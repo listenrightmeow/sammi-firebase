@@ -10,12 +10,6 @@ on:
 permissions:
   contents: read
 
-# Moment's ADR-037 grammar and ADR-038 project mode are not on npm yet; the model gate builds the
-# CLI from this commit on mmmnt/mmmnt (branch feat/adr-037-grammar-completeness).
-env:
-  MOMENT_REPO: https://github.com/mmmnt/mmmnt.git
-  MOMENT_COMMIT: bebd994f81befd27a2198399241e6d593ad2cfae
-
 jobs:
   pipeline:
     runs-on: ubuntu-latest
@@ -38,11 +32,7 @@ jobs:
       - name: "2 · Types"
         run: pnpm exec tsc --noEmit
       - name: "3 · Model"
-        run: |
-          git clone --filter=blob:none "$MOMENT_REPO" "$RUNNER_TEMP/moment"
-          git -C "$RUNNER_TEMP/moment" checkout "$MOMENT_COMMIT"
-          (cd "$RUNNER_TEMP/moment" && corepack pnpm@10.29.3 install --frozen-lockfile && corepack pnpm@10.29.3 --filter @mmmnt/cli build)
-          node "$RUNNER_TEMP/moment/packages/cli/dist/moment.mjs" parse model/
+        run: pnpm model
       - name: "4 · Spec lint and audit"
         run: pnpm exec feat lint && pnpm exec feat audit
       - name: "5 · Generate"

@@ -18,11 +18,13 @@
     "test:spec": "feat run --coverage && node tools/build/counts.ts",
     "test:unit": "vitest run -c vitest.unit.config.ts --coverage",
     "coverage": "node tools/build/coverage-gate.ts",
-    "ci:local": "bash -eo pipefail -c 'pnpm lint && pnpm typecheck && pnpm spec && pnpm test:spec && pnpm test:unit && pnpm coverage && pnpm build:sef --check'"
+    "model": "moment parse model/",
+    "ci:local": "bash -eo pipefail -c 'pnpm lint && pnpm typecheck && pnpm model && pnpm spec && pnpm test:spec && pnpm test:unit && pnpm coverage && pnpm build:sef --check'"
   },
   "devDependencies": {
     "@dotenvx/dotenvx": "^2.38.2",
     "@eslint/js": "^10.0.1",
+    "@mmmnt/cli": "0.6.0",
     "@mmmnt/feat-adapter-handler": "^0.1.7",
     "@mmmnt/feat-adapter-kit": "^0.1.6",
     "@mmmnt/feat-runtime": "^0.1.19",

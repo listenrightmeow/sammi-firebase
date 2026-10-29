@@ -1,24 +1,23 @@
 #!/usr/bin/env python3
 """Regenerate the Facet directory from the Moment model and check it the way Facet will.
 
-Runs `moment simulate model --out-dir model/facet --all` with the ADR-038 CLI, then replicates
+Runs `moment simulate model --out-dir model/facet --all` with the pinned @mmmnt/cli, then replicates
 Facet's scenario check: every event type must be in its topology's eventRouting or start with one
 of Facet's synthetic prefixes (SYNTHETIC_PREFIXES in facet/packages/client/src/contracts/
 moment-ir-validation.ts; SimQuery accepted since mmmnt/facet 27b1a40, 2026-10-29). A command or
 query placed on a branch lane has no lane context, so the simulator emits its bare name and Facet
 rejects the scenario; keep such nodes on the context lane inside the when block.
 
-Usage: python3 tools/export_facet.py [path-to-moment-adr037]
+Usage: python3 tools/export_facet.py [path-to-moment.mjs]
 """
 import json, pathlib, subprocess, sys, re
 
 HERE = pathlib.Path(__file__).resolve().parent.parent
-ADR = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else pathlib.Path("/Volumes/Storage/development/projects/complai/moment-adr037")
-CLI = ADR / "packages/cli/dist/moment.mjs"
+CLI = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else HERE / "node_modules/@mmmnt/cli/dist/moment.mjs"
 OUT = HERE / "model/facet"
 
 if not CLI.exists():
-    sys.exit(f"ADR-038 CLI not found at {CLI}; pass the moment-adr037 worktree path as the first argument")
+    sys.exit(f"Moment CLI not found at {CLI}; run pnpm install or pass the path to moment.mjs")
 
 subprocess.run(["rm", "-rf", str(OUT)], check=True)
 r = subprocess.run(["node", str(CLI), "simulate", str(HERE / "model"), "--out-dir", str(OUT), "--all"], capture_output=True, text=True)

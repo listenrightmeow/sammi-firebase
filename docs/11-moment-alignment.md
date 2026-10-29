@@ -4,7 +4,7 @@ The methodology's gate before the spec layer: every event, command, aggregate an
 
 ## The model
 
-`model/` is a Moment project in the ADR-037 grammar, held to the palette by ADR-038 (feature branch `feat/adr-037-grammar-completeness`, CLI 0.5.0 built Oct 24, 2026 from commit bebd994, run as `node …/moment-adr037/packages/cli/dist/moment.mjs`). The installed `moment` on this machine is the main-branch 0.5.0 whose grammar has no `external`, `projection`, `query`, `rule`, `state` or `gateway`; it will not parse these files.
+`model/` is a Moment project in the ADR-037 grammar, held to the palette by ADR-038 (`@mmmnt/cli` 0.6.0, pinned exactly as a dev dependency; run it as `pnpm exec moment`). Moment releases before 0.6.0 have no `external`, `projection`, `query`, `rule`, `state` or `gateway` and will not parse these files.
 
 | File | Holds |
 | --- | --- |
@@ -29,7 +29,7 @@ Two manifests exist and both are in place:
 
 ```
 python3 tools/export_facet.py                                                   # simulate --all, then Facet's event-type check
-node <moment-adr037>/packages/cli/dist/moment.mjs serve model/facet --all      # WebSocket for Facet on port 4321
+pnpm exec moment serve model/facet --all                                       # WebSocket for Facet on port 4321
 ```
 
 Facet accepts `SimQuery.*` since mmmnt/facet 27b1a40 (Oct 29, 2026, shipped to https://facet.mmmnt.dev), so the output loads unmodified. The export script replicates Facet's event-type check after generating; a command or query placed on a branch lane has no lane context, is emitted as a bare name, and would be rejected, so such nodes sit on the context lane inside their `when` block (T1 `RecordConnectionFailure`, T7 `RecordSessionLoss`, fixed Oct 29, 2026).

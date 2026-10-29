@@ -293,6 +293,8 @@ Dates are when the decision was made. Facts cited here are tracked, with sources
 
 **Moment, resolved the same day.** CI's model stage builds Moment from commit `bebd994` of `mmmnt/mmmnt`, on branch `feat/adr-037-grammar-completeness` (ADR-037 grammar, ADR-038 palette conformance and project mode, ADR-039 sync). The branch had never been pushed; it was pushed on Oct 29, 2026. The `lodash-es` advisory was traced to Moment's pin of `langium` 4.2.1, which pins chevrotain ~11.1.1 and through it `lodash-es` exactly 4.17.23, so no consumer of `@mmmnt/cli` could override it. The fix is mmmnt/mmmnt pull request #180: `langium` 4.4.0 and Node 22, because every Langium release without the pin depends on chevrotain 12 or 13, which require Node 22 (Node 20 has been end-of-life since April 30, 2026). All its checks pass; it awaits review and a branch-protection update from `build (20)` to `build (24)`.
 
+**Moment 0.6.0, Oct 29, 2026.** Moment 0.6.0 is on npm with ADR-037, ADR-038 and ADR-039. The model stage now runs `@mmmnt/cli` 0.6.0, pinned exactly as a dev dependency, instead of building commit `bebd994`. The model parses with exit 0. It reports five V17 warnings, one per flow with more than one `returns-to`. These were always there; Moment's CLI printed only errors until 0.6.0.
+
 **Next.** Milestone 2 is the PC tier: the gateway probe (T-D2), the on-PC matrix, and the full bundled deck.
 
 ---
