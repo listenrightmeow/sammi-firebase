@@ -99,24 +99,36 @@ Remove the Probe dock in OBS via **Docks** → **Custom Browser Docks…** → t
 
 It needs SAMMI 2025.2.0 or newer, with the Bridge open and connected. Nothing leaves the machine.
 
-## Part 5. Install (2 minutes)
+## Part 5. Install (2 minutes, plus 3 if the Bridge is not set up yet)
+
+If the Bridge is not already running as an OBS dock:
+
+1. In SAMMI Core click **Bridge** → **Copy Full Path**. That copies the path of `bridge.html` inside the `SAMMI/bridge` folder.
+2. In OBS: **Docks** → **Custom Browser Docks…**, Dock Name `Bridge`, paste the path into the URL column, **Apply**, **Close**. If the dock does not appear, **Docks** → **Bridge**.
+3. In the dock's **Settings** tab, under Bridge Connection: IP `127.0.0.1`, port `9425`, password only if one is set in SAMMI Core → **Settings**. Click **Connect**. A green "Connected" (or green dot) means it worked, and the dock remembers this.
+4. Only one Bridge may be open. If it says "Second Bridge tried to connect", close the other one (a browser tab or a second dock).
+
+Then:
 
 1. Copy `cloud-probe-echo.sef` to the Windows PC.
 2. Make sure the Bridge dock is open in OBS and shows as connected to SAMMI.
 3. In SAMMI Core: **Bridge** → **Install an Extension** → pick the `.sef` file. SAMMI refuses with a message if the Bridge is not connected or SAMMI is older than 2025.2.0. Report any refusal text.
 4. Two things appear: a **Cloud Probe** tab in the Bridge dock, with a log that already shows one line listing the Bridge's helper functions, and a **Cloud Probe** deck in SAMMI with four buttons.
 
-## Part 6. Run the five tests (5 minutes)
+## Part 6. Run the six tests (6 minutes)
 
-Keep the Bridge dock visible while pressing buttons, so the log and the SAMMI alert can be seen together. Every button first sets `echoResult` to "NOT SET (the extension never answered)", then runs the extension command, then shows an alert with whatever `echoResult` holds.
+Keep the Bridge dock visible while pressing buttons, so the log and the SAMMI alert can be seen together. Every button deletes `echoResult`, runs the extension command, then shows an alert with whatever `echoResult` holds. If the Save Variable wait timed out, the alert shows the unresolved text `/$echoResult$/` (or `0`).
+
+**Reinstalling after a change** (the extension name stays the same): SAMMI Core → **Bridge** → **Uninstall an Extension** → Cloud Probe, delete the old Cloud Probe deck, then install the new `.sef`. Check the Cloud Probe tab's heading shows the expected version.
 
 | # | Press | Expected if the hypothesis holds | Record |
 | --- | --- | --- | --- |
 | 1 | **Echo (persistent)** | Alert appears at once reading `echo: hello from cpEchoP @ hh:mm:ss`. The log shows `received: {...}` and `sent setVariable(...) -> SAMMI replied: {...}`. | Screenshot of the alert and of the log. The `received` line is the most valuable thing in this whole test: it shows exactly what SAMMI sends for a type 37 box. |
-| 2 | **Echo (non-persistent)** | Same as test 1. | Alert text. If it reads NOT SET, instanceId handling differs for non-persistent buttons. |
+| 2 | **Echo (non-persistent)** | Same as test 1. | Alert text. If it shows the unresolved placeholder, instanceId handling differs for non-persistent buttons. |
 | 3 | **Echo (3 s delay)** | The button visibly pauses about three seconds, then the alert shows the echo. | Roughly how long the pause was. |
-| 4 | **Echo (15 s delay, 10 s timeout)** | After about ten seconds the alert appears. What it says is the answer: NOT SET, empty, or something else. Five seconds later the log shows the late `setVariable` and SAMMI's reply to it. | Alert text, the delay before it, and SAMMI's reply to the late write. Also check SAMMI's own log window for an error line. |
-| 5 | **Bridge closed** | Close the Bridge dock (Docks menu, untick it), wait a few seconds, press **Echo (persistent)**. Either the alert appears at once, or after about ten seconds, or the button hangs. | Which of the three happened, the alert text, and any error in SAMMI's log. Reopen the Bridge dock afterwards and confirm the Cloud Probe tab comes back. |
+| 4 | **Echo (15 s delay, 10 s timeout)** | After about ten seconds the alert appears. What it says is the answer: the unresolved placeholder, empty, or something else. Five seconds later the log shows the late `setVariable` and SAMMI's reply to it. | Alert text, the delay before it, and SAMMI's reply to the late write. Also check SAMMI's own log window for an error line. |
+| 5 | **Echo (no delete, press twice)** | First press: alert after one second with the time. Second press: if the alert comes at once showing the *first* press's time, SAMMI accepts a stale value and product code must delete the variable before every command. If it waits one second and shows a new time, SAMMI clears it itself. | Both alert texts and whether the second press waited. |
+| 6 | **Bridge closed** | Close the Bridge dock (Docks menu, untick it), wait a few seconds, press **Echo (persistent)**. Either the alert appears at once, or after about ten seconds, or the button hangs. | Which of the three happened, the alert text, and any error in SAMMI's log. Reopen the Bridge dock afterwards and confirm the Cloud Probe tab comes back. |
 
 ## Part 7. Record and clean up
 

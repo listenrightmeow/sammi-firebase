@@ -48,29 +48,33 @@ def button(bid, text, x, y, color, commands, persistent):
         "color": color, "persistent": 1.0 if persistent else 0.0, "text": text,
         "release_duration": 0.0, "queueable": 0.0, "command_list": cmds, "press_type": 0.0,
         "x": x, "border": 2.0, "image": "", "triggers": [], "group_id": "", "overlappable": 0.0,
-        "init_variable": "", "deck": 0.0, "width": 0.25, "button_id": bid, "button_duration": 0.0,
+        "init_variable": "", "deck": 0.0, "width": 0.2, "button_id": bid, "button_duration": 0.0,
         "y": y, "switch_deck": "", "height": 0.125, "release_list": [], "functions": float(functions),
         "stretch": 0.0, "is_transparent": 0.0,
     }
 
-def echo_button(bid, text, x, y, color, *, persistent, delay_ms, note):
-    return button(bid, text, x, y, color, [
-        comment(f"Cloud Probe. {note}"),
-        delete_var("echoResult"),
-        set_string("echoResult", "NOT SET (the extension never answered)"),
-        echo("hello from " + bid, delay_ms, "echoResult"),
-        alert("Cloud Probe " + bid + ": /$echoResult$/"),
-    ], persistent)
+def echo_button(bid, text, x, y, color, *, persistent, delay_ms, note, delete_first=True):
+    # v0.1.0 preset the variable to a placeholder before the command, and SAMMI continued at once: the
+    # Save Variable box is a "wait until this variable exists" and a preset value satisfies it immediately.
+    # So: delete first, never preset. If the wait times out, the alert shows an unresolved /$echoResult$/.
+    cmds = [comment(f"Cloud Probe. {note}")]
+    if delete_first: cmds.append(delete_var("echoResult"))
+    cmds += [echo("hello from " + bid, delay_ms, "echoResult"),
+             alert("Cloud Probe " + bid + ": /$echoResult$/")]
+    return button(bid, text, x, y, color, cmds, persistent)
 
 BUTTONS = [
     echo_button("cpEchoP", "Echo\n(persistent)", 0.0, 0.0, bgr(60, 160, 60), persistent=True, delay_ms=0,
                 note="Persistent button, no delay. Expected: the alert shows 'echo: hello from cpEchoP @ <time>' right away."),
-    echo_button("cpEchoN", "Echo\n(non-persistent)", 0.25, 0.0, bgr(60, 120, 200), persistent=False, delay_ms=0,
+    echo_button("cpEchoN", "Echo\n(non-persistent)", 0.2, 0.0, bgr(60, 120, 200), persistent=False, delay_ms=0,
                 note="Non-persistent button. Tests that instanceId is enough for the value to land in the right button instance."),
-    echo_button("cpEchoSlow", "Echo\n(3 s delay)", 0.5, 0.0, bgr(200, 160, 40), persistent=True, delay_ms=3000,
+    echo_button("cpEchoSlow", "Echo\n(3 s delay)", 0.4, 0.0, bgr(200, 160, 40), persistent=True, delay_ms=3000,
                 note="The extension waits 3 s before answering. Expected: the button pauses 3 s, then the alert shows the echo."),
-    echo_button("cpEchoLate", "Echo\n(15 s delay, 10 s timeout)", 0.75, 0.0, bgr(200, 60, 60), persistent=True, delay_ms=15000,
+    echo_button("cpEchoLate", "Echo\n(15 s delay, 10 s timeout)", 0.6, 0.0, bgr(200, 60, 60), persistent=True, delay_ms=15000,
                 note=f"The extension answers after 15 s but the box times out at {TIMEOUT_MS} ms. Shows what the button sees on timeout."),
+    echo_button("cpEchoStale", "Echo\n(no delete, press twice)", 0.8, 0.0, bgr(150, 90, 200), persistent=True, delay_ms=1000,
+                delete_first=False,
+                note="Does NOT delete echoResult first. Press twice. If the second alert shows the FIRST press's time at once, SAMMI accepts a stale value and product code must delete the variable before every command."),
 ]
 
 uid = time.strftime("%Y%m%d%H%M%S") + "000000000"
@@ -78,14 +82,14 @@ deck_data = {
     "background_color": 4210752.0, "on": True, "grid_y": 8.0, "snap_grid": True,
     "lb_version": SAMMI_MIN, "background_image": "", "sammi_version": SAMMI_MIN,
     "encrypted": False, "adaptive_resizing": True, "unique_id": uid,
-    "button_list": BUTTONS, "deck_name": "Cloud Probe", "grid_x": 4.0, "stretch": False,
+    "button_list": BUTTONS, "deck_name": "Cloud Probe", "grid_x": 5.0, "stretch": False,
 }
 insert_over = {"deck_data": json.dumps(deck_data), "unique_id": uid, "include_image": {},
                "sammi_version": SAMMI_MIN, "bridge": True}
 
 # ---------------------------------------------------------------- the extension itself
 INSERT_EXTERNAL = """<div style="font-family:system-ui,sans-serif">
-  <h4>Cloud Probe (prototype 2)</h4>
+  <h4>Cloud Probe (prototype 2, v0.2.0)</h4>
   <p>Press the buttons on the <b>Cloud Probe</b> deck in SAMMI. Every command the extension receives is logged
      below, newest first, together with what the extension sent back and how SAMMI replied.
      Nothing leaves this machine.</p>
@@ -140,7 +144,7 @@ sef = f"""[extension_name]
 [extension_info]
 Throwaway prototype for the SAMMI Cloud Vars project. One command, "{CMD_NAME}", that echoes a text box back into a Save Variable box. Safe to uninstall.
 [extension_version]
-0.1.0
+0.2.0
 [insert_external]
 {INSERT_EXTERNAL}
 
