@@ -79,7 +79,7 @@ Dates are when the decision was made. Facts cited here are tracked, with sources
 
 **Context.** SAMMI Bridge runs from a file URL inside OBS's embedded Chromium. Firebase's documentation says popup and redirect sign-in flows (Google and other identity providers) require an http, https or chrome-extension origin and fail with "operation not supported in this environment" otherwise. SAMMI cannot sign RSA JWTs, so service accounts are out.
 
-**Hardware note, Oct 28, 2026.** The probe showed that `window.open` and IndexedDB both work inside the OBS dock, contrary to the research. Probe v2 then showed the Firebase SDK (10.12.0) opens its sign-in popup from the `file://` dock without the documented "operation not supported" refusal. What remains untested is whether a real project completes the sign-in, since Firebase also checks the page's origin against the project's authorized domains and a `file://` page has no hostname. **This decision is under review** until probe v3's Google sign-in button answers it: if Google sign-in completes from the dock, it should become the primary sign-in because it removes the "create an email/password account" step for the user, with Email/Password kept as the fallback.
+**Hardware note, Oct 28 and 29, 2026.** The probe showed that `window.open` and IndexedDB both work inside the OBS dock, and that the Firebase SDK (10.12.0) opens its sign-in popup from `file://` without the documented "operation not supported" error. But with a real project and Google enabled, sign-in fails with `auth/unauthorized-domain`: the SDK's authorized-domain check requires an http or https page before it matches the hostname, so a `file://` page can never pass and no console setting changes that. Google and every other popup or redirect provider are therefore ruled out for the Bridge. **Review closed; Email/Password confirmed.** A future alternative, if the account-creation step proves to be a real obstacle for users, is a small hosted sign-in page (static, on GitHub Pages) that performs Google sign-in in the user's normal browser and shows a one-time code to paste into the extension. That is a separate decision with its own hosting responsibility and is not part of the MVP.
 
 **Decision.**
 
@@ -160,7 +160,6 @@ Dates are when the decision was made. Facts cited here are tracked, with sources
 
 ## Open decisions
 
-- **Sign-in method** (D4). Email/Password stands unless probe v3 shows Google sign-in completes from the dock with a real project.
 - **Final name and command names** (D7). Needed before the user journey document.
 - **Scope of the first release.** Proposal: Save, Load, Delete, Value Changed trigger, sign-in panel, status display. List, export and import in a later release.
 - **Ini layout** for the mirror: one file per deck prefix, or one file for everything. Decide in the data model document.
