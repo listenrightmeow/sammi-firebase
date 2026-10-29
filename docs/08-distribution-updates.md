@@ -13,7 +13,7 @@ src/
   features/<feature>/handler.ts   one pure handler per spec, export handle(input) → { status, body }
 specs/                  Feature specs (.feat + .contract.json), one per command and query; coverage in specs/README.md
 contracts/              JSON Schema contract outputs of the ADRs
-model/                  the Moment model (ADR-038 grammar)
+model/                  the Moment model (ADR-037 grammar, ADR-038 palette conformance)
 tools/
   build/
     sef.ts              esbuild bundle + .sef assembly + version stamp → dist/sammi-firebase.sef (`pnpm build:sef`)

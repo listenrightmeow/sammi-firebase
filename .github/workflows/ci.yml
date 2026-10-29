@@ -10,7 +10,8 @@ on:
 permissions:
   contents: read
 
-# The ADR-038 Moment grammar is not on npm yet; the model gate builds the CLI from this commit.
+# Moment's ADR-037 grammar and ADR-038 project mode are not on npm yet; the model gate builds the
+# CLI from this commit on mmmnt/mmmnt (branch feat/adr-037-grammar-completeness).
 env:
   MOMENT_REPO: https://github.com/mmmnt/mmmnt.git
   MOMENT_COMMIT: bebd994f81befd27a2198399241e6d593ad2cfae

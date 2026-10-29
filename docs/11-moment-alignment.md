@@ -4,7 +4,7 @@ The methodology's gate before the spec layer: every event, command, aggregate an
 
 ## The model
 
-`model/` is a Moment project in the ADR-038 grammar (feature branch `feat/adr-037-grammar-completeness`, CLI 0.5.0 built Oct 24, 2026 from commit bebd994, run as `node …/moment-adr037/packages/cli/dist/moment.mjs`). The installed `moment` on this machine is the main-branch 0.5.0 whose grammar has no `external`, `projection`, `query`, `rule`, `state` or `gateway`; it will not parse these files.
+`model/` is a Moment project in the ADR-037 grammar, held to the palette by ADR-038 (feature branch `feat/adr-037-grammar-completeness`, CLI 0.5.0 built Oct 24, 2026 from commit bebd994, run as `node …/moment-adr037/packages/cli/dist/moment.mjs`). The installed `moment` on this machine is the main-branch 0.5.0 whose grammar has no `external`, `projection`, `query`, `rule`, `state` or `gateway`; it will not parse these files.
 
 | File | Holds |
 | --- | --- |

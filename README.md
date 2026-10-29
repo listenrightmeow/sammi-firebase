@@ -85,7 +85,7 @@ Read `CONTRIBUTING.md` before changing behavior: the spec changes first, and thr
 | `docs/10-domain-model.md` | The domain model: aggregates, commands, events, queries, invariants. |
 | `docs/11-moment-alignment.md` | How the model, the design board and the specs were kept in agreement. |
 | `contracts/` | JSON Schema contracts: config, ini layout, cloud tree, security rules, answers, events, variables, command boxes, registry entry, quality gates. |
-| `model/` | The Moment model: one context, eight flows. Validated with the Moment CLI build that implements ADR-038 (`moment parse model/`). `tools/export_facet.py` exports it for Facet. |
+| `model/` | The Moment model: one context, eight flows. Validated with the Moment build that adds ADR-037 (grammar completeness) and ADR-038 (palette conformance, project mode) (`moment parse model/`). `tools/export_facet.py` exports it for Facet. |
 | `specs/` | 23 Feature specs with their contract registries; coverage matrix in `specs/README.md`. `feat.config.json` is the harness. |
 | `tools/feat-adapters/` | The harness's `ini`, `firebase` and `sammi` service adapters (milestone 1). |
 | `evidence/` | Shipped release evidence: the on-PC matrix per release and the gateway-probe fixture. |

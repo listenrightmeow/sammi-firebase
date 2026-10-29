@@ -1,7 +1,7 @@
 // SAMMI Firebase — domain model, spatial + temporal, one unified file.
 // Sources: docs/10-domain-model.md (DDD inventory), docs/06-data-model.md, docs/01-decision-record.md (D1–D12),
 //          NDD board "SAMMI Firebase — NDD" https://miro.com/app/board/uXjVEUQjpYg=/ (T1–T8, rulings H1–H5, 2026-10-29).
-// Grammar: ADR-038 (orchestration, external, projection, query, rule, state, gateway); validated with the
+// Grammar: ADR-037 (external, projection, query, rule, state, gateway), held to the palette by ADR-038; validated with the
 //          feat/adr-037-grammar-completeness CLI. Sift bypassed on this project by maintainer ruling (D11).
 // Causality: flmnt workspace firebase (35904f1a). Truth for execution will be the Feature specs; this file is the model.
 //
