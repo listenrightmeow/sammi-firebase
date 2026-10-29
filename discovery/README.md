@@ -1,6 +1,6 @@
 # Discovery: OBS dock probe
 
-`obs-dock-probe.html` is a single self-contained page. Loaded the same way SAMMI Bridge is loaded, as an OBS Custom Browser Dock, it reports what that environment can and cannot do. It answers the **Assumed** rows in `docs/02-verification-list.md` (S14, O5, O6, O7, F2, F7).
+`obs-dock-probe.html` (currently v2; the version is printed under the title) is a single self-contained page. Loaded the same way SAMMI Bridge is loaded, as an OBS Custom Browser Dock, it reports what that environment can and cannot do. It answers the **Assumed** rows in `docs/02-verification-list.md` (S14, O5, O6, O7, F2, F7).
 
 It needs a Windows PC with OBS Studio. SAMMI does not need to be running. Nothing leaves the machine unless you fill in the optional Firebase section.
 
@@ -25,14 +25,14 @@ What the rows mean:
 | --- | --- | --- |
 | Running inside OBS | YES | The file is open in a browser, not in OBS. Redo Part 2. |
 | localStorage, sessionStorage | YES | Design still works; the mirror is a SAMMI ini file. Record it. |
-| IndexedDB open | NO is expected | Confirms the design decision to avoid IndexedDB. |
-| window.open | NO is expected | Confirms Google popup sign-in is impossible here. |
+| IndexedDB open | YES (observed Oct 28, 2026; the research said NO) | Either answer is fine; the design does not use IndexedDB. |
+| window.open | YES (observed Oct 28, 2026; the research said NO) | NO would rule out Google popup sign-in. |
 | CORS fetch to Firebase Auth REST | YES with an HTTP 400 and an API key error | NO means the dock cannot reach Google at all. Check the PC's internet, then report. |
 | CDN reachable | YES | NO means the Bridge itself would fail to load here too. |
 | Firebase JS SDK loads | YES | NO blocks the whole approach. Report the error text. |
 | Auth initializes with localStorage persistence | YES | Report the error text. |
 | Email/password sign-in call reaches the server | YES with `auth/api-key-not-valid` | `auth/operation-not-supported-in-this-environment` would be bad news. Report it. |
-| Google popup sign-in | NO with `auth/operation-not-supported-in-this-environment` | Expected. |
+| Google popup sign-in | Either. YES reads "popup window opened; auth/popup-closed-by-user" and means Google sign-in is possible from the dock. NO with `auth/operation-not-supported-in-this-environment` means it is not. | A small popup window opens for about three seconds and closes itself. `auth/argument-error` means you are running probe v1; use the current file. |
 
 ## Part 3. Real Firebase round trip (15 minutes, optional but valuable)
 
@@ -79,6 +79,8 @@ Create `discovery/results/` and save:
 - A short `notes.md` with the OBS version, the Chromium version from Raw environment, the date, and anything unexpected.
 
 Then send the screenshots. The architecture document waits on these results.
+
+Results so far: `results/2026-10-28-notes.md`.
 
 ## Cleanup
 

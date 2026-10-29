@@ -21,7 +21,7 @@
 </head>
 <body>
 <h1>OBS dock probe</h1>
-<p class="sub">Checks what a page loaded the way SAMMI Bridge is loaded can and cannot do. Nothing leaves this machine unless you fill in the optional Firebase section.</p>
+<p class="sub">Probe v2. Checks what a page loaded the way SAMMI Bridge is loaded can and cannot do. Nothing leaves this machine unless you fill in the optional Firebase section.</p>
 
 <p id="boot" class="warn">Starting… If this line is still here after 10 seconds, the page's script did not run in this browser (module scripts or dynamic import unsupported). Report that as the result.</p>
 <p id="jserr" class="bad"></p>
@@ -102,12 +102,23 @@ try {
 if (fb) {
   try {
     const app = fb.app.initializeApp({ apiKey: "probe", authDomain: "probe.firebaseapp.com", projectId: "probe", appId: "1:1:web:1" }, "probe");
-    const auth = fb.auth.initializeAuth(app, { persistence: fb.auth.browserLocalPersistence });
+    const auth = fb.auth.initializeAuth(app, { persistence: fb.auth.browserLocalPersistence, popupRedirectResolver: fb.auth.browserPopupRedirectResolver });
     add("Auth initializes with localStorage persistence", "ok", auth.config.apiKey ? "" : "");
     try { await fb.auth.signInWithEmailAndPassword(auth, "probe@example.com", "probe"); add("Email/password sign-in call reaches the server", "ok"); }
     catch (e) { add("Email/password sign-in call reaches the server", /api-key-not-valid|invalid-api-key|network|operation-not-supported/.test(e.code) && !/operation-not-supported/.test(e.code) ? "ok" : (/operation-not-supported/.test(e.code) ? "bad" : "warn"), `${e.code} (api-key-not-valid is the expected answer here)`); }
-    try { await fb.auth.signInWithPopup(auth, new fb.auth.GoogleAuthProvider()); add("Google popup sign-in", "ok"); }
-    catch (e) { add("Google popup sign-in", /operation-not-supported/.test(e.code) ? "bad" : "warn", e.code); }
+    // The SDK opens a popup to authDomain/__/auth/handler and waits for it to close. The project is fake, so
+    // capture the window the SDK opens, note that it opened, and close it after 3 s. The SDK then reports
+    // auth/popup-closed-by-user, which proves the popup path itself works in this environment.
+    let popupOpened = false; const realOpen = window.open.bind(window);
+    window.open = (...a) => { const w = realOpen(...a); if (w) { popupOpened = true; setTimeout(() => { try { w.close(); } catch (_) {} }, 3000); } return w; };
+    try { await fb.auth.signInWithPopup(auth, new fb.auth.GoogleAuthProvider()); add("Google popup sign-in", "ok", "signed in (unexpected with a fake project)"); }
+    catch (e) {
+      if (/operation-not-supported/.test(e.code)) add("Google popup sign-in", "bad", `${e.code} (the SDK refuses popups on this origin)`);
+      else if (/popup-closed-by-user|cancelled-popup-request/.test(e.code) && popupOpened) add("Google popup sign-in", "ok", `popup window opened; ${e.code} after the probe closed it. The popup path works here.`);
+      else if (/popup-blocked/.test(e.code)) add("Google popup sign-in", "bad", `${e.code}`);
+      else add("Google popup sign-in", "warn", `${e.code}; popup window ${popupOpened ? "opened" : "did not open"}`);
+    }
+    window.open = realOpen;
   } catch (e) { add("Auth initializes with localStorage persistence", "bad", e.message); }
 }
 
@@ -123,7 +134,7 @@ document.getElementById("run").onclick = async () => {
   if (!cfg.databaseURL) return say("Config has no databaseURL. Open Realtime Database in the console, copy the URL shown above the data tree (https://....firebasedatabase.app) and add it as \"databaseURL\".");
   try {
     const app = fb.app.initializeApp(cfg, "roundtrip-" + Date.now());
-    const auth = fb.auth.initializeAuth(app, { persistence: fb.auth.browserLocalPersistence });
+    const auth = fb.auth.initializeAuth(app, { persistence: fb.auth.browserLocalPersistence, popupRedirectResolver: fb.auth.browserPopupRedirectResolver });
     say("1. auth initialized (localStorage persistence)");
     const cred = await fb.auth.signInWithEmailAndPassword(auth, document.getElementById("email").value, document.getElementById("password").value);
     say("2. signed in as uid " + cred.user.uid);

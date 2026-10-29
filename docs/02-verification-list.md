@@ -7,7 +7,7 @@ Every fact the design leans on, where it came from, and whether it has been conf
 - **Assumed**: consistent with the sources but not yet observed. Has a verification step.
 - **Open**: not yet researched.
 
-Last updated: Oct 28, 2026.
+Last updated: Oct 28, 2026. Hardware results from probe v1 are in `discovery/results/2026-10-28-notes.md`.
 
 ## SAMMI and SAMMI Bridge
 
@@ -26,7 +26,7 @@ Last updated: Oct 28, 2026.
 | S11 | `SAMMI.triggerExt(name, pullData)` fires an extension trigger in SAMMI with arbitrary pull data. | Verified (source) | SAMMI-Bridge README, "Trigger Extension" |
 | S12 | `SAMMI.setVariable` messages have a size limit; large payloads must be chunked. | Verified (source) | SAMMI docs, "Build Extension", data size limitation |
 | S13 | The `.sef` deck section accepts `"sammi_version"` and `"bridge": true` keys that make SAMMI refuse to install on an old SAMMI or without the Bridge connected. | Verified (source) | SAMMI docs, "Build Extension", `[insert_over]` |
-| S14 | Extension JavaScript in `[insert_script]` can use dynamic `import()` to load ES modules such as the Firebase SDK from gstatic. | Assumed | Probe page uses dynamic import; confirm it runs inside the OBS dock (probe row "Firebase JS SDK loads") |
+| S14 | A page loaded as an OBS dock can use dynamic `import()` to load ES modules such as the Firebase SDK from gstatic. | Verified (hardware) | Probe v1 in OBS dock, Oct 28, 2026: SDK 10.12.0 loaded. Still to confirm: the same from inside a `.sef` `[insert_script]`, which the Bridge injects as a classic script (prototype 2) |
 | S15 | Whether SAMMI Core keeps running extension commands queued while the Bridge is disconnected, or fails them immediately, and what the button sees. | Open | Test with the Bridge closed: a button with a type 37 command, observe timeout behavior and any error |
 
 ## OBS browser environment
@@ -34,19 +34,19 @@ Last updated: Oct 28, 2026.
 | # | Fact | Status | Source or verification step |
 | --- | --- | --- | --- |
 | O1 | OBS browser docks are Chromium Embedded Framework. | Verified (source) | obs-browser README |
-| O2 | Chromium disables IndexedDB for pages loaded from file URLs. | Verified (source) | Chromium code review 11052023; community reports |
-| O3 | localStorage works in OBS docks and survives OBS updates. | Verified (source) | OBS forum threads 159835, 131768 |
+| O2 | Chromium disables IndexedDB for pages loaded from file URLs. | **Contradicted (hardware)** | Probe v1, Oct 28, 2026: `indexedDB.open` succeeds on `file://` in Chromium 156 and in the OBS dock (CEF 127). The 2012 Chromium change is no longer in effect. Design does not rely on IndexedDB either way |
+| O3 | localStorage works in OBS docks and survives OBS updates. | Verified (hardware, partial) | Read/write confirmed by probe v1 in the OBS dock, Oct 28, 2026. Survival across OBS updates still rests on forum threads 159835, 131768 |
 | O4 | All file-URL docks on one machine share a single localStorage namespace, so keys collide across docks. | Verified (source) | OBS forum thread 131768 |
-| O5 | `window.open` is unavailable or blocked in the dock. | Assumed | Probe row "window.open" |
-| O6 | Cross-origin `fetch` from the dock to Google endpoints works. | Assumed | Probe row "CORS fetch to Firebase Auth REST" |
+| O5 | `window.open` is unavailable or blocked in the dock. | **Contradicted (hardware)** | Probe v1, Oct 28, 2026: `window.open` returns a window in the OBS dock (obs-browser 2.26.9). Whether Firebase's popup sign-in accepts the `file://` origin is a separate question, F1 |
+| O6 | Cross-origin `fetch` from the dock to Google endpoints works. | Verified (hardware) | Probe v1 in OBS dock, Oct 28, 2026: HTTP 400 with a JSON error body from identitytoolkit.googleapis.com |
 | O7 | Websocket connections from the dock to `*.firebaseio.com` work. | Assumed | Probe round trip, step 3 to 5 |
 
 ## Firebase
 
 | # | Fact | Status | Source or verification step |
 | --- | --- | --- | --- |
-| F1 | Popup and redirect sign-in require an http, https or chrome-extension origin and web storage; otherwise `auth/operation-not-supported-in-this-environment`. | Verified (source) | Firebase Auth error reference; firebase-js-sdk issue 558 |
-| F2 | Email/Password sign-in has no origin restriction and works from a file URL. | Assumed | Probe rows "Email/password sign-in call reaches the server" and round trip step 2 |
+| F1 | Popup and redirect sign-in require an http, https or chrome-extension origin and web storage; otherwise `auth/operation-not-supported-in-this-environment`. | Verified (source), hardware pending | Firebase Auth error reference; firebase-js-sdk issue 558. Probe v1 could not test it (probe defect: Auth initialized without `popupRedirectResolver`, giving `auth/argument-error`). Probe v2 row "Google popup sign-in" answers it; a NO here closes the question, a YES reopens D4 |
+| F2 | Email/Password sign-in has no origin restriction and works from a file URL. | Verified (hardware, partial) | Probe v1 in OBS dock, Oct 28, 2026: the call reached the server and failed only on the fake API key. A full sign-in is round-trip step 2, not yet run |
 | F3 | The Auth SDK can be initialized with localStorage or in-memory persistence instead of IndexedDB. | Verified (source) | Firebase JS SDK reference, `initializeAuth`, `browserLocalPersistence`, `inMemoryPersistence` |
 | F4 | ID tokens last one hour; the refresh token lasts until revoked and is exchanged at `securetoken.googleapis.com/v1/token`. | Verified (source) | Firebase Auth REST reference |
 | F5 | Realtime Database realtime listeners (`onValue`) deliver changes made from any client, including the console, within about a second. | Verified (source) | Firebase Realtime Database documentation |
@@ -59,7 +59,7 @@ Last updated: Oct 28, 2026.
 
 Two small prototypes close every **Assumed** row above. Neither is product code.
 
-1. **OBS dock probe** (`discovery/obs-dock-probe.html`). Load as an OBS Custom Browser Dock on the Windows machine. Covers S14, O5, O6, O7, F2, F7. Record the result table and the round-trip log in `discovery/results/` with the OBS version and the Chromium version the probe reports.
+1. **OBS dock probe** (`discovery/obs-dock-probe.html`). Load as an OBS Custom Browser Dock on the Windows machine. Covers S14, O5, O6, O7, F1, F2, F7. Record the result table and the round-trip log in `discovery/results/` with the OBS version and the Chromium version the probe reports. **Status:** v1 table run Oct 28, 2026, see results. Remaining: v2 table (for the popup row) and the round trip (O7, F7, rest of F2).
 2. **One-command extension.** A `.sef` with a single command that has a text box and a type 37 Save Variable box, whose script echoes the text back. Covers S6 and S15. Also records what the button sees when the Bridge is closed.
 
 Both must pass before the architecture document is written, because S6 and F7 decide the shape of Cloud: Load and of the live update path.

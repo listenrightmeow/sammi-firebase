@@ -77,16 +77,18 @@ Dates are when the decision was made. Facts cited here are tracked, with sources
 
 **Decided:** Oct 28, 2026.
 
-**Context.** SAMMI Bridge runs from a file URL inside OBS's embedded Chromium. Firebase's popup and redirect sign-in flows (Google and other identity providers) require an http, https or chrome-extension origin and fail with "operation not supported in this environment" otherwise. Firebase's default Auth persistence uses IndexedDB, which Chromium disables on file URLs. SAMMI cannot sign RSA JWTs, so service accounts are out.
+**Context.** SAMMI Bridge runs from a file URL inside OBS's embedded Chromium. Firebase's documentation says popup and redirect sign-in flows (Google and other identity providers) require an http, https or chrome-extension origin and fail with "operation not supported in this environment" otherwise. SAMMI cannot sign RSA JWTs, so service accounts are out.
+
+**Hardware note, Oct 28, 2026.** The probe showed that `window.open` and IndexedDB both work inside the OBS dock, contrary to the research. Whether Firebase's popup flow accepts the `file://` origin has not been tested yet (probe v1 had a defect on that row). **This decision is under review** until probe v2 answers it: if Google popup sign-in works from the dock, it should become the primary sign-in because it removes the "create an email/password account" step for the user, with Email/Password kept as the fallback.
 
 **Decision.**
 
 - Sign in with email and password through a form in the extension's tab in the Bridge.
-- Configure the Firebase Auth SDK for localStorage persistence or in-memory persistence.
+- Configure the Firebase Auth SDK for localStorage persistence or in-memory persistence, so the extension does not depend on IndexedDB behavior that varies across Chromium builds.
 - Store the refresh token, and nothing else secret, in a SAMMI ini file through the Bridge's `SAMMI.saveIni` helper, the same way the Spotify extension stores its refresh token. On Bridge start, exchange it for a fresh ID token.
 - Security rules grant each uid access to its own subtree only.
 
-**Why.** It is the only flow that works in the environment, and it needs no browser storage to survive restarts. One secret remains on the machine, the refresh token, which is unavoidable and is the same exposure every other SAMMI integration has.
+**Why.** It is the flow the documentation guarantees to work in the environment, and it needs no browser storage to survive restarts. One secret remains on the machine, the refresh token, which is unavoidable and is the same exposure every other SAMMI integration has.
 
 **Consequences.** Users create an email and password account for this purpose. Password reset goes through Firebase's email flow, which the console enables by default. The extension must show sign-in state clearly and recover from a revoked token by asking for the password again.
 
@@ -115,7 +117,7 @@ Dates are when the decision was made. Facts cited here are tracked, with sources
 
 **Decided:** Oct 28, 2026.
 
-**Context.** The Bridge has `SAMMI.saveIni` and `SAMMI.loadIni` helpers that make SAMMI Core write and read ini files in the SAMMI folder. Existing extensions use them for their settings. Browser storage inside OBS docks works for localStorage but is shared across every dock on the machine because of the file URL, and IndexedDB is unavailable.
+**Context.** The Bridge has `SAMMI.saveIni` and `SAMMI.loadIni` helpers that make SAMMI Core write and read ini files in the SAMMI folder. Existing extensions use them for their settings. Browser storage inside OBS docks works (localStorage and, per the Oct 28, 2026 probe, IndexedDB too) but is shared across every dock on the machine because of the file URL, lives inside OBS's profile rather than SAMMI's folder, and is invisible to SAMMI's own commands.
 
 **Decision.** The mirror and the extension's own settings live in SAMMI ini files written through the Bridge helpers. Browser storage is not used for anything that must survive.
 
@@ -158,6 +160,7 @@ Dates are when the decision was made. Facts cited here are tracked, with sources
 
 ## Open decisions
 
+- **Sign-in method** (D4). Email/Password stands unless probe v2 shows Google popup sign-in works from the dock.
 - **Final name and command names** (D7). Needed before the user journey document.
 - **Scope of the first release.** Proposal: Save, Load, Delete, Value Changed trigger, sign-in panel, status display. List, export and import in a later release.
 - **Ini layout** for the mirror: one file per deck prefix, or one file for everything. Decide in the data model document.
