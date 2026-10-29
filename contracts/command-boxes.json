@@ -6,10 +6,7 @@
   "$defs": {
     "Base": {
       "type": "object",
-      "required": [
-        "FromButton",
-        "instanceId"
-      ],
+      "required": ["FromButton", "instanceId"],
       "properties": {
         "FromButton": {
           "type": "string"
@@ -31,9 +28,7 @@
               "type": "string"
             }
           },
-          "required": [
-            "result"
-          ]
+          "required": ["result"]
         }
       ]
     },
@@ -48,9 +43,7 @@
               "type": "string"
             }
           },
-          "required": [
-            "result"
-          ]
+          "required": ["result"]
         }
       ]
     },
@@ -65,9 +58,7 @@
               "type": "string"
             }
           },
-          "required": [
-            "result"
-          ]
+          "required": ["result"]
         }
       ]
     },
@@ -95,10 +86,7 @@
               "type": "string"
             }
           },
-          "required": [
-            "name",
-            "result"
-          ]
+          "required": ["name", "result"]
         }
       ]
     },
@@ -116,10 +104,7 @@
               "type": "string"
             }
           },
-          "required": [
-            "name",
-            "result"
-          ]
+          "required": ["name", "result"]
         }
       ]
     },
@@ -144,11 +129,7 @@
               "type": "string"
             }
           },
-          "required": [
-            "collection",
-            "fields",
-            "result"
-          ]
+          "required": ["collection", "fields", "result"]
         }
       ]
     },
@@ -181,13 +162,7 @@
               "type": "string"
             }
           },
-          "required": [
-            "collection",
-            "id",
-            "field",
-            "value",
-            "result"
-          ]
+          "required": ["collection", "id", "field", "value", "result"]
         }
       ]
     },
@@ -214,13 +189,7 @@
               "type": "string"
             }
           },
-          "required": [
-            "collection",
-            "id",
-            "field",
-            "by",
-            "result"
-          ]
+          "required": ["collection", "id", "field", "by", "result"]
         }
       ]
     },
@@ -244,12 +213,7 @@
               "type": "string"
             }
           },
-          "required": [
-            "collection",
-            "id",
-            "field",
-            "result"
-          ]
+          "required": ["collection", "id", "field", "result"]
         }
       ]
     },
@@ -270,11 +234,7 @@
               "type": "string"
             }
           },
-          "required": [
-            "collection",
-            "id",
-            "result"
-          ]
+          "required": ["collection", "id", "result"]
         }
       ]
     },
@@ -298,11 +258,7 @@
               "type": "string"
             }
           },
-          "required": [
-            "collection",
-            "id",
-            "result"
-          ]
+          "required": ["collection", "id", "result"]
         }
       ]
     },
@@ -329,12 +285,7 @@
               "type": "string"
             }
           },
-          "required": [
-            "collection",
-            "id",
-            "field",
-            "result"
-          ]
+          "required": ["collection", "id", "field", "result"]
         }
       ]
     },
@@ -355,10 +306,7 @@
               "type": "string"
             }
           },
-          "required": [
-            "collection",
-            "result"
-          ]
+          "required": ["collection", "result"]
         }
       ]
     },
@@ -376,16 +324,7 @@
               "type": "string"
             },
             "operator": {
-              "enum": [
-                "==",
-                "!=",
-                "<",
-                "<=",
-                ">",
-                ">=",
-                "contains",
-                "exists"
-              ]
+              "enum": ["==", "!=", "<", "<=", ">", ">=", "contains", "exists"]
             },
             "value": {
               "type": "string"
@@ -394,10 +333,7 @@
               "type": "string"
             }
           },
-          "required": [
-            "collection",
-            "result"
-          ]
+          "required": ["collection", "result"]
         }
       ]
     },
@@ -415,16 +351,7 @@
               "type": "string"
             },
             "operator": {
-              "enum": [
-                "==",
-                "!=",
-                "<",
-                "<=",
-                ">",
-                ">=",
-                "contains",
-                "exists"
-              ]
+              "enum": ["==", "!=", "<", "<=", ">", ">=", "contains", "exists"]
             },
             "value": {
               "type": "string"
@@ -443,10 +370,7 @@
               "description": "'true' to order descending"
             }
           },
-          "required": [
-            "collection",
-            "result"
-          ]
+          "required": ["collection", "result"]
         }
       ]
     },

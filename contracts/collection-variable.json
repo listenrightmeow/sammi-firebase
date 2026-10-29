@@ -32,12 +32,7 @@
     },
     "Delta": {
       "type": "object",
-      "required": [
-        "collection",
-        "id",
-        "field",
-        "deleted"
-      ],
+      "required": ["collection", "id", "field", "deleted"],
       "properties": {
         "collection": {
           "type": "string",

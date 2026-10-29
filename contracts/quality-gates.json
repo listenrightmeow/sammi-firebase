@@ -21,15 +21,10 @@
       "lines": 95,
       "branches": 95,
       "instrumentation": "all-files",
-      "scope": [
-        "src/features/**",
-        "tools/feat-adapters/**",
-        "tools/build/**"
-      ],
-      "excluded": [
-        "src/ext/**"
-      ],
-      "excludedJustification": "host wiring (real gateways, tab DOM, poller and listener loops) is exercised on the pc tier, docs/09-test-plan.md Layer 3"
+      "scope": ["src/core/**", "src/features/**", "tools/feat-adapters/**", "tools/build/**"],
+      "excluded": ["src/ext/**"],
+      "excludedJustification": "host wiring (real gateways, tab DOM, poller and listener loops) is exercised on the pc tier, docs/09-test-plan.md Layer 3",
+      "measuredBy": "tools/build/coverage-gate.ts merges coverage/spec (feat run --coverage) and coverage/unit (vitest -c vitest.unit.config.ts)"
     },
     "unit": {
       "adapterConformance": 3
@@ -55,10 +50,7 @@
     },
     "lifecycle": {
       "agentBuilds": "agreed",
-      "flippedByTooling": [
-        "built",
-        "verified"
-      ]
+      "flippedByTooling": ["built", "verified"]
     },
     "release": {
       "tagOnlyOnGreen": true,

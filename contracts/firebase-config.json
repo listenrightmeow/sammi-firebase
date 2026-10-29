@@ -4,13 +4,7 @@
   "title": "FirebaseConfig",
   "description": "The web-app config block the streamer pastes into the tab (SF-ADR-002). Five keys are required; the extension names the missing one.",
   "type": "object",
-  "required": [
-    "apiKey",
-    "authDomain",
-    "projectId",
-    "appId",
-    "databaseURL"
-  ],
+  "required": ["apiKey", "authDomain", "projectId", "appId", "databaseURL"],
   "properties": {
     "apiKey": {
       "type": "string",

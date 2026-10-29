@@ -10,7 +10,7 @@ Every behavior in `specs/` is an executable assertion. `feat lint && feat audit 
 | --- | --- | --- |
 | H1 | Adapter conformance: `@mmmnt/feat-adapter-kit` `serviceAdapterContract` for each of the three adapters | capture-window discipline, record shape, reset and seed semantics the runtime relies on |
 | H2 | Fake fidelity: unit tests on the fake world, one per documented behavior of the real surface, each citing its verified fact (S10 ini strings one key at a time; RTDB `update` with null removes, `increment` from a missing field starts at 0, server timestamp is the clock; S16 `setVariable` with an object) and asserting the fixture recorded by T-D2 | the fakes behave like the Bridge and the SDK |
-| H3 | The generated suites: 190 scenarios across 23 specs (68 success, 116 rejection with zero effects on every service, 6 error with compensating effects) | every command, query, precondition, event and mirror rule |
+| H3 | The generated suites: 200 scenarios across 23 specs | every command, query, precondition, event and mirror rule |
 | H4 | Coverage: vitest with all-files instrumentation on `src/features/**`, `tools/feat-adapters/**`, `tools/build/**`; `src/ext/**` excluded by name (host wiring, Layer 3) | at least 95% lines and branches (SF-ADR-017) |
 
 ## Layer 2. Build and static checks, any machine (SF-ADR-011, SF-ADR-012)

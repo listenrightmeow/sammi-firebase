@@ -41,16 +41,7 @@
   "$defs": {
     "Connected": {
       "type": "object",
-      "required": [
-        "eventId",
-        "eventType",
-        "timestamp",
-        "version",
-        "source",
-        "email",
-        "projectId",
-        "documents"
-      ],
+      "required": ["eventId", "eventType", "timestamp", "version", "source", "email", "projectId", "documents"],
       "properties": {
         "eventId": {
           "type": "string",
@@ -67,10 +58,7 @@
           "const": 1
         },
         "source": {
-          "enum": [
-            "local",
-            "remote"
-          ]
+          "enum": ["local", "remote"]
         },
         "deviceId": {
           "type": "string"
@@ -93,14 +81,7 @@
     },
     "ConnectionFailed": {
       "type": "object",
-      "required": [
-        "eventId",
-        "eventType",
-        "timestamp",
-        "version",
-        "source",
-        "reason"
-      ],
+      "required": ["eventId", "eventType", "timestamp", "version", "source", "reason"],
       "properties": {
         "eventId": {
           "type": "string",
@@ -117,10 +98,7 @@
           "const": 1
         },
         "source": {
-          "enum": [
-            "local",
-            "remote"
-          ]
+          "enum": ["local", "remote"]
         },
         "deviceId": {
           "type": "string"
@@ -137,14 +115,7 @@
     },
     "Disconnected": {
       "type": "object",
-      "required": [
-        "eventId",
-        "eventType",
-        "timestamp",
-        "version",
-        "source",
-        "reason"
-      ],
+      "required": ["eventId", "eventType", "timestamp", "version", "source", "reason"],
       "properties": {
         "eventId": {
           "type": "string",
@@ -161,10 +132,7 @@
           "const": 1
         },
         "source": {
-          "enum": [
-            "local",
-            "remote"
-          ]
+          "enum": ["local", "remote"]
         },
         "deviceId": {
           "type": "string"
@@ -174,28 +142,14 @@
           "description": "the SAMMI button instance that issued the command when source is local; empty for remote"
         },
         "reason": {
-          "enum": [
-            "user",
-            "network",
-            "session"
-          ]
+          "enum": ["user", "network", "session"]
         }
       },
       "additionalProperties": false
     },
     "MirrorReconciled": {
       "type": "object",
-      "required": [
-        "eventId",
-        "eventType",
-        "timestamp",
-        "version",
-        "source",
-        "pushed",
-        "applied",
-        "dropped",
-        "cause"
-      ],
+      "required": ["eventId", "eventType", "timestamp", "version", "source", "pushed", "applied", "dropped", "cause"],
       "properties": {
         "eventId": {
           "type": "string",
@@ -212,10 +166,7 @@
           "const": 1
         },
         "source": {
-          "enum": [
-            "local",
-            "remote"
-          ]
+          "enum": ["local", "remote"]
         },
         "deviceId": {
           "type": "string"
@@ -234,10 +185,7 @@
           "type": "integer"
         },
         "cause": {
-          "enum": [
-            "connect",
-            "command"
-          ]
+          "enum": ["connect", "command"]
         }
       },
       "additionalProperties": false
@@ -271,10 +219,7 @@
           "const": 1
         },
         "source": {
-          "enum": [
-            "local",
-            "remote"
-          ]
+          "enum": ["local", "remote"]
         },
         "deviceId": {
           "type": "string"
@@ -302,14 +247,7 @@
     },
     "CollectionUndefined": {
       "type": "object",
-      "required": [
-        "eventId",
-        "eventType",
-        "timestamp",
-        "version",
-        "source",
-        "collection"
-      ],
+      "required": ["eventId", "eventType", "timestamp", "version", "source", "collection"],
       "properties": {
         "eventId": {
           "type": "string",
@@ -326,10 +264,7 @@
           "const": 1
         },
         "source": {
-          "enum": [
-            "local",
-            "remote"
-          ]
+          "enum": ["local", "remote"]
         },
         "deviceId": {
           "type": "string"
@@ -347,16 +282,7 @@
     },
     "DocumentCreated": {
       "type": "object",
-      "required": [
-        "eventId",
-        "eventType",
-        "timestamp",
-        "version",
-        "source",
-        "collection",
-        "id",
-        "fields"
-      ],
+      "required": ["eventId", "eventType", "timestamp", "version", "source", "collection", "id", "fields"],
       "properties": {
         "eventId": {
           "type": "string",
@@ -373,10 +299,7 @@
           "const": 1
         },
         "source": {
-          "enum": [
-            "local",
-            "remote"
-          ]
+          "enum": ["local", "remote"]
         },
         "deviceId": {
           "type": "string"
@@ -401,17 +324,7 @@
     },
     "DocumentReplaced": {
       "type": "object",
-      "required": [
-        "eventId",
-        "eventType",
-        "timestamp",
-        "version",
-        "source",
-        "collection",
-        "id",
-        "fields",
-        "previous"
-      ],
+      "required": ["eventId", "eventType", "timestamp", "version", "source", "collection", "id", "fields", "previous"],
       "properties": {
         "eventId": {
           "type": "string",
@@ -428,10 +341,7 @@
           "const": 1
         },
         "source": {
-          "enum": [
-            "local",
-            "remote"
-          ]
+          "enum": ["local", "remote"]
         },
         "deviceId": {
           "type": "string"
@@ -487,10 +397,7 @@
           "const": 1
         },
         "source": {
-          "enum": [
-            "local",
-            "remote"
-          ]
+          "enum": ["local", "remote"]
         },
         "deviceId": {
           "type": "string"
@@ -522,16 +429,7 @@
     },
     "DocumentDeleted": {
       "type": "object",
-      "required": [
-        "eventId",
-        "eventType",
-        "timestamp",
-        "version",
-        "source",
-        "collection",
-        "id",
-        "previous"
-      ],
+      "required": ["eventId", "eventType", "timestamp", "version", "source", "collection", "id", "previous"],
       "properties": {
         "eventId": {
           "type": "string",
@@ -548,10 +446,7 @@
           "const": 1
         },
         "source": {
-          "enum": [
-            "local",
-            "remote"
-          ]
+          "enum": ["local", "remote"]
         },
         "deviceId": {
           "type": "string"
@@ -576,17 +471,7 @@
     },
     "WriteRejected": {
       "type": "object",
-      "required": [
-        "eventId",
-        "eventType",
-        "timestamp",
-        "version",
-        "source",
-        "collection",
-        "id",
-        "field",
-        "reason"
-      ],
+      "required": ["eventId", "eventType", "timestamp", "version", "source", "collection", "id", "field", "reason"],
       "properties": {
         "eventId": {
           "type": "string",
@@ -603,10 +488,7 @@
           "const": 1
         },
         "source": {
-          "enum": [
-            "local",
-            "remote"
-          ]
+          "enum": ["local", "remote"]
         },
         "deviceId": {
           "type": "string"

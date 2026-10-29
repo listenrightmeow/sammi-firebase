@@ -1,0 +1,18 @@
+<div style="font-family: system-ui, sans-serif; font-size: 13px">
+  <h4 style="margin: 4px 0">SAMMI Firebase</h4>
+  <p id="fbStatus" style="margin: 4px 0">Starting…</p>
+  <details>
+    <summary>Connection</summary>
+    <p>Paste the config block from step 5 of the setup guide, then sign in with the user you created in step 2b.</p>
+    <textarea
+      id="fbConfig"
+      rows="7"
+      style="width: 100%"
+      placeholder="const firebaseConfig = { apiKey: ..., authDomain: ..., projectId: ..., appId: ..., databaseURL: ... };"
+    ></textarea>
+    <input id="fbEmail" type="email" placeholder="email" style="width: 100%" />
+    <input id="fbPassword" type="password" placeholder="password (never stored)" style="width: 100%" />
+    <button id="fbConnect" type="button">Connect</button>
+    <button id="fbDisconnect" type="button">Disconnect</button>
+  </details>
+</div>

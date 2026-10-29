@@ -1,0 +1,78 @@
+# The pipeline of SF-ADR-012. Every stage runs its command directly and fails on a non-zero exit
+# (GitHub's bash runs with -e -o pipefail). Thresholds come from contracts/quality-gates.json.
+name: ci
+
+on:
+  push:
+  pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
+
+# The ADR-038 Moment grammar is not on npm yet; the model gate builds the CLI from this commit.
+env:
+  MOMENT_REPO: https://github.com/mmmnt/mmmnt.git
+  MOMENT_COMMIT: bebd994f81befd27a2198399241e6d593ad2cfae
+
+jobs:
+  pipeline:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: "1 · Lint and format"
+        run: pnpm exec eslint . && pnpm exec prettier --check .
+      - name: "2 · Types"
+        run: pnpm exec tsc --noEmit
+      - name: "3 · Model"
+        run: |
+          git clone --filter=blob:none "$MOMENT_REPO" "$RUNNER_TEMP/moment"
+          git -C "$RUNNER_TEMP/moment" checkout "$MOMENT_COMMIT"
+          (cd "$RUNNER_TEMP/moment" && corepack pnpm@10.29.3 install --frozen-lockfile && corepack pnpm@10.29.3 --filter @mmmnt/cli build)
+          node "$RUNNER_TEMP/moment/packages/cli/dist/moment.mjs" parse model/
+      - name: "4 · Spec lint and audit"
+        run: pnpm exec feat lint && pnpm exec feat audit
+      - name: "5 · Generate"
+        run: pnpm exec feat generate
+      - name: "6 · Run (every generated scenario, with coverage)"
+        run: pnpm exec feat run --coverage
+      - name: "5–6 · Counts: suites = specs, executed tests = scenarios"
+        run: node tools/build/counts.ts
+      - name: "7 · Unit (adapter conformance, fake fidelity, build tool, core)"
+        run: pnpm exec vitest run -c vitest.unit.config.ts --coverage
+      - name: "8 · Coverage (spec + unit, merged)"
+        run: node tools/build/coverage-gate.ts
+      - name: "9 · Secrets"
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: "9 · Dependencies (no HIGH or CRITICAL)"
+        run: pnpm audit --audit-level=high
+      - name: "9 · SAST (no CRITICAL)"
+        run: pipx run semgrep scan --config auto --severity ERROR --error --exclude node_modules --exclude discovery
+      - name: "10 · Build"
+        run: pnpm build:sef --check
+      - name: "11 · Evidence"
+        run: pnpm exec feat report --junit && pnpm exec feat report --evidence
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: evidence-${{ github.sha }}
+          path: |
+            .feature/evidence/
+            .feature/run/feat-junit.xml
+            coverage/spec/coverage-final.json
+            coverage/unit/coverage-final.json
+          if-no-files-found: error

@@ -2,7 +2,7 @@
 
 A [SAMMI](https://sammi.solutions) Bridge extension that keeps a streamer's records in their own Firebase project: collections of documents with fields, read locally in milliseconds, written through to the cloud, and announced as SAMMI triggers when they change anywhere. Settings and state survive reinstalls, drive failures and new machines, and one stream's data can be shared by several rigs.
 
-**Status: specification complete; build starting (milestone 1).** There is no release and no product code yet. The design, decisions and executable specs are complete, ratified and audited against each other (decisions D16 to D19 in `docs/01-decision-record.md`).
+**Status: milestone 1 built; no release yet.** All 23 specs pass, 200 of 200 scenarios, with every local quality gate green (decision D20 in `docs/01-decision-record.md`). Next is milestone 2: proving the Bridge wiring on a streaming PC.
 
 ## Why
 
@@ -35,7 +35,7 @@ gh attestation verify sammi-firebase.sef --repo listenrightmeow/sammi-firebase
 
 ## How it is built
 
-Spec first. Every fact the design relies on was verified on a streaming PC or in SAMMI's source before any product code (`docs/02-verification-list.md`). The design was modelled in Moment, decided in seventeen ADRs with JSON Schema contracts, and specified in 23 Feature specs whose 190 scenarios compile into the test suite on every CI run. Generated tests are never committed.
+Spec first. Every fact the design relies on was verified on a streaming PC or in SAMMI's source before any product code (`docs/02-verification-list.md`). The design was modelled in Moment, decided in seventeen ADRs with JSON Schema contracts, and specified in 23 Feature specs whose 200 scenarios compile into the test suite on every CI run. Generated tests are never committed.
 
 | Tool | Used for |
 | --- | --- |

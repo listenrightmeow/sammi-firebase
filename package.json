@@ -14,21 +14,29 @@
     "build:sef": "node tools/build/sef.ts",
     "lint": "eslint . && prettier --check .",
     "typecheck": "tsc --noEmit",
-    "model": "moment parse model/",
-    "spec": "feat lint && feat generate && feat audit",
-    "test": "feat run --coverage && vitest run",
-    "ci:local": "FEAT_ENVIRONMENT=local sh -c 'set -o pipefail; pnpm lint && pnpm typecheck && pnpm spec && pnpm test && pnpm build:sef --check'"
+    "spec": "feat lint && feat audit && feat generate",
+    "test:spec": "feat run --coverage && node tools/build/counts.ts",
+    "test:unit": "vitest run -c vitest.unit.config.ts --coverage",
+    "coverage": "node tools/build/coverage-gate.ts",
+    "ci:local": "bash -eo pipefail -c 'pnpm lint && pnpm typecheck && pnpm spec && pnpm test:spec && pnpm test:unit && pnpm coverage && pnpm build:sef --check'"
   },
   "devDependencies": {
     "@dotenvx/dotenvx": "^2.38.2",
-    "@mmmnt/cli": "^0.5.0",
+    "@eslint/js": "^10.0.1",
     "@mmmnt/feat-adapter-handler": "^0.1.7",
     "@mmmnt/feat-adapter-kit": "^0.1.6",
     "@mmmnt/feat-runtime": "^0.1.19",
     "@mmmnt/feat-schema-json": "^0.2.0",
     "@mmmnt/feature": "^0.3.2",
+    "@types/istanbul-lib-coverage": "^2.0.6",
+    "@types/node": "^24.19.2",
+    "@vitest/coverage-v8": "5.0.5",
     "esbuild": "^0.28.2",
-    "typescript": "^7.0.2",
+    "eslint": "^10.13.0",
+    "istanbul-lib-coverage": "^3.2.2",
+    "prettier": "^3.9.10",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.72.1",
     "vitest": "^5.0.5"
   }
 }

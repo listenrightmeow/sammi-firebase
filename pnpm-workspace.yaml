@@ -1,2 +1,4 @@
 allowBuilds:
   esbuild: true
+  # The Firebase SDK is a types-only dependency here; the extension loads it from gstatic (SF-ADR-010).
+  protobufjs: false

@@ -55,7 +55,7 @@ Release 1 is the connection and the data model: the Bridge tab, twelve commands,
 
 ## How it was built
 
-Planning first. Every fact the design relies on was verified on the streaming PC or in SAMMI's source before a line of product code (`docs/02-verification-list.md`). The design was argued on an NDD board, modelled in Moment, decided in sixteen ADRs with JSON Schema contracts, and specified in twenty-three Feature specs whose 190 scenarios compile into the test suite on every CI run. The repository is meant to be read as closely as it is run.
+Planning first. Every fact the design relies on was verified on the streaming PC or in SAMMI's source before a line of product code (`docs/02-verification-list.md`). The design was argued on an NDD board, modelled in Moment, decided in sixteen ADRs with JSON Schema contracts, and specified in twenty-three Feature specs whose 200 scenarios compile into the test suite on every CI run. The repository is meant to be read as closely as it is run.
 
 ## Where to go next
 

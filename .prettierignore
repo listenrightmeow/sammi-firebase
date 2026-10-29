@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.feature/
+coverage/
+model/
+specs/
+discovery/
+docs/
+evidence/
+pnpm-lock.yaml
+*.md
+.flmnt.json
+coverage/

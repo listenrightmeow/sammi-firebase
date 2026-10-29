@@ -131,10 +131,7 @@
     "outputPattern": "{name}.test.ts"
   },
   "report": {
-    "format": [
-      "console",
-      "junit"
-    ],
+    "format": ["console", "junit"],
     "junitOutput": ".feature/run/feat-junit.xml"
   }
 }

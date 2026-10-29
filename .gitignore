@@ -4,13 +4,16 @@ node_modules
 .DS_Store
 .env.*
 .mcp.json
+
 # Generated Facet output (moment simulate --out-dir); regenerate, never commit
 model/facet/
 model/generated/
 
 # Generated files are never committed; CI builds them (SF-ADR-012, platform ruling a7846ba6)
 dist/
+
 # Feature toolchain: generated tests and run artifacts
 .feature/
 specs/**/*.test.ts
 reports/
+coverage/

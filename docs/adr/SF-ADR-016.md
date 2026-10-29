@@ -20,7 +20,7 @@ A `.feat` spec instructs an agent, predicts every observable effect, and compile
 | Service | Consistency | Captures (record types) | Seeds | Reads |
 | --- | --- | --- | --- | --- |
 | `ini` | acid | `IniWrite { section, key, value }`, `IniDelete { section, key }` | `IniWrite` records, so a scenario starts from a known `firebase.ini` | the ini as records |
-| `firebase` | strong | `set { path, value }`, `update { path, fields }`, `remove { path }`, `increment { path, field, by }` | `node { path, value }` records | the tree as `node` records |
+| `firebase` | strong | `set { path, value }`, `update { path, fields }`, `remove { path }`, `increment { path, field, by }` | `node`, `user`, `provider`, `project`, `later` (a write that lands after the Bridge's first full read), `outage { writes }` (document writes fail, as offline) | the tree as `node` records |
 | `sammi` | acid | `SetVariable { name, value }` (the `fb_<collection>` publications), `Trigger { name, pullData }` (the events) | none | none |
 
 3. **Spec types map to the model:** aggregate commands → `type command`; queries → `type query`; the reconcile policy is exercised as an effect of `Connect` rather than a separate policy spec, because the delivered-event stimulus has no service of its own here; the Mirror projection is asserted through the `ini` and `sammi` effects of every command.
@@ -39,6 +39,9 @@ Three surfaces are exactly what the extension touches on the host: SAMMI's ini, 
 - **Mocking the Firebase SDK itself.** Rejected: the gateway interface is the seam; the SDK sits behind it and is exercised on the pc tier.
 
 ## Consequences
+
+Built Oct 29, 2026 (D20). Two harness facts learned while building: seeds always run before `execute` steps, so a change that must arrive after Connect is a `later` write and a pending entry comes from a command issued during an `outage`; and the Feature runtime packages are inlined under Vite (`vitest.config.ts`) so coverage of natively imported TypeScript maps to the right lines.
+
 
 The first milestone builds the three adapters and their conformance suites before any feature. The specs in `specs/` are the units of work of the build.
 

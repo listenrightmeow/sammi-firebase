@@ -4,17 +4,11 @@
   "title": "FirebaseIni",
   "description": "firebase.ini in the SAMMI folder, as the extension writes it through SAMMI.saveIni and SAMMI's INI commands read it (SF-ADR-004). One object per section; [collection:<name>] sections are frozen from release 1.",
   "type": "object",
-  "required": [
-    "connection",
-    "index"
-  ],
+  "required": ["connection", "index"],
   "properties": {
     "connection": {
       "type": "object",
-      "required": [
-        "config",
-        "device_id"
-      ],
+      "required": ["config", "device_id"],
       "properties": {
         "config": {
           "type": "string",
@@ -54,10 +48,7 @@
     },
     "index": {
       "type": "object",
-      "required": [
-        "collections",
-        "hashes"
-      ],
+      "required": ["collections", "hashes"],
       "properties": {
         "collections": {
           "type": "string",
@@ -97,12 +88,7 @@
   "$defs": {
     "SchemaEntry": {
       "type": "object",
-      "required": [
-        "fields",
-        "strict",
-        "two_way",
-        "_t"
-      ],
+      "required": ["fields", "strict", "two_way", "_t"],
       "properties": {
         "fields": {
           "type": "array",
@@ -125,21 +111,10 @@
     },
     "PendingOperation": {
       "type": "object",
-      "required": [
-        "op",
-        "at"
-      ],
+      "required": ["op", "at"],
       "properties": {
         "op": {
-          "enum": [
-            "create",
-            "replace",
-            "update",
-            "set_field",
-            "increment",
-            "delete_field",
-            "delete"
-          ]
+          "enum": ["create", "replace", "update", "set_field", "increment", "delete_field", "delete"]
         },
         "fields": {
           "type": "object"

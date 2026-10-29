@@ -1,0 +1,43 @@
+# Release (SF-ADR-010, SF-ADR-012 §4): tag only on green; the .sef attached is the one CI built,
+# signed with a GitHub artifact attestation users can verify with `gh attestation verify`.
+name: release
+
+on:
+  push:
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  release:
+    needs: ci
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: The tag matches package.json
+        run: test "v$(node -p 'require("./package.json").version')" = "$GITHUB_REF_NAME"
+      - name: Build the .sef
+        run: pnpm build:sef --check
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: dist/sammi-firebase.sef
+      - name: Publish the GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/sammi-firebase.sef \
+            --verify-tag --title "$GITHUB_REF_NAME" \
+            --notes "Install through SAMMI Core → Bridge → Install an Extension. Verify the file: gh attestation verify sammi-firebase.sef --repo $GITHUB_REPOSITORY"

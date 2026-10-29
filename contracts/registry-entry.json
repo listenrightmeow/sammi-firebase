@@ -4,11 +4,7 @@
   "title": "RegistryEntry",
   "description": "The JSON file submitted to SAMMISolutions/SAMMI-Bridge extensions/ so the Bridge can offer updates (SF-ADR-010); shape per extensions/sample.json.",
   "type": "object",
-  "required": [
-    "extension_name",
-    "latest_version",
-    "download_link"
-  ],
+  "required": ["extension_name", "latest_version", "download_link"],
   "properties": {
     "extension_name": {
       "const": "SAMMI Firebase"

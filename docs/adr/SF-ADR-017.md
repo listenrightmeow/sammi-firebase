@@ -27,7 +27,7 @@ The constants live in `contracts/quality-gates.json` and are read by the CI work
 | `run.unpredictedEffects` / `run.missingEffects` | 0 / 0 | `feat run` |
 | `run.executedTestCount` | equals the scenario count reported by `feat lint` (190 today) | CI count check; refuse on zero |
 | `coverage.lines` / `coverage.branches` | 95 / 95 | vitest coverage, all-files instrumentation |
-| `coverage.scope` | `src/features/**`, `tools/feat-adapters/**`, `tools/build/**` | coverage config |
+| `coverage.scope` | `src/core/**`, `src/features/**`, `tools/feat-adapters/**`, `tools/build/**` | `tools/build/coverage-gate.ts`, merging the spec and unit runs |
 | `coverage.excluded` | `src/ext/**` (host wiring: real gateways, tab DOM, poller and listener loops), justified by the PC tier | coverage config; any addition is an ADR amendment |
 | `unit.adapterConformance` | 3 of 3 adapters pass the kit suite | vitest |
 | `security.secrets` | 0 | gitleaks |

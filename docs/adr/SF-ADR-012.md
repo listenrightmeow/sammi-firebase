@@ -24,12 +24,12 @@ Every push and pull request runs these stages in order on GitHub Actions (`ubunt
 | --- | --- | --- | --- | --- |
 | 1 | Lint and format | `eslint .` · `prettier --check .` | zero findings | kept |
 | 2 | Types | `tsc --noEmit` (the strict tsconfig the build uses) | zero errors | kept |
-| 3 | Model | `moment parse model/` (pinned ADR-038 CLI) | zero diagnostics | ours: the model is a gate input here |
+| 3 | Model | `moment parse model/` with the Moment CLI built from the pinned ADR-038 commit (`MOMENT_COMMIT` in `ci.yml`) | zero diagnostics | ours: the model is a gate input here |
 | 4 | Spec lint and audit | `feat lint` · `feat audit` | zero ERROR; B1 handler present, B2 rejects ↔ rejection, B3 touches present | kept |
 | 5 | Generate | `feat generate` | succeeds; output gitignored; **generated-suite count equals spec count** (23) | kept; count check per §5e(1) |
 | 6 | Run | `feat run --coverage` | 100% scenarios green, zero unpredicted and zero missing effects on every service; **executed test count equals scenario count** (190, read from `feat lint` output, never hard-coded) | kept; the runner refuses to spawn on zero files |
 | 7 | Unit | `vitest run` on `tools/feat-adapters/**` and `src/**` non-generated suites | green; the `@mmmnt/feat-adapter-kit` conformance suite runs for each of the three adapters and the fake-fidelity suite runs against the recorded fixture | kept ("Unit" tier) |
-| 8 | Coverage | the coverage artifact from stage 6 and 7, all-files instrumentation | ≥ 95% lines and branches on `src/features/**` and `tools/feat-adapters/**`; a built module with no coverage artifact is a violation; the only exclusion is `src/ext/**` (host wiring exercised on the PC tier), listed by name in the contract | kept at the platform floor; exclusion justified below |
+| 8 | Coverage | `tools/build/coverage-gate.ts` merges the stage 6 and 7 reports and scopes them by `contracts/quality-gates.json` | ≥ 95% lines and branches on `src/features/**` and `tools/feat-adapters/**`; a built module with no coverage artifact is a violation; the only exclusion is `src/ext/**` (host wiring exercised on the PC tier), listed by name in the contract | kept at the platform floor; exclusion justified below |
 | 9 | Security | `gitleaks detect` · Dependabot alerts via `pnpm audit --audit-level=high` · `semgrep --config auto --severity ERROR` | zero secrets; no HIGH/CRITICAL dependency; no CRITICAL SAST finding | kept; CDK Nag not applicable |
 | 10 | Build | `pnpm build:sef --check` (`tools/build/sef.ts`) | `.sef` assembles; bundle passes `node --check`; deck JSON parses; every deck command carries `"async": 0.0`; no `http://`; SDK import URL appears exactly once; `.sef` ≤ 200 KB | ours; replaces CDK/Serverless/Cosmo build |
 | 11 | Evidence | `feat report --junit` · `feat report --evidence` | bundle written at `.feature/evidence/ci/<sha>.json` and archived as a CI artifact; a lane that ran and filed nothing is a red gate | kept; environment `ci` so the bundle is recorded (`local` records none) |
@@ -40,7 +40,7 @@ Stages 1 to 4 and 10 run in parallel after install; 5 to 8 and 11 run in sequenc
 
 | Platform tier | Here | Status |
 | --- | --- | --- |
-| Generated-behavioral (response status, body, matchers) | the 190 scenarios | kept |
+| Generated-behavioral (response status, body, matchers) | the 200 scenarios | kept |
 | Generated-structural (per-service record diff: cardinality, ordering, absences) | `ini`, `firebase`, `sammi` predictions in every scenario | kept |
 | Generated-eventual (`contains`, convergence-polled) | none: all three services are `acid` or `strong`; no eventual lane | not applicable, stated |
 | Integrity (`feat verify`) | removed platform-wide (a73f2697); CI generates every run | not applicable |

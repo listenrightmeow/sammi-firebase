@@ -33,12 +33,7 @@
           },
           "additionalProperties": {
             "type": "object",
-            "required": [
-              "fields",
-              "strict",
-              "two_way",
-              "_t"
-            ],
+            "required": ["fields", "strict", "two_way", "_t"],
             "properties": {
               "fields": {
                 "type": "array",
@@ -82,10 +77,7 @@
   "$defs": {
     "Document": {
       "type": "object",
-      "required": [
-        "_t",
-        "_d"
-      ],
+      "required": ["_t", "_d"],
       "properties": {
         "_t": {
           "type": "integer",

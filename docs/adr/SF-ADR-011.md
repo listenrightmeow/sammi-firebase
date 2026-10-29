@@ -31,6 +31,9 @@ The harness has to call the same code the Bridge runs, or the specs prove nothin
 
 ## Consequences
 
+Tooling pins (Oct 29, 2026): TypeScript 6.0 for type-checking and linting, because typescript-eslint does not support TypeScript 7 yet; the Firebase SDK's types are declared in `src/ext/firebase-sdk.ts` rather than taken from the `firebase` npm package, whose Node-side dependencies the extension never runs.
+
+
 Generated tests import the handler modules through the adapter's `{ module, export }` routing. The `.sef` is reproducible from source; `dist/` is committed per release only.
 
 ## Compliance impact
