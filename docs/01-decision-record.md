@@ -30,7 +30,7 @@ Dates are when the decision was made. Facts cited here are tracked, with sources
 
 **Why.** The target user is non-technical. A command with a box labeled "Key" and a box labeled "Save Variable As" needs no explanation. A calling convention does. Live updates are the feature that makes the cloud worth having, and only the extension can deliver them. The Bridge dependency is acceptable because the Bridge is step 5 of SAMMI's own getting-started guide and every user with alerts already runs it.
 
-**Consequences.** Commands must behave sensibly when the Bridge is closed (see D5). The extension is JavaScript, so the project needs a build step that assembles a `.sef` from source files, plus a way to test in a real OBS dock.
+**Consequences.** Commands must behave sensibly when the Bridge is closed (see D5). Every extension command in a shipped deck must carry `"async": 0.0` (SAMMI 2025.2.0's Async checkbox, unticked), otherwise SAMMI does not wait for the Save Variable box; found by prototype 2 on Oct 29, 2026. The extension is JavaScript, so the project needs a build step that assembles a `.sef` from source files, plus a way to test in a real OBS dock.
 
 ---
 

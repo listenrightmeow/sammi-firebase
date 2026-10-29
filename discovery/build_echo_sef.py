@@ -32,8 +32,12 @@ def delete_var(name):           return cmd(78, b0=name)
 def set_string(name, text):     return cmd(20, b0=name, b1=text, v0=False)
 
 def echo(text, delay_ms, save_as):
-    """The extension command. Box values travel under the box keys defined in [insert_command]."""
-    return cmd(0, ext="SAMMI Bridge", extcmd=CMD_NAME, text=text, delayMs=str(delay_ms), result=save_as)
+    """The extension command. Box values travel under the box keys defined in [insert_command].
+
+    "async": 0.0 is the "Async" checkbox SAMMI 2025.2.0 added to every purple command, unticked. Without
+    the key SAMMI ran the command asynchronously (v0.1.0 and v0.2.0): it never waited for the Save
+    Variable box, and the alert ran before the extension's reply landed."""
+    return cmd(0, ext="SAMMI Bridge", extcmd=CMD_NAME, text=text, delayMs=str(delay_ms), result=save_as, **{"async": 0.0})
 
 def number(cmds):
     for i, c in enumerate(cmds): c["pos"] = float(i)
@@ -89,7 +93,7 @@ insert_over = {"deck_data": json.dumps(deck_data), "unique_id": uid, "include_im
 
 # ---------------------------------------------------------------- the extension itself
 INSERT_EXTERNAL = """<div style="font-family:system-ui,sans-serif">
-  <h4>Cloud Probe (prototype 2, v0.2.0)</h4>
+  <h4>Cloud Probe (prototype 2, v0.3.0)</h4>
   <p>Press the buttons on the <b>Cloud Probe</b> deck in SAMMI. Every command the extension receives is logged
      below, newest first, together with what the extension sent back and how SAMMI replied.
      Nothing leaves this machine.</p>
@@ -144,7 +148,7 @@ sef = f"""[extension_name]
 [extension_info]
 Throwaway prototype for the SAMMI Cloud Vars project. One command, "{CMD_NAME}", that echoes a text box back into a Save Variable box. Safe to uninstall.
 [extension_version]
-0.2.0
+0.3.0
 [insert_external]
 {INSERT_EXTERNAL}
 

@@ -121,6 +121,8 @@ Keep the Bridge dock visible while pressing buttons, so the log and the SAMMI al
 
 **Reinstalling after a change** (the extension name stays the same): SAMMI Core → **Bridge** → **Uninstall an Extension** → Cloud Probe, delete the old Cloud Probe deck, then install the new `.sef`. Check the Cloud Probe tab's heading shows the expected version.
 
+**Quick check without reinstalling:** open any Cloud Probe button in SAMMI's editor and look at the Cloud Probe: Echo command. If it is purple with an **Async** box ticked, the deck predates v0.3.0; untick Async, save, and the command turns gray and waits. v0.3.0 ships it unticked.
+
 | # | Press | Expected if the hypothesis holds | Record |
 | --- | --- | --- | --- |
 | 1 | **Echo (persistent)** | Alert appears at once reading `echo: hello from cpEchoP @ hh:mm:ss`. The log shows `received: {...}` and `sent setVariable(...) -> SAMMI replied: {...}`. | Screenshot of the alert and of the log. The `received` line is the most valuable thing in this whole test: it shows exactly what SAMMI sends for a type 37 box. |
