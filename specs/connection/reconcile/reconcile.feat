@@ -30,8 +30,10 @@ contract:
   error CommandError
   record IniWrite
   record IniDelete
+  record CloudUpdate
   record CloudIncrement
   record CloudNode
+  record Outage
   record AuthUser
   record SetVariable
   record Trigger
@@ -40,9 +42,8 @@ scenario "applies a newer remote change and announces it with source remote":
   given:
     clock at "2026-10-29T12:00:00Z"
     seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
-    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/collections/hue/settings", value: { ip: "192.168.1.20", scene_1: "3f2c", _t: 1793275150000, _d: "dev2" } } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/collections/hue/settings", value: { ip: "192.168.1.20", scene_1: "3f2c", _t: 1793275150000, _d: "dev2" } }, later with CloudNode { path: "users/uid-streamer/collections/hue/settings", value: { ip: "192.168.1.99", scene_1: "3f2c", _t: 1793275199000, _d: "dev2" } } ]
     execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
-    seed firebase [ node with CloudNode { path: "users/uid-streamer/collections/hue/settings", value: { ip: "192.168.1.99", scene_1: "3f2c", _t: 1793275199000, _d: "dev2" } } ]
   when: Reconcile { }
   predict success:
     response OK CommandResponse { answer: "ok", value: { pushed: 0, applied: 1, dropped: 0 } }
@@ -62,9 +63,8 @@ scenario "keeps a local document that is newer than the remote (rule 2) and fire
   given:
     clock at "2026-10-29T12:00:00Z"
     seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
-    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/collections/hue/settings", value: { ip: "192.168.1.20", scene_1: "3f2c", _t: 1793275150000, _d: "dev2" } } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/collections/hue/settings", value: { ip: "192.168.1.20", scene_1: "3f2c", _t: 1793275150000, _d: "dev2" } }, later with CloudNode { path: "users/uid-streamer/collections/hue/settings", value: { ip: "192.168.1.1", scene_1: "3f2c", _t: 1793275110000, _d: "dev2" } } ]
     execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
-    seed firebase [ node with CloudNode { path: "users/uid-streamer/collections/hue/settings", value: { ip: "192.168.1.1", scene_1: "3f2c", _t: 1793275110000, _d: "dev2" } } ]
   when: Reconcile { }
   predict success:
     response OK CommandResponse { answer: "ok", value: { pushed: 0, applied: 0, dropped: 0 } }
@@ -76,20 +76,21 @@ scenario "keeps a local document that is newer than the remote (rule 2) and fire
       Trigger with Trigger { name: "Firebase: Mirror Reconciled", pullData: { eventId: any uuid, eventType: "MirrorReconciled", timestamp: any timestamp, version: 1, source: "local", deviceId: "dev1", pushed: 0, applied: 0, dropped: 0, cause: "command" } }
     ]
 
+# The givens of the four reconcile scenarios were amended at build (D20): a change the Bridge has not yet seen is a `later` node,
+# and a pending entry comes from a command issued during an `outage`, because seeds always run before executes.
 scenario "drops a pending replace older than the remote and announces the remote version (rule 4)":
   given:
     clock at "2026-10-29T12:00:00Z"
     seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
-    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/collections/hue/settings", value: { ip: "192.168.1.20", scene_1: "3f2c", _t: 1793275150000, _d: "dev2" } } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/collections/hue/settings", value: { ip: "192.168.1.20", scene_1: "3f2c", _t: 1793275150000, _d: "dev2" } }, outage with Outage { writes: 1 }, later with CloudNode { path: "users/uid-streamer/collections/hue/settings", value: { ip: "192.168.1.99", scene_1: "3f2c", _t: 1793275201000, _d: "dev2" } } ]
     execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
-    seed ini [ IniWrite with IniWrite { section: "pending", key: "hue/settings", json: { op: "replace", fields: { ip: "10.0.0.1", scene_1: "3f2c" }, at: 1793275180000 } } ]
-    seed firebase [ node with CloudNode { path: "users/uid-streamer/collections/hue/settings", value: { ip: "192.168.1.99", scene_1: "3f2c", _t: 1793275199000, _d: "dev2" } } ]
+    execute ReplaceDocument { collection: "hue", id: "settings", fields: "{\"ip\":\"10.0.0.1\",\"scene_1\":\"3f2c\"}" }
   when: Reconcile { }
   predict success:
     response OK CommandResponse { answer: "ok", value: { pushed: 0, applied: 1, dropped: 1 } }
     ini has ordered [
       IniDelete with IniDelete { section: "pending", key: "hue/settings" },
-      IniWrite with IniWrite { section: "collection:hue", key: "settings", json: { ip: "192.168.1.99", scene_1: "3f2c", _t: 1793275199000, _d: "dev2" } },
+      IniWrite with IniWrite { section: "collection:hue", key: "settings", json: { ip: "192.168.1.99", scene_1: "3f2c", _t: 1793275201000, _d: "dev2" } },
       IniWrite with IniWrite { section: "index", key: "hashes", json: { "hue/settings": any string } },
       IniWrite with IniWrite { section: "index", key: "last_sync", value: "1793275200000" }
     ]
@@ -104,10 +105,9 @@ scenario "replays a pending increment regardless of the remote timestamp (increm
   given:
     clock at "2026-10-29T12:00:00Z"
     seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
-    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/collections/counters/deaths", value: { value: 7, _t: 1793275150000, _d: "dev2" } } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/collections/counters/deaths", value: { value: 7, _t: 1793275150000, _d: "dev2" } }, outage with Outage { writes: 1 }, later with CloudNode { path: "users/uid-streamer/collections/counters/deaths", value: { value: 9, _t: 1793275201000, _d: "dev2" } } ]
     execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
-    seed ini [ IniWrite with IniWrite { section: "pending", key: "counters/deaths", json: { op: "increment", field: "value", by: 1, at: 1793275180000 } } ]
-    seed firebase [ node with CloudNode { path: "users/uid-streamer/collections/counters/deaths", value: { value: 9, _t: 1793275199000, _d: "dev2" } } ]
+    execute IncrementField { collection: "counters", id: "deaths", field: "value", by: 1 }
   when: Reconcile { }
   predict success:
     response OK CommandResponse { answer: "ok", value: { pushed: 1, applied: 1, dropped: 0 } }
@@ -118,7 +118,8 @@ scenario "replays a pending increment regardless of the remote timestamp (increm
       IniWrite with IniWrite { section: "index", key: "last_sync", value: "1793275200000" }
     ]
     firebase has ordered [
-      increment with CloudIncrement { path: "users/uid-streamer/collections/counters/deaths", field: "value", by: 1 }
+      increment with CloudIncrement { path: "users/uid-streamer/collections/counters/deaths", field: "value", by: 1 },
+      update with CloudUpdate { path: "users/uid-streamer/collections/counters/deaths", fields: { _t: 1793275200000, _d: "dev1" } }
     ]
     sammi has ordered [
       SetVariable with SetVariable { name: "fb_counters", value: { deaths: { value: 10 } } },

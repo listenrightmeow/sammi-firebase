@@ -141,3 +141,23 @@ scenario "rejects NOT_CONNECTED when nothing is connected":
     ini has []
     firebase has []
     sammi has []
+
+# Added at build (D20): a behavior the code needs that no scenario stated.
+scenario "a collection may be declared with no fields":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" } ]
+    execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
+  when: DefineCollection { name: "log" }
+  predict success:
+    response OK CommandResponse { answer: "ok" }
+    ini has ordered [
+      IniWrite with IniWrite { section: "schema", key: "log", json: { fields: [], strict: false, two_way: true, _t: 1793275200000 } }
+    ]
+    firebase has ordered [
+      set with CloudSet { path: "users/uid-streamer/meta/schema/log", value: { fields: [], strict: false, two_way: true, _t: 1793275200000 } }
+    ]
+    sammi has ordered [
+      Trigger with Trigger { name: "Firebase: Collection Defined", pullData: { eventId: any uuid, timestamp: any timestamp, version: 1, eventType: "CollectionDefined", source: "local", deviceId: "dev1", collection: "log", fields: "[]", strict: false, twoWay: true } }
+    ]

@@ -172,7 +172,8 @@
         },
         "value": {}
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "description": "node: database contents before the scenario. later: a write by another device that lands after this Bridge's first full read and that its listener never delivered."
     },
     "AuthProvider": {
       "type": "object",
@@ -291,6 +292,20 @@
         }
       },
       "additionalProperties": false
+    },
+    "Outage": {
+      "type": "object",
+      "required": [
+        "writes"
+      ],
+      "properties": {
+        "writes": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "additionalProperties": false,
+      "description": "Fake world only: the next N writes to document paths fail as if the network dropped."
     }
   }
 }

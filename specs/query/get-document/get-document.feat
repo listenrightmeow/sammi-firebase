@@ -41,7 +41,7 @@ scenario "answers the document as JSON":
     execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
   when: GetDocument { collection: "viewers", id: "12345678" }
   predict success:
-    response OK CommandResponse { answer: "{\"name\": \"alice\", \"points\": 10, \"tier\": \"gold\"}", document: { name: "alice", points: 10, tier: "gold" } }
+    response OK CommandResponse { answer: "{\"name\":\"alice\",\"points\":10,\"tier\":\"gold\"}", document: { name: "alice", points: 10, tier: "gold" } }
 
 scenario "unpacks fields into prefixed variables":
   given:
@@ -51,7 +51,7 @@ scenario "unpacks fields into prefixed variables":
     execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
   when: GetDocument { collection: "viewers", id: "12345678", unpack: "v" }
   predict success:
-    response OK CommandResponse { answer: "{\"name\": \"alice\", \"points\": 10, \"tier\": \"gold\"}", document: { name: "alice", points: 10, tier: "gold" }, variables: { v_name: "alice", v_points: 10, v_tier: "gold" } }
+    response OK CommandResponse { answer: "{\"name\":\"alice\",\"points\":10,\"tier\":\"gold\"}", document: { name: "alice", points: 10, tier: "gold" }, variables: { v_name: "alice", v_points: 10, v_tier: "gold" } }
 
 scenario "rejects MISSING for an unknown id":
   given:

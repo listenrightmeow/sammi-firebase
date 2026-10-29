@@ -42,7 +42,7 @@ scenario "top two by points descending (leaderboard)":
     execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
   when: QueryDocuments { collection: "viewers", orderBy: "points", descending: true, limit: 2 }
   predict success:
-    response OK CommandResponse { answer: "[{\"id\": \"333\", \"name\": \"carol\", \"points\": 25, \"tier\": \"gold\"}, {\"id\": \"12345678\", \"name\": \"alice\", \"points\": 10, \"tier\": \"gold\"}]", documents: [{ id: "333", name: "carol", points: 25, tier: "gold" }, { id: "12345678", name: "alice", points: 10, tier: "gold" }] }
+    response OK CommandResponse { answer: "[{\"id\":\"333\",\"name\":\"carol\",\"points\":25,\"tier\":\"gold\"},{\"id\":\"12345678\",\"name\":\"alice\",\"points\":10,\"tier\":\"gold\"}]", documents: [{ id: "333", name: "carol", points: 25, tier: "gold" }, { id: "12345678", name: "alice", points: 10, tier: "gold" }] }
 
 scenario "filters numerically with >=":
   given:

@@ -42,6 +42,7 @@ contract:
   record SetVariable
   record Trigger
 
+# Documents are applied in key order, as the Realtime Database returns them (amended at build, D20).
 scenario "connects with stored config, reconciles two documents from the cloud, fires Connected then MirrorReconciled":
   given:
     clock at "2026-10-29T12:00:00Z"
@@ -54,8 +55,8 @@ scenario "connects with stored config, reconciles two documents from the cloud, 
       IniWrite with IniWrite { section: "connection", key: "session", value: any string },
       IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" },
       IniWrite with IniWrite { section: "schema", key: "hue", json: { fields: ["ip", "scene_1"], strict: true, two_way: true, _t: 1793275100000 } },
-      IniWrite with IniWrite { section: "collection:hue", key: "settings", json: { ip: "192.168.1.20", scene_1: "3f2c", _t: 1793275150000, _d: "dev2" } },
       IniWrite with IniWrite { section: "collection:counters", key: "deaths", json: { value: 7, _t: 1793275160000, _d: "dev2" } },
+      IniWrite with IniWrite { section: "collection:hue", key: "settings", json: { ip: "192.168.1.20", scene_1: "3f2c", _t: 1793275150000, _d: "dev2" } },
       IniWrite with IniWrite { section: "index", key: "collections", json: ["counters", "hue"] },
       IniWrite with IniWrite { section: "index", key: "counters", json: ["deaths"] },
       IniWrite with IniWrite { section: "index", key: "hue", json: ["settings"] },
@@ -278,4 +279,86 @@ scenario "a disabled Email/Password provider is refused with the setup step to r
     firebase has []
     sammi has ordered [
       Trigger with Trigger { name: "Firebase: Connection Failed", pullData: { eventId: any uuid, eventType: "ConnectionFailed", timestamp: any timestamp, version: 1, source: "local", deviceId: "dev1", reason: "provider disabled" } }
+    ]
+
+# Added at build (D20): a behavior the code needs that no scenario stated.
+scenario "on a machine that has never connected, generates a device id and stores it before the session":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" } ]
+  when: Connect { email: "streamer@example.com", password: "correct-horse-battery" }
+  predict success:
+    response OK CommandResponse { answer: "ok", status: { state: "Connected", deviceId: matching "^[a-z0-9]{8}$" } }
+    ini has ordered [
+      IniWrite with IniWrite { section: "connection", key: "device_id", value: matching "^[a-z0-9]{8}$" },
+      IniWrite with IniWrite { section: "connection", key: "session", value: any string },
+      IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" },
+      IniWrite with IniWrite { section: "index", key: "collections", json: [] },
+      IniWrite with IniWrite { section: "index", key: "hashes", json: { } },
+      IniWrite with IniWrite { section: "index", key: "last_sync", value: "1793275200000" }
+    ]
+    firebase has ordered [
+      update with CloudUpdate { path: matching "^users/uid-streamer/meta/devices/[a-z0-9]{8}$", fields: { name: any string, lastSeen: 1793275200000 } }
+    ]
+    sammi has ordered [
+      Trigger with Trigger { name: "Firebase: Connected", pullData: { eventId: any uuid, timestamp: any timestamp, version: 1, eventType: "Connected", source: "local", deviceId: @ini[0].value, email: "streamer@example.com", projectId: "sammi-probe", documents: 0 } },
+      Trigger with Trigger { name: "Firebase: Mirror Reconciled", pullData: { eventId: any uuid, timestamp: any timestamp, version: 1, eventType: "MirrorReconciled", source: "local", deviceId: @ini[0].value, pushed: 0, applied: 0, dropped: 0, cause: "connect" } }
+    ]
+
+# Added at build (D20): a behavior the code needs that no scenario stated.
+scenario "rejects CONFIG_INCOMPLETE naming apiKey when no config was ever saved or supplied":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" } ]
+  when: Connect { email: "streamer@example.com", password: "correct-horse-battery" }
+  predict rejection CONFIG_INCOMPLETE:
+    response ERR CommandError { code: "CONFIG_INCOMPLETE", answer: "error: config incomplete apiKey" }
+    ini has []
+    firebase has []
+    sammi has []
+
+# Added at build (D20): a behavior the code needs that no scenario stated.
+scenario "a password with no email saved or supplied is refused as invalid credentials":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" } ]
+  when: Connect { password: "correct-horse-battery" }
+  predict error CREDENTIALS_INVALID:
+    response ERR CommandError { code: "CREDENTIALS_INVALID", answer: "error: credentials invalid" }
+    ini has []
+    firebase has []
+    sammi has ordered [
+      Trigger with Trigger { name: "Firebase: Connection Failed", pullData: { eventId: any uuid, timestamp: any timestamp, version: 1, eventType: "ConnectionFailed", source: "local", deviceId: "dev1", reason: "credentials invalid" } }
+    ]
+
+# Added at build (D20): a behavior the code needs that no scenario stated.
+scenario "the deck command with no stored session asks for the password through the tab (resume-only, SF-ADR-003 §5)":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" } ]
+  when: Connect { }
+  predict error CREDENTIALS_INVALID:
+    response ERR CommandError { code: "CREDENTIALS_INVALID", answer: "error: credentials invalid" }
+    ini has []
+    firebase has []
+    sammi has ordered [
+      Trigger with Trigger { name: "Firebase: Connection Failed", pullData: { eventId: any uuid, timestamp: any timestamp, version: 1, eventType: "ConnectionFailed", source: "local", deviceId: "dev1", reason: "credentials invalid" } }
+    ]
+
+# Added at build (D20): a behavior the code needs that no scenario stated.
+scenario "a stored session the SDK no longer accepts is refused as invalid credentials (O7)":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" }, IniWrite with IniWrite { section: "connection", key: "session", value: "opaque-sdk-record-for-uid-deleted" } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" } ]
+  when: Connect { }
+  predict error CREDENTIALS_INVALID:
+    response ERR CommandError { code: "CREDENTIALS_INVALID", answer: "error: credentials invalid" }
+    ini has []
+    firebase has []
+    sammi has ordered [
+      Trigger with Trigger { name: "Firebase: Connection Failed", pullData: { eventId: any uuid, timestamp: any timestamp, version: 1, eventType: "ConnectionFailed", source: "local", deviceId: "dev1", reason: "credentials invalid" } }
     ]

@@ -62,7 +62,7 @@ scenario "increments a viewer's points and answers with the new total (O8)":
     ]
     sammi has ordered [
       SetVariable with SetVariable { name: "fb_viewers", value: { "12345678": { name: "alice", points: 15 } } },
-      Trigger with Trigger { name: "Firebase: Document Updated", pullData: { eventId: any uuid, eventType: "DocumentUpdated", timestamp: any timestamp, version: 1, source: "local", deviceId: "dev1", collection: "viewers", id: "12345678", changed: "{\"points\": 15}", causationId: any string } }
+      Trigger with Trigger { name: "Firebase: Document Updated", pullData: { eventId: any uuid, eventType: "DocumentUpdated", timestamp: any timestamp, version: 1, source: "local", deviceId: "dev1", collection: "viewers", id: "12345678", changed: "{\"points\":15}", causationId: any string } }
     ]
 
 scenario "by defaults to 1":
@@ -86,7 +86,7 @@ scenario "by defaults to 1":
     ]
     sammi has ordered [
       SetVariable with SetVariable { name: "fb_counters", value: { deaths: { value: 8 } } },
-      Trigger with Trigger { name: "Firebase: Document Updated", pullData: { eventId: any uuid, eventType: "DocumentUpdated", timestamp: any timestamp, version: 1, source: "local", deviceId: "dev1", collection: "counters", id: "deaths", changed: "{\"value\": 8}", causationId: any string } }
+      Trigger with Trigger { name: "Firebase: Document Updated", pullData: { eventId: any uuid, eventType: "DocumentUpdated", timestamp: any timestamp, version: 1, source: "local", deviceId: "dev1", collection: "counters", id: "deaths", changed: "{\"value\":8}", causationId: any string } }
     ]
 
 scenario "a negative by decrements":
@@ -110,7 +110,7 @@ scenario "a negative by decrements":
     ]
     sammi has ordered [
       SetVariable with SetVariable { name: "fb_counters", value: { deaths: { value: 5 } } },
-      Trigger with Trigger { name: "Firebase: Document Updated", pullData: { eventId: any uuid, eventType: "DocumentUpdated", timestamp: any timestamp, version: 1, source: "local", deviceId: "dev1", collection: "counters", id: "deaths", changed: "{\"value\": 5}", causationId: any string } }
+      Trigger with Trigger { name: "Firebase: Document Updated", pullData: { eventId: any uuid, eventType: "DocumentUpdated", timestamp: any timestamp, version: 1, source: "local", deviceId: "dev1", collection: "counters", id: "deaths", changed: "{\"value\":5}", causationId: any string } }
     ]
 
 scenario "a missing document starts from 0 and is created":
@@ -136,7 +136,7 @@ scenario "a missing document starts from 0 and is created":
     ]
     sammi has ordered [
       SetVariable with SetVariable { name: "fb_viewers", value: { "99": { points: 1 } } },
-      Trigger with Trigger { name: "Firebase: Document Created", pullData: { eventId: any uuid, eventType: "DocumentCreated", timestamp: any timestamp, version: 1, source: "local", deviceId: "dev1", collection: "viewers", id: "99", fields: "{\"points\": 1}", causationId: any string } }
+      Trigger with Trigger { name: "Firebase: Document Created", pullData: { eventId: any uuid, eventType: "DocumentCreated", timestamp: any timestamp, version: 1, source: "local", deviceId: "dev1", collection: "viewers", id: "99", fields: "{\"points\":1}", causationId: any string } }
     ]
 
 scenario "rejects NOT_A_NUMBER when the field holds a string":
@@ -252,3 +252,28 @@ scenario "rejects BAD_ID for an id over 64 characters":
     ini has []
     firebase has []
     sammi has []
+
+# Added at build (D20): a behavior the code needs that no scenario stated.
+scenario "by typed in a SAMMI box arrives as text and is read as a number":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/collections/counters/deaths", value: { value: 7, _t: 1793275150000, _d: "dev2" } } ]
+    execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
+  when: IncrementField { collection: "counters", id: "deaths", field: "value", by: "5" }
+  predict success:
+    response OK CommandResponse { answer: "12", value: 12 }
+    ini has ordered [
+      IniWrite with IniWrite { section: "collection:counters", key: "deaths", json: { value: 12, _t: 1793275200000, _d: "dev1" } },
+      IniWrite with IniWrite { section: "index", key: "hashes", json: { "counters/deaths": any string } },
+      IniWrite with IniWrite { section: "pending", key: "counters/deaths", json: { op: "increment", field: "value", by: 5, at: 1793275200000 } },
+      IniDelete with IniDelete { section: "pending", key: "counters/deaths" }
+    ]
+    firebase has ordered [
+      increment with CloudIncrement { path: "users/uid-streamer/collections/counters/deaths", field: "value", by: 5 },
+      update with CloudUpdate { path: "users/uid-streamer/collections/counters/deaths", fields: { _t: 1793275200000, _d: "dev1" } }
+    ]
+    sammi has ordered [
+      SetVariable with SetVariable { name: "fb_counters", value: { deaths: { value: 12 } } },
+      Trigger with Trigger { name: "Firebase: Document Updated", pullData: { eventId: any uuid, timestamp: any timestamp, version: 1, eventType: "DocumentUpdated", source: "local", deviceId: "dev1", collection: "counters", id: "deaths", changed: "{\"value\":12}", causationId: any string } }
+    ]

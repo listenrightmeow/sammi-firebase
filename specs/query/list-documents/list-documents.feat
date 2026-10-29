@@ -38,7 +38,7 @@ scenario "lists ids sorted":
     execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
   when: ListDocuments { collection: "viewers" }
   predict success:
-    response OK CommandResponse { answer: "[\"12345678\", \"222\", \"333\"]", ids: ["12345678", "222", "333"] }
+    response OK CommandResponse { answer: "[\"12345678\",\"222\",\"333\"]", ids: ["12345678", "222", "333"] }
 
 scenario "an unknown collection lists nothing":
   given:

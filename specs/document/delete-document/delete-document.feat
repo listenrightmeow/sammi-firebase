@@ -57,7 +57,7 @@ scenario "deletes a document and leaves its siblings":
     ]
     sammi has ordered [
       SetVariable with SetVariable { name: "fb_viewers", value: { "222": { name: "bob", points: 3 } } },
-      Trigger with Trigger { name: "Firebase: Document Deleted", pullData: { eventId: any uuid, eventType: "DocumentDeleted", timestamp: any timestamp, version: 1, source: "local", deviceId: "dev1", collection: "viewers", id: "12345678", previous: "{\"name\": \"alice\", \"points\": 10}", causationId: any string } }
+      Trigger with Trigger { name: "Firebase: Document Deleted", pullData: { eventId: any uuid, eventType: "DocumentDeleted", timestamp: any timestamp, version: 1, source: "local", deviceId: "dev1", collection: "viewers", id: "12345678", previous: "{\"name\":\"alice\",\"points\":10}", causationId: any string } }
     ]
 
 scenario "deleting the last document leaves an empty collection variable":
@@ -81,7 +81,7 @@ scenario "deleting the last document leaves an empty collection variable":
     ]
     sammi has ordered [
       SetVariable with SetVariable { name: "fb_counters", value: { } },
-      Trigger with Trigger { name: "Firebase: Document Deleted", pullData: { eventId: any uuid, eventType: "DocumentDeleted", timestamp: any timestamp, version: 1, source: "local", deviceId: "dev1", collection: "counters", id: "deaths", previous: "{\"value\": 7}", causationId: any string } }
+      Trigger with Trigger { name: "Firebase: Document Deleted", pullData: { eventId: any uuid, eventType: "DocumentDeleted", timestamp: any timestamp, version: 1, source: "local", deviceId: "dev1", collection: "counters", id: "deaths", previous: "{\"value\":7}", causationId: any string } }
     ]
 
 scenario "rejects MISSING when the document does not exist":
