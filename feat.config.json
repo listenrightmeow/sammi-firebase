@@ -1,0 +1,140 @@
+{
+  "featVersion": "1.0",
+  "environment": "ci",
+  "schemas": {
+    "adapter": "@mmmnt/feat-schema-json"
+  },
+  "response": {
+    "adapter": "@mmmnt/feat-adapter-handler",
+    "commands": {
+      "Connect": {
+        "module": "src/features/connect/handler.ts",
+        "export": "handle"
+      },
+      "Disconnect": {
+        "module": "src/features/disconnect/handler.ts",
+        "export": "handle"
+      },
+      "Reconcile": {
+        "module": "src/features/reconcile/handler.ts",
+        "export": "handle"
+      },
+      "RecordSessionLoss": {
+        "module": "src/features/record-session-loss/handler.ts",
+        "export": "handle"
+      },
+      "DefineCollection": {
+        "module": "src/features/define-collection/handler.ts",
+        "export": "handle"
+      },
+      "UndefineCollection": {
+        "module": "src/features/undefine-collection/handler.ts",
+        "export": "handle"
+      },
+      "ApplyRemoteSchema": {
+        "module": "src/features/apply-remote-schema/handler.ts",
+        "export": "handle"
+      },
+      "CreateDocument": {
+        "module": "src/features/create-document/handler.ts",
+        "export": "handle"
+      },
+      "ReplaceDocument": {
+        "module": "src/features/replace-document/handler.ts",
+        "export": "handle"
+      },
+      "UpdateDocument": {
+        "module": "src/features/update-document/handler.ts",
+        "export": "handle"
+      },
+      "SetField": {
+        "module": "src/features/set-field/handler.ts",
+        "export": "handle"
+      },
+      "IncrementField": {
+        "module": "src/features/increment-field/handler.ts",
+        "export": "handle"
+      },
+      "DeleteField": {
+        "module": "src/features/delete-field/handler.ts",
+        "export": "handle"
+      },
+      "DeleteDocument": {
+        "module": "src/features/delete-document/handler.ts",
+        "export": "handle"
+      },
+      "ApplyRemoteChange": {
+        "module": "src/features/apply-remote-change/handler.ts",
+        "export": "handle"
+      },
+      "ApplyVariableChange": {
+        "module": "src/features/apply-variable-change/handler.ts",
+        "export": "handle"
+      },
+      "GetDocument": {
+        "module": "src/features/get-document/handler.ts",
+        "export": "handle"
+      },
+      "GetField": {
+        "module": "src/features/get-field/handler.ts",
+        "export": "handle"
+      },
+      "DocumentExists": {
+        "module": "src/features/document-exists/handler.ts",
+        "export": "handle"
+      },
+      "ListDocuments": {
+        "module": "src/features/list-documents/handler.ts",
+        "export": "handle"
+      },
+      "QueryDocuments": {
+        "module": "src/features/query-documents/handler.ts",
+        "export": "handle"
+      },
+      "CountDocuments": {
+        "module": "src/features/count-documents/handler.ts",
+        "export": "handle"
+      },
+      "GetStatus": {
+        "module": "src/features/get-status/handler.ts",
+        "export": "handle"
+      }
+    }
+  },
+  "services": {
+    "ini": {
+      "adapter": "./tools/feat-adapters/ini/index.ts",
+      "consistency": "acid",
+      "options": {
+        "clock": "2026-10-29T12:00:00Z"
+      }
+    },
+    "firebase": {
+      "adapter": "./tools/feat-adapters/firebase/index.ts",
+      "consistency": "strong",
+      "options": {
+        "clock": "2026-10-29T12:00:00Z"
+      }
+    },
+    "sammi": {
+      "adapter": "./tools/feat-adapters/sammi/index.ts",
+      "consistency": "acid",
+      "options": {
+        "clock": "2026-10-29T12:00:00Z"
+      }
+    }
+  },
+  "specs": {
+    "dir": "specs",
+    "pattern": "**/*.feat",
+    "contractPattern": "**/*.contract.json",
+    "outputPattern": "{name}.test.ts"
+  },
+  "report": {
+    "format": [
+      "console",
+      "junit"
+    ],
+    "junitOutput": ".feature/run/feat-junit.xml"
+  }
+}

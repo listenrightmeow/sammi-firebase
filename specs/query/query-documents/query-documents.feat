@@ -1,0 +1,182 @@
+feat 1.0
+
+# SPEC-QRY-005 — Query Documents
+# Derived from model/contexts/sammi-firebase.moment, docs/10-domain-model.md and the ADRs in docs/adr/.
+# Harness surfaces (SF-ADR-016): ini = firebase.ini writes · firebase = the user's Realtime Database · sammi = SAMMI variables and triggers.
+
+spec SPEC-QRY-005 "Query Documents"
+context SammiFirebase
+aggregate Collection
+type query
+status agreed
+
+construct:
+  handler at src/features/query-documents/handler.ts
+  touches src/features/query-documents/**
+  Filter the mirrored documents of a collection by one field, operator and value; order by a field; limit. Answer a JSON array of {id, ...fields} so a leaderboard is one command (O8).
+  Comparisons are numeric when both sides are numbers, otherwise string comparisons; `contains` is a case-insensitive substring test on strings; `exists` tests field presence and ignores value. Documents lacking the filter field never match.
+
+enforce:
+  read from the mirror only
+  numeric comparison when both sides are numbers, string otherwise
+  order ascending by default, descending when asked; missing order fields sort last
+  no filter means every document
+  rejects BAD_OPERATOR when the operator is not one of == != > >= < <= contains exists
+  rejects BAD_FIELD when the filter or order field name is invalid
+  rejects NOT_CONNECTED when no connection is established
+  rejects BAD_COLLECTION_NAME when the collection name is not [a-z][a-z0-9_]{0,31}
+
+contract:
+  input Input
+  response CommandResponse
+  error CommandError
+  record IniWrite
+  record CloudNode
+  record AuthUser
+
+scenario "top two by points descending (leaderboard)":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/meta/schema/viewers", value: { fields: ["name", "points", "tier"], strict: false, two_way: true, _t: 1793275100000 } }, node with CloudNode { path: "users/uid-streamer/collections/viewers/12345678", value: { name: "alice", points: 10, tier: "gold", _t: 1793275150000, _d: "dev2" } }, node with CloudNode { path: "users/uid-streamer/collections/viewers/222", value: { name: "bob", points: 3, _t: 1793275150000, _d: "dev2" } }, node with CloudNode { path: "users/uid-streamer/collections/viewers/333", value: { name: "carol", points: 25, tier: "gold", _t: 1793275150000, _d: "dev2" } } ]
+    execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
+  when: QueryDocuments { collection: "viewers", orderBy: "points", descending: true, limit: 2 }
+  predict success:
+    response OK CommandResponse { answer: "[{\"id\": \"333\", \"name\": \"carol\", \"points\": 25, \"tier\": \"gold\"}, {\"id\": \"12345678\", \"name\": \"alice\", \"points\": 10, \"tier\": \"gold\"}]", documents: [{ id: "333", name: "carol", points: 25, tier: "gold" }, { id: "12345678", name: "alice", points: 10, tier: "gold" }] }
+
+scenario "filters numerically with >=":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/meta/schema/viewers", value: { fields: ["name", "points", "tier"], strict: false, two_way: true, _t: 1793275100000 } }, node with CloudNode { path: "users/uid-streamer/collections/viewers/12345678", value: { name: "alice", points: 10, tier: "gold", _t: 1793275150000, _d: "dev2" } }, node with CloudNode { path: "users/uid-streamer/collections/viewers/222", value: { name: "bob", points: 3, _t: 1793275150000, _d: "dev2" } }, node with CloudNode { path: "users/uid-streamer/collections/viewers/333", value: { name: "carol", points: 25, tier: "gold", _t: 1793275150000, _d: "dev2" } } ]
+    execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
+  when: QueryDocuments { collection: "viewers", field: "points", operator: ">=", value: 10, orderBy: "points" }
+  predict success:
+    response OK CommandResponse { answer: any string, documents: [{ id: "12345678", name: "alice", points: 10, tier: "gold" }, { id: "333", name: "carol", points: 25, tier: "gold" }] }
+
+scenario "a numeric-looking string value compares numerically against a number field":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/meta/schema/viewers", value: { fields: ["name", "points", "tier"], strict: false, two_way: true, _t: 1793275100000 } }, node with CloudNode { path: "users/uid-streamer/collections/viewers/12345678", value: { name: "alice", points: 10, tier: "gold", _t: 1793275150000, _d: "dev2" } }, node with CloudNode { path: "users/uid-streamer/collections/viewers/222", value: { name: "bob", points: 3, _t: 1793275150000, _d: "dev2" } }, node with CloudNode { path: "users/uid-streamer/collections/viewers/333", value: { name: "carol", points: 25, tier: "gold", _t: 1793275150000, _d: "dev2" } } ]
+    execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
+  when: QueryDocuments { collection: "viewers", field: "points", operator: "<", value: "10" }
+  predict success:
+    response OK CommandResponse { answer: any string, documents: [{ id: "222", name: "bob", points: 3 }] }
+
+scenario "filters by string equality":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/meta/schema/viewers", value: { fields: ["name", "points", "tier"], strict: false, two_way: true, _t: 1793275100000 } }, node with CloudNode { path: "users/uid-streamer/collections/viewers/12345678", value: { name: "alice", points: 10, tier: "gold", _t: 1793275150000, _d: "dev2" } }, node with CloudNode { path: "users/uid-streamer/collections/viewers/222", value: { name: "bob", points: 3, _t: 1793275150000, _d: "dev2" } }, node with CloudNode { path: "users/uid-streamer/collections/viewers/333", value: { name: "carol", points: 25, tier: "gold", _t: 1793275150000, _d: "dev2" } } ]
+    execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
+  when: QueryDocuments { collection: "viewers", field: "tier", operator: "==", value: "gold", orderBy: "name" }
+  predict success:
+    response OK CommandResponse { answer: any string, documents: [{ id: "12345678", name: "alice", points: 10, tier: "gold" }, { id: "333", name: "carol", points: 25, tier: "gold" }] }
+
+scenario "documents lacking the filter field never match !=":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/meta/schema/viewers", value: { fields: ["name", "points", "tier"], strict: false, two_way: true, _t: 1793275100000 } }, node with CloudNode { path: "users/uid-streamer/collections/viewers/12345678", value: { name: "alice", points: 10, tier: "gold", _t: 1793275150000, _d: "dev2" } }, node with CloudNode { path: "users/uid-streamer/collections/viewers/222", value: { name: "bob", points: 3, _t: 1793275150000, _d: "dev2" } }, node with CloudNode { path: "users/uid-streamer/collections/viewers/333", value: { name: "carol", points: 25, tier: "gold", _t: 1793275150000, _d: "dev2" } } ]
+    execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
+  when: QueryDocuments { collection: "viewers", field: "tier", operator: "!=", value: "gold" }
+  predict success:
+    response OK CommandResponse { answer: "[]", documents: [] }
+
+scenario "contains is a case-insensitive substring test":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/meta/schema/viewers", value: { fields: ["name", "points", "tier"], strict: false, two_way: true, _t: 1793275100000 } }, node with CloudNode { path: "users/uid-streamer/collections/viewers/12345678", value: { name: "alice", points: 10, tier: "gold", _t: 1793275150000, _d: "dev2" } }, node with CloudNode { path: "users/uid-streamer/collections/viewers/222", value: { name: "bob", points: 3, _t: 1793275150000, _d: "dev2" } }, node with CloudNode { path: "users/uid-streamer/collections/viewers/333", value: { name: "carol", points: 25, tier: "gold", _t: 1793275150000, _d: "dev2" } } ]
+    execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
+  when: QueryDocuments { collection: "viewers", field: "name", operator: "contains", value: "AR" }
+  predict success:
+    response OK CommandResponse { answer: any string, documents: [{ id: "333", name: "carol", points: 25, tier: "gold" }] }
+
+scenario "exists tests field presence":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/meta/schema/viewers", value: { fields: ["name", "points", "tier"], strict: false, two_way: true, _t: 1793275100000 } }, node with CloudNode { path: "users/uid-streamer/collections/viewers/12345678", value: { name: "alice", points: 10, tier: "gold", _t: 1793275150000, _d: "dev2" } }, node with CloudNode { path: "users/uid-streamer/collections/viewers/222", value: { name: "bob", points: 3, _t: 1793275150000, _d: "dev2" } }, node with CloudNode { path: "users/uid-streamer/collections/viewers/333", value: { name: "carol", points: 25, tier: "gold", _t: 1793275150000, _d: "dev2" } } ]
+    execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
+  when: QueryDocuments { collection: "viewers", field: "tier", operator: "exists", orderBy: "id" }
+  predict success:
+    response OK CommandResponse { answer: any string, documents: [{ id: "12345678", name: "alice", points: 10, tier: "gold" }, { id: "333", name: "carol", points: 25, tier: "gold" }] }
+
+scenario "no filter returns every document ordered by id":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/meta/schema/viewers", value: { fields: ["name", "points", "tier"], strict: false, two_way: true, _t: 1793275100000 } }, node with CloudNode { path: "users/uid-streamer/collections/viewers/12345678", value: { name: "alice", points: 10, tier: "gold", _t: 1793275150000, _d: "dev2" } }, node with CloudNode { path: "users/uid-streamer/collections/viewers/222", value: { name: "bob", points: 3, _t: 1793275150000, _d: "dev2" } }, node with CloudNode { path: "users/uid-streamer/collections/viewers/333", value: { name: "carol", points: 25, tier: "gold", _t: 1793275150000, _d: "dev2" } } ]
+    execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
+  when: QueryDocuments { collection: "viewers" }
+  predict success:
+    response OK CommandResponse { answer: any string, documents: [{ id: "12345678", name: "alice", points: 10, tier: "gold" }, { id: "222", name: "bob", points: 3 }, { id: "333", name: "carol", points: 25, tier: "gold" }] }
+
+scenario "documents missing the order field sort last":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/meta/schema/viewers", value: { fields: ["name", "points", "tier"], strict: false, two_way: true, _t: 1793275100000 } }, node with CloudNode { path: "users/uid-streamer/collections/viewers/12345678", value: { name: "alice", points: 10, tier: "gold", _t: 1793275150000, _d: "dev2" } }, node with CloudNode { path: "users/uid-streamer/collections/viewers/222", value: { name: "bob", points: 3, _t: 1793275150000, _d: "dev2" } }, node with CloudNode { path: "users/uid-streamer/collections/viewers/333", value: { name: "carol", points: 25, tier: "gold", _t: 1793275150000, _d: "dev2" } } ]
+    execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
+  when: QueryDocuments { collection: "viewers", orderBy: "tier" }
+  predict success:
+    response OK CommandResponse { answer: any string, documents: [{ id: "12345678", name: "alice", points: 10, tier: "gold" }, { id: "333", name: "carol", points: 25, tier: "gold" }, { id: "222", name: "bob", points: 3 }] }
+
+scenario "an unknown collection answers an empty array":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" } ]
+    execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
+  when: QueryDocuments { collection: "ghosts" }
+  predict success:
+    response OK CommandResponse { answer: "[]", documents: [] }
+
+scenario "rejects BAD_OPERATOR":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/meta/schema/viewers", value: { fields: ["name", "points", "tier"], strict: false, two_way: true, _t: 1793275100000 } }, node with CloudNode { path: "users/uid-streamer/collections/viewers/12345678", value: { name: "alice", points: 10, tier: "gold", _t: 1793275150000, _d: "dev2" } }, node with CloudNode { path: "users/uid-streamer/collections/viewers/222", value: { name: "bob", points: 3, _t: 1793275150000, _d: "dev2" } }, node with CloudNode { path: "users/uid-streamer/collections/viewers/333", value: { name: "carol", points: 25, tier: "gold", _t: 1793275150000, _d: "dev2" } } ]
+    execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
+  when: QueryDocuments { collection: "viewers", field: "points", operator: "~", value: 1 }
+  predict rejection BAD_OPERATOR:
+    response ERR CommandError { code: "BAD_OPERATOR", answer: "error: bad operator ~" }
+
+scenario "rejects BAD_FIELD for an invalid order field":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/meta/schema/viewers", value: { fields: ["name", "points", "tier"], strict: false, two_way: true, _t: 1793275100000 } }, node with CloudNode { path: "users/uid-streamer/collections/viewers/12345678", value: { name: "alice", points: 10, tier: "gold", _t: 1793275150000, _d: "dev2" } }, node with CloudNode { path: "users/uid-streamer/collections/viewers/222", value: { name: "bob", points: 3, _t: 1793275150000, _d: "dev2" } }, node with CloudNode { path: "users/uid-streamer/collections/viewers/333", value: { name: "carol", points: 25, tier: "gold", _t: 1793275150000, _d: "dev2" } } ]
+    execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
+  when: QueryDocuments { collection: "viewers", orderBy: "_t" }
+  predict rejection BAD_FIELD:
+    response ERR CommandError { code: "BAD_FIELD", answer: "error: bad field _t" }
+
+scenario "rejects BAD_FIELD for an invalid filter field":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/meta/schema/viewers", value: { fields: ["name", "points", "tier"], strict: false, two_way: true, _t: 1793275100000 } }, node with CloudNode { path: "users/uid-streamer/collections/viewers/12345678", value: { name: "alice", points: 10, tier: "gold", _t: 1793275150000, _d: "dev2" } }, node with CloudNode { path: "users/uid-streamer/collections/viewers/222", value: { name: "bob", points: 3, _t: 1793275150000, _d: "dev2" } }, node with CloudNode { path: "users/uid-streamer/collections/viewers/333", value: { name: "carol", points: 25, tier: "gold", _t: 1793275150000, _d: "dev2" } } ]
+    execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
+  when: QueryDocuments { collection: "viewers", field: "Points", operator: "==", value: 1 }
+  predict rejection BAD_FIELD:
+    response ERR CommandError { code: "BAD_FIELD", answer: "error: bad field Points" }
+
+scenario "rejects NOT_CONNECTED when nothing is connected":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+  when: QueryDocuments { collection: "viewers" }
+  predict rejection NOT_CONNECTED:
+    response ERR CommandError { code: "NOT_CONNECTED", answer: "error: not connected" }
+
+scenario "rejects BAD_COLLECTION_NAME for an invalid name":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" } ]
+    execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
+  when: QueryDocuments { collection: "Bad Name" }
+  predict rejection BAD_COLLECTION_NAME:
+    response ERR CommandError { code: "BAD_COLLECTION_NAME", answer: "error: bad collection name Bad Name" }

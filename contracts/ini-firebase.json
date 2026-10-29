@@ -1,0 +1,172 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/listenrightmeow/sammi-firebase/contracts/ini-firebase.json",
+  "title": "FirebaseIni",
+  "description": "firebase.ini in the SAMMI folder, as the extension writes it through SAMMI.saveIni and SAMMI's INI commands read it (SF-ADR-004). One object per section; [collection:<name>] sections are frozen from release 1.",
+  "type": "object",
+  "required": [
+    "connection",
+    "index"
+  ],
+  "properties": {
+    "connection": {
+      "type": "object",
+      "required": [
+        "config",
+        "device_id"
+      ],
+      "properties": {
+        "config": {
+          "type": "string",
+          "description": "JSON text of FirebaseConfig"
+        },
+        "email": {
+          "type": "string",
+          "format": "email"
+        },
+        "device_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9]{4,16}$"
+        },
+        "device_name": {
+          "type": "string"
+        },
+        "session": {
+          "type": "string",
+          "description": "opaque Firebase Auth SDK persisted record, restored into localStorage before Auth initializes"
+        },
+        "poll_ms": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 10000,
+          "default": 500
+        }
+      },
+      "additionalProperties": false
+    },
+    "schema": {
+      "type": "object",
+      "description": "one key per declared collection",
+      "additionalProperties": {
+        "type": "string",
+        "description": "JSON text of SchemaEntry"
+      }
+    },
+    "index": {
+      "type": "object",
+      "required": [
+        "collections",
+        "hashes"
+      ],
+      "properties": {
+        "collections": {
+          "type": "string",
+          "description": "JSON array of collection names"
+        },
+        "hashes": {
+          "type": "string",
+          "description": "JSON object: '<collection>/<id>' -> crc32 hex of the document JSON as last written"
+        },
+        "last_sync": {
+          "type": "string",
+          "pattern": "^[0-9]+$"
+        }
+      },
+      "additionalProperties": {
+        "type": "string",
+        "description": "'<collection>' -> JSON array of document ids"
+      }
+    },
+    "pending": {
+      "type": "object",
+      "description": "'<collection>/<id>' -> JSON text of PendingOperation",
+      "additionalProperties": {
+        "type": "string"
+      }
+    }
+  },
+  "patternProperties": {
+    "^collection:[a-z][a-z0-9_]{0,31}$": {
+      "type": "object",
+      "description": "'<id>' -> document JSON including _t and _d",
+      "additionalProperties": {
+        "type": "string"
+      }
+    }
+  },
+  "$defs": {
+    "SchemaEntry": {
+      "type": "object",
+      "required": [
+        "fields",
+        "strict",
+        "two_way",
+        "_t"
+      ],
+      "properties": {
+        "fields": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,31}$"
+          }
+        },
+        "strict": {
+          "type": "boolean"
+        },
+        "two_way": {
+          "type": "boolean"
+        },
+        "_t": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    },
+    "PendingOperation": {
+      "type": "object",
+      "required": [
+        "op",
+        "at"
+      ],
+      "properties": {
+        "op": {
+          "enum": [
+            "create",
+            "replace",
+            "update",
+            "set_field",
+            "increment",
+            "delete_field",
+            "delete"
+          ]
+        },
+        "fields": {
+          "type": "object"
+        },
+        "field": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,31}$"
+        },
+        "value": {
+          "oneOf": [
+            {
+              "type": "string",
+              "maxLength": 4096
+            },
+            {
+              "type": "number"
+            }
+          ]
+        },
+        "by": {
+          "type": "number"
+        },
+        "at": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

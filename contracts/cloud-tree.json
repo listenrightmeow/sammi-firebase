@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/listenrightmeow/sammi-firebase/contracts/cloud-tree.json",
+  "title": "CloudTree",
+  "description": "users/{uid} in the streamer's Realtime Database (SF-ADR-003). Firebase is schema-less; this is what the extension writes and reads.",
+  "type": "object",
+  "properties": {
+    "meta": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "devices": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "lastSeen": {
+                "type": "integer"
+              }
+            }
+          }
+        },
+        "schema": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,31}$"
+          },
+          "additionalProperties": {
+            "type": "object",
+            "required": [
+              "fields",
+              "strict",
+              "two_way",
+              "_t"
+            ],
+            "properties": {
+              "fields": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_]{0,31}$"
+                }
+              },
+              "strict": {
+                "type": "boolean"
+              },
+              "two_way": {
+                "type": "boolean"
+              },
+              "_t": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      }
+    },
+    "collections": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9_]{0,31}$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "propertyNames": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,64}$"
+        },
+        "additionalProperties": {
+          "$ref": "#/$defs/Document"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "Document": {
+      "type": "object",
+      "required": [
+        "_t",
+        "_d"
+      ],
+      "properties": {
+        "_t": {
+          "type": "integer",
+          "description": "server timestamp of the last write"
+        },
+        "_d": {
+          "type": "string",
+          "description": "writing device id"
+        }
+      },
+      "patternProperties": {
+        "^[a-z][a-z0-9_]{0,31}$": {
+          "oneOf": [
+            {
+              "type": "string",
+              "maxLength": 4096
+            },
+            {
+              "type": "number"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "maxProperties": 200
+    }
+  }
+}

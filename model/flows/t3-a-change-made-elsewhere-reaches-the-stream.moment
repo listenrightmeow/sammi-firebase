@@ -1,0 +1,40 @@
+// T3 — A change made elsewhere reaches the stream
+// Source: NDD board uXjVEUQjpYg= thread T3 · docs/03-user-journey.md · rulings of 2026-10-29.
+// Part of the model directory; validate with `moment parse model/` (project mode) and `moment test` on this file.
+
+flow "T3 — A change made elsewhere reaches the stream (O3)"
+  description "A document edited in the Firebase console or on another PC arrives through the listener, updates the mirror and the variable, and fires the trigger a streamer's policy button reacts to"
+
+  lane streamer "Streamer" [External]
+  lane data "SammiFirebase" [Core]
+  lane firebase "FirebaseDatabase" [External]
+  branch-lane refusals "Refusals & Edge Cases"
+
+  moment "M1 · You edit a record elsewhere"
+    data: RemoteChange
+    // [streamer] EditInConsole   (external lane: project mode cannot resolve nodes on it; kept as narrative)
+    // [firebase] Listen   (external lane: project mode cannot resolve nodes on it; kept as narrative)
+    //   triggers ApplyRemoteChange
+
+  moment "Own echo or older" [branch]
+    when RemoteNewer [data]
+      data: ApplyRemoteChange
+    when OwnEcho [refusals]
+      refusals: IgnoredNoEvent
+        returns-to "M1 · You edit a record elsewhere"
+    when RemoteOlder [refusals]
+      refusals: LocalKeptNoEvent
+        returns-to "M1 · You edit a record elsewhere"
+
+  moment "M2 · The mirror catches up"
+    data: DocumentUpdated
+    data: CollectionVariable
+
+  moment "M3 · Your deck reacts"
+    data: DomainEventEnvelope
+    // [streamer] PolicyButtonRuns   (external lane: project mode cannot resolve nodes on it; kept as narrative)
+    //   triggered-by DocumentUpdated
+    // [streamer] PopupMessage   (external lane: project mode cannot resolve nodes on it; kept as narrative)
+
+  moment "M4 · Both machines agree"
+    data: GetDocument [terminal]

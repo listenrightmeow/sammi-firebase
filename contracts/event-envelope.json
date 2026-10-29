@@ -1,0 +1,637 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/listenrightmeow/sammi-firebase/contracts/event-envelope.json",
+  "title": "EventEnvelope",
+  "description": "Pull data of every Firebase: trigger: the reduced PADR-004 envelope plus the event's own fields, all flat (SF-ADR-006). JSON-valued fields are JSON text.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/Connected"
+    },
+    {
+      "$ref": "#/$defs/ConnectionFailed"
+    },
+    {
+      "$ref": "#/$defs/Disconnected"
+    },
+    {
+      "$ref": "#/$defs/MirrorReconciled"
+    },
+    {
+      "$ref": "#/$defs/CollectionDefined"
+    },
+    {
+      "$ref": "#/$defs/CollectionUndefined"
+    },
+    {
+      "$ref": "#/$defs/DocumentCreated"
+    },
+    {
+      "$ref": "#/$defs/DocumentReplaced"
+    },
+    {
+      "$ref": "#/$defs/DocumentUpdated"
+    },
+    {
+      "$ref": "#/$defs/DocumentDeleted"
+    },
+    {
+      "$ref": "#/$defs/WriteRejected"
+    }
+  ],
+  "$defs": {
+    "Connected": {
+      "type": "object",
+      "required": [
+        "eventId",
+        "eventType",
+        "timestamp",
+        "version",
+        "source",
+        "email",
+        "projectId",
+        "documents"
+      ],
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "Connected"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "version": {
+          "const": 1
+        },
+        "source": {
+          "enum": [
+            "local",
+            "remote"
+          ]
+        },
+        "deviceId": {
+          "type": "string"
+        },
+        "causationId": {
+          "type": "string",
+          "description": "the SAMMI button instance that issued the command when source is local; empty for remote"
+        },
+        "email": {
+          "type": "string"
+        },
+        "projectId": {
+          "type": "string"
+        },
+        "documents": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ConnectionFailed": {
+      "type": "object",
+      "required": [
+        "eventId",
+        "eventType",
+        "timestamp",
+        "version",
+        "source",
+        "reason"
+      ],
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "ConnectionFailed"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "version": {
+          "const": 1
+        },
+        "source": {
+          "enum": [
+            "local",
+            "remote"
+          ]
+        },
+        "deviceId": {
+          "type": "string"
+        },
+        "causationId": {
+          "type": "string",
+          "description": "the SAMMI button instance that issued the command when source is local; empty for remote"
+        },
+        "reason": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Disconnected": {
+      "type": "object",
+      "required": [
+        "eventId",
+        "eventType",
+        "timestamp",
+        "version",
+        "source",
+        "reason"
+      ],
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "Disconnected"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "version": {
+          "const": 1
+        },
+        "source": {
+          "enum": [
+            "local",
+            "remote"
+          ]
+        },
+        "deviceId": {
+          "type": "string"
+        },
+        "causationId": {
+          "type": "string",
+          "description": "the SAMMI button instance that issued the command when source is local; empty for remote"
+        },
+        "reason": {
+          "enum": [
+            "user",
+            "network",
+            "session"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "MirrorReconciled": {
+      "type": "object",
+      "required": [
+        "eventId",
+        "eventType",
+        "timestamp",
+        "version",
+        "source",
+        "pushed",
+        "applied",
+        "dropped",
+        "cause"
+      ],
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "MirrorReconciled"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "version": {
+          "const": 1
+        },
+        "source": {
+          "enum": [
+            "local",
+            "remote"
+          ]
+        },
+        "deviceId": {
+          "type": "string"
+        },
+        "causationId": {
+          "type": "string",
+          "description": "the SAMMI button instance that issued the command when source is local; empty for remote"
+        },
+        "pushed": {
+          "type": "integer"
+        },
+        "applied": {
+          "type": "integer"
+        },
+        "dropped": {
+          "type": "integer"
+        },
+        "cause": {
+          "enum": [
+            "connect",
+            "command"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "CollectionDefined": {
+      "type": "object",
+      "required": [
+        "eventId",
+        "eventType",
+        "timestamp",
+        "version",
+        "source",
+        "collection",
+        "fields",
+        "strict",
+        "twoWay"
+      ],
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "CollectionDefined"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "version": {
+          "const": 1
+        },
+        "source": {
+          "enum": [
+            "local",
+            "remote"
+          ]
+        },
+        "deviceId": {
+          "type": "string"
+        },
+        "causationId": {
+          "type": "string",
+          "description": "the SAMMI button instance that issued the command when source is local; empty for remote"
+        },
+        "collection": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,31}$"
+        },
+        "fields": {
+          "type": "string",
+          "description": "JSON array"
+        },
+        "strict": {
+          "type": "boolean"
+        },
+        "twoWay": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "CollectionUndefined": {
+      "type": "object",
+      "required": [
+        "eventId",
+        "eventType",
+        "timestamp",
+        "version",
+        "source",
+        "collection"
+      ],
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "CollectionUndefined"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "version": {
+          "const": 1
+        },
+        "source": {
+          "enum": [
+            "local",
+            "remote"
+          ]
+        },
+        "deviceId": {
+          "type": "string"
+        },
+        "causationId": {
+          "type": "string",
+          "description": "the SAMMI button instance that issued the command when source is local; empty for remote"
+        },
+        "collection": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,31}$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "DocumentCreated": {
+      "type": "object",
+      "required": [
+        "eventId",
+        "eventType",
+        "timestamp",
+        "version",
+        "source",
+        "collection",
+        "id",
+        "fields"
+      ],
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "DocumentCreated"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "version": {
+          "const": 1
+        },
+        "source": {
+          "enum": [
+            "local",
+            "remote"
+          ]
+        },
+        "deviceId": {
+          "type": "string"
+        },
+        "causationId": {
+          "type": "string",
+          "description": "the SAMMI button instance that issued the command when source is local; empty for remote"
+        },
+        "collection": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,31}$"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,64}$"
+        },
+        "fields": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "DocumentReplaced": {
+      "type": "object",
+      "required": [
+        "eventId",
+        "eventType",
+        "timestamp",
+        "version",
+        "source",
+        "collection",
+        "id",
+        "fields",
+        "previous"
+      ],
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "DocumentReplaced"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "version": {
+          "const": 1
+        },
+        "source": {
+          "enum": [
+            "local",
+            "remote"
+          ]
+        },
+        "deviceId": {
+          "type": "string"
+        },
+        "causationId": {
+          "type": "string",
+          "description": "the SAMMI button instance that issued the command when source is local; empty for remote"
+        },
+        "collection": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,31}$"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,64}$"
+        },
+        "fields": {
+          "type": "string"
+        },
+        "previous": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "DocumentUpdated": {
+      "type": "object",
+      "required": [
+        "eventId",
+        "eventType",
+        "timestamp",
+        "version",
+        "source",
+        "collection",
+        "id",
+        "fields",
+        "previous",
+        "changed"
+      ],
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "DocumentUpdated"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "version": {
+          "const": 1
+        },
+        "source": {
+          "enum": [
+            "local",
+            "remote"
+          ]
+        },
+        "deviceId": {
+          "type": "string"
+        },
+        "causationId": {
+          "type": "string",
+          "description": "the SAMMI button instance that issued the command when source is local; empty for remote"
+        },
+        "collection": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,31}$"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,64}$"
+        },
+        "fields": {
+          "type": "string"
+        },
+        "previous": {
+          "type": "string"
+        },
+        "changed": {
+          "type": "string",
+          "description": "JSON array of field names"
+        }
+      },
+      "additionalProperties": false
+    },
+    "DocumentDeleted": {
+      "type": "object",
+      "required": [
+        "eventId",
+        "eventType",
+        "timestamp",
+        "version",
+        "source",
+        "collection",
+        "id",
+        "previous"
+      ],
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "DocumentDeleted"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "version": {
+          "const": 1
+        },
+        "source": {
+          "enum": [
+            "local",
+            "remote"
+          ]
+        },
+        "deviceId": {
+          "type": "string"
+        },
+        "causationId": {
+          "type": "string",
+          "description": "the SAMMI button instance that issued the command when source is local; empty for remote"
+        },
+        "collection": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,31}$"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,64}$"
+        },
+        "previous": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "WriteRejected": {
+      "type": "object",
+      "required": [
+        "eventId",
+        "eventType",
+        "timestamp",
+        "version",
+        "source",
+        "collection",
+        "id",
+        "field",
+        "reason"
+      ],
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "WriteRejected"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "version": {
+          "const": 1
+        },
+        "source": {
+          "enum": [
+            "local",
+            "remote"
+          ]
+        },
+        "deviceId": {
+          "type": "string"
+        },
+        "causationId": {
+          "type": "string",
+          "description": "the SAMMI button instance that issued the command when source is local; empty for remote"
+        },
+        "collection": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,31}$"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,64}$"
+        },
+        "field": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,31}$"
+        },
+        "reason": {
+          "$ref": "command-answer.json#/$defs/ErrorReason"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

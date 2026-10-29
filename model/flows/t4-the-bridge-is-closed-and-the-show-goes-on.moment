@@ -1,0 +1,58 @@
+// T4 — The Bridge is closed and the show goes on
+// Source: NDD board uXjVEUQjpYg= thread T4 · docs/03-user-journey.md · rulings of 2026-10-29.
+// Part of the model directory; validate with `moment parse model/` (project mode) and `moment test` on this file.
+
+flow "T4 — The Bridge is closed and the show goes on (O4)"
+  description "OBS is closed, SAMMI runs: reads fall back to the ini, the deck tells the streamer once, a local edit is caught up when the Bridge returns and wins over changes made meanwhile (D10, H3)"
+
+  lane streamer "Streamer" [External]
+  lane sammi "SammiCore" [External]
+  lane data "SammiFirebase" [Core]
+  lane firebase "FirebaseDatabase" [External]
+  branch-lane refusals "Refusals & Edge Cases"
+
+  moment "M1 · OBS is closed, SAMMI runs"
+    data: SaveVariableAnswer
+    // [streamer] PressButton   (external lane: project mode cannot resolve nodes on it; kept as narrative)
+    // [sammi] BridgeDisconnected   (external lane: project mode cannot resolve nodes on it; kept as narrative)
+    // [sammi] SaveVariableAbsent   (external lane: project mode cannot resolve nodes on it; kept as narrative)
+
+  moment "M2 · The deck notices and tells you"
+    data: ConnectionStatus
+    // [sammi] LocalNotice   (external lane: project mode cannot resolve nodes on it; kept as narrative)
+    // [streamer] PopupLocalCopy   (external lane: project mode cannot resolve nodes on it; kept as narrative)
+
+  moment "M3 · Reads keep working"
+    data: IniRecord
+    // [sammi] IniLoadText   (external lane: project mode cannot resolve nodes on it; kept as narrative)
+
+  moment "M4 · You change something anyway"
+    data: MirrorChange
+    // [streamer] IniSaveText   (external lane: project mode cannot resolve nodes on it; kept as narrative)
+    // [sammi] IniDocumentDiffers   (external lane: project mode cannot resolve nodes on it; kept as narrative)
+
+  moment "Invalid JSON" [branch]
+    when IniValidJson [data]
+      data: DocumentChange
+    when IniNotJson [refusals]
+      refusals: LeftInPlaceNamedInTab
+        returns-to "M4 · You change something anyway"
+    when DeleteWhileClosed [refusals]
+      refusals: UnsupportedInRelease1
+        returns-to "M4 · You change something anyway"
+
+  moment "M5 · OBS returns"
+    data: Connect
+    data: Connected
+
+  moment "M5b · The local change is pushed"
+    data: Reconcile
+      triggered-by Connected
+    // [firebase] WriteDocument   (external lane: project mode cannot resolve nodes on it; kept as narrative)
+    data: DocumentReplaced
+    data: MirrorReconciled
+
+  moment "M6 · Nothing was lost"
+    data: WriteAck [terminal]
+    // [streamer] AlertBackOnline   (external lane: project mode cannot resolve nodes on it; kept as narrative)
+    // [firebase] WriteAck [terminal]   (external lane: project mode cannot resolve nodes on it; kept as narrative)

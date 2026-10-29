@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/listenrightmeow/sammi-firebase/contracts/quality-gates.json",
+  "title": "Quality gate constants (SF-ADR-017)",
+  "description": "Read by .github/workflows/ci.yml and pnpm ci:local. A change here is an ADR amendment.",
+  "type": "object",
+  "const": {
+    "specs": {
+      "lintErrors": 0,
+      "auditErrors": 0,
+      "generatedSuiteCount": "equals .feat file count"
+    },
+    "run": {
+      "scenarioPassRate": 100,
+      "unpredictedEffects": 0,
+      "missingEffects": 0,
+      "executedTestCount": "equals scenario count from feat lint",
+      "refuseOnZeroInputs": true
+    },
+    "coverage": {
+      "lines": 95,
+      "branches": 95,
+      "instrumentation": "all-files",
+      "scope": [
+        "src/features/**",
+        "tools/feat-adapters/**",
+        "tools/build/**"
+      ],
+      "excluded": [
+        "src/ext/**"
+      ],
+      "excludedJustification": "host wiring (real gateways, tab DOM, poller and listener loops) is exercised on the pc tier, docs/09-test-plan.md Layer 3"
+    },
+    "unit": {
+      "adapterConformance": 3
+    },
+    "security": {
+      "secrets": 0,
+      "dependencyMaxSeverity": "moderate",
+      "sastMaxSeverity": "high"
+    },
+    "build": {
+      "sefMaxBytes": 204800,
+      "asyncFlagOnEveryDeckCommand": true,
+      "httpUrls": 0,
+      "sdkImportUrlOccurrences": 1
+    },
+    "model": {
+      "parseDiagnostics": 0
+    },
+    "evidence": {
+      "environment": "ci",
+      "bundlePath": ".feature/evidence/ci/<sha>.json",
+      "missingBundleIsRed": true
+    },
+    "lifecycle": {
+      "agentBuilds": "agreed",
+      "flippedByTooling": [
+        "built",
+        "verified"
+      ]
+    },
+    "release": {
+      "tagOnlyOnGreen": true,
+      "sefBuiltByCI": true,
+      "artifactAttestation": "actions/attest-build-provenance",
+      "verifyCommand": "gh attestation verify sammi-firebase.sef --repo <owner>/sammi-firebase",
+      "pcEvidence": "evidence/pc/<version>.md",
+      "gatewayProbeFixture": "evidence/pc/gateway-probe.json"
+    }
+  }
+}

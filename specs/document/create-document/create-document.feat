@@ -1,0 +1,297 @@
+feat 1.0
+
+# SPEC-DOC-001 — Create Document
+# Derived from model/contexts/sammi-firebase.moment, docs/10-domain-model.md and the ADRs in docs/adr/.
+# Harness surfaces (SF-ADR-016): ini = firebase.ini writes · firebase = the user's Realtime Database · sammi = SAMMI variables and triggers.
+
+spec SPEC-DOC-001 "Create Document"
+context SammiFirebase
+aggregate Document
+type command
+status agreed
+
+construct:
+  handler at src/features/create-document/handler.ts
+  touches src/features/create-document/**
+  Parse the fields box as a JSON object of strings and numbers; a blank id means a generated push id (SF-ADR-008 §4).
+  Mirror rule 1: validate against the local mirror → write [collection:<c>] <id>, [index] <c> ids, [index] hashes, [pending] → rewrite fb_<c> → answer with the document JSON → set users/{uid}/collections/<c>/<id> with _t and _d → delete the pending entry on acknowledgement.
+  Strict collections reject unknown fields (SF-ADR-008 §3); sizes per S12: document ≤ 8 KB, field ≤ 4 KB.
+
+enforce:
+  answer with the stored document including the generated id
+  stamp _t with the scenario clock and _d with this device
+  write the ini before the cloud and the cloud before deleting the pending entry (rule 1)
+  a rejection writes nothing, publishes nothing and fires nothing
+  rejects EXISTS when a document with the id is already in the mirror
+  rejects BAD_FIELD when the fields box is not a JSON object of strings and numbers, or a field name is invalid
+  rejects UNKNOWN_FIELD when the collection is strict and a field is not declared
+  rejects TOO_LARGE when the document exceeds 8 KB or a field exceeds 4 KB
+  rejects NOT_CONNECTED when no connection is established
+  rejects BAD_COLLECTION_NAME when the collection name is not [a-z][a-z0-9_]{0,31}
+  rejects BAD_ID when the id is not [A-Za-z0-9_-]{1,64}
+
+contract:
+  input Input
+  response CommandResponse
+  error CommandError
+  record IniWrite
+  record IniDelete
+  record CloudSet
+  record CloudNode
+  record AuthUser
+  record SetVariable
+  record Trigger
+
+scenario "creates a viewer document keyed by the provider's user id and answers with it":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/meta/schema/viewers", value: { fields: ["name", "points", "tier"], strict: false, two_way: true, _t: 1793275100000 } } ]
+    execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
+  when: CreateDocument { collection: "viewers", id: "12345678", fields: "{\"name\": \"alice\", \"points\": 10}" }
+  predict success:
+    response OK CommandResponse { answer: "{\"name\": \"alice\", \"points\": 10}", document: { name: "alice", points: 10 } }
+    ini has ordered [
+      IniWrite with IniWrite { section: "collection:viewers", key: "12345678", json: { name: "alice", points: 10, _t: 1793275200000, _d: "dev1" } },
+      IniWrite with IniWrite { section: "index", key: "collections", json: ["viewers"] },
+      IniWrite with IniWrite { section: "index", key: "viewers", json: ["12345678"] },
+      IniWrite with IniWrite { section: "index", key: "hashes", json: { "viewers/12345678": any string } },
+      IniWrite with IniWrite { section: "pending", key: "viewers/12345678", json: { op: "create", fields: { name: "alice", points: 10 }, at: 1793275200000 } },
+      IniDelete with IniDelete { section: "pending", key: "viewers/12345678" }
+    ]
+    firebase has ordered [
+      set with CloudSet { path: "users/uid-streamer/collections/viewers/12345678", value: { name: "alice", points: 10, _t: 1793275200000, _d: "dev1" } }
+    ]
+    sammi has ordered [
+      SetVariable with SetVariable { name: "fb_viewers", value: { "12345678": { name: "alice", points: 10 } } },
+      Trigger with Trigger { name: "Firebase: Document Created", pullData: { eventId: any uuid, eventType: "DocumentCreated", timestamp: any timestamp, version: 1, source: "local", deviceId: "dev1", collection: "viewers", id: "12345678", fields: "{\"name\": \"alice\", \"points\": 10}", causationId: any string } }
+    ]
+
+scenario "a blank id generates a push id and the answer carries it":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" } ]
+    execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
+  when: CreateDocument { collection: "log", id: "", fields: "{\"line\": \"hello\"}" }
+  predict success:
+    response OK CommandResponse { answer: matching "\"line\":\"hello\"", document: { line: "hello" }, value: matching "^[A-Za-z0-9_-]{1,64}$" }
+    ini has ordered [
+      IniWrite with IniWrite { section: "collection:log", key: matching "^[A-Za-z0-9_-]{1,64}$", json: { line: "hello", _t: 1793275200000, _d: "dev1" } },
+      IniWrite with IniWrite { section: "index", key: "collections", json: ["log"] },
+      IniWrite with IniWrite { section: "index", key: "log", json: any },
+      IniWrite with IniWrite { section: "index", key: "hashes", json: any },
+      IniWrite with IniWrite { section: "pending", key: matching "^log/", json: { op: "create", fields: { line: "hello" }, at: 1793275200000 } },
+      IniDelete with IniDelete { section: "pending", key: matching "^log/" }
+    ]
+    firebase has ordered [
+      set with CloudSet { path: matching "^users/uid-streamer/collections/log/[A-Za-z0-9_-]+$", value: { line: "hello", _t: 1793275200000, _d: "dev1" } }
+    ]
+    sammi has ordered [
+      SetVariable with SetVariable { name: "fb_log", value: any },
+      Trigger with Trigger { name: "Firebase: Document Created", pullData: { eventId: any uuid, eventType: "DocumentCreated", timestamp: any timestamp, version: 1, source: "local", deviceId: "dev1", collection: "log", id: matching "^[A-Za-z0-9_-]{1,64}$", fields: "{\"line\": \"hello\"}", causationId: any string } }
+    ]
+
+scenario "an open collection accepts any field names":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" } ]
+    execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
+  when: CreateDocument { collection: "notes", id: "n1", fields: "{\"anything\": \"goes\", \"n\": 1.5}" }
+  predict success:
+    response OK CommandResponse { answer: "{\"anything\": \"goes\", \"n\": 1.5}", document: { anything: "goes", n: 1.5 } }
+    ini has ordered [
+      IniWrite with IniWrite { section: "collection:notes", key: "n1", json: { anything: "goes", n: 1.5, _t: 1793275200000, _d: "dev1" } },
+      IniWrite with IniWrite { section: "index", key: "collections", json: ["notes"] },
+      IniWrite with IniWrite { section: "index", key: "notes", json: ["n1"] },
+      IniWrite with IniWrite { section: "index", key: "hashes", json: { "notes/n1": any string } },
+      IniWrite with IniWrite { section: "pending", key: "notes/n1", json: { op: "create", fields: { anything: "goes", n: 1.5 }, at: 1793275200000 } },
+      IniDelete with IniDelete { section: "pending", key: "notes/n1" }
+    ]
+    firebase has ordered [
+      set with CloudSet { path: "users/uid-streamer/collections/notes/n1", value: { anything: "goes", n: 1.5, _t: 1793275200000, _d: "dev1" } }
+    ]
+    sammi has ordered [
+      SetVariable with SetVariable { name: "fb_notes", value: { n1: { anything: "goes", n: 1.5 } } },
+      Trigger with Trigger { name: "Firebase: Document Created", pullData: { eventId: any uuid, eventType: "DocumentCreated", timestamp: any timestamp, version: 1, source: "local", deviceId: "dev1", collection: "notes", id: "n1", causationId: any string } }
+    ]
+
+scenario "rejects EXISTS when the id is already in the mirror":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/collections/viewers/12345678", value: { name: "alice", points: 10, _t: 1793275150000, _d: "dev2" } } ]
+    execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
+  when: CreateDocument { collection: "viewers", id: "12345678", fields: "{\"name\": \"alice\"}" }
+  predict rejection EXISTS:
+    response ERR CommandError { code: "EXISTS", answer: "error: exists viewers/12345678" }
+    ini has []
+    firebase has []
+    sammi has []
+
+scenario "rejects UNKNOWN_FIELD on a strict collection":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/meta/schema/hue", value: { fields: ["ip", "scene_1"], strict: true, two_way: true, _t: 1793275100000 } } ]
+    execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
+  when: CreateDocument { collection: "hue", id: "settings", fields: "{\"ip\": \"1.2.3.4\", \"colour\": \"red\"}" }
+  predict rejection UNKNOWN_FIELD:
+    response ERR CommandError { code: "UNKNOWN_FIELD", answer: "error: unknown field colour" }
+    ini has []
+    firebase has []
+    sammi has []
+
+scenario "rejects BAD_FIELD when the box is not JSON":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" } ]
+    execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
+  when: CreateDocument { collection: "hue", id: "settings", fields: "ip=1.2.3.4" }
+  predict rejection BAD_FIELD:
+    response ERR CommandError { code: "BAD_FIELD", answer: "error: bad field" }
+    ini has []
+    firebase has []
+    sammi has []
+
+scenario "rejects BAD_FIELD when a value is a nested object":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" } ]
+    execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
+  when: CreateDocument { collection: "hue", id: "settings", fields: "{\"ip\": {\"v4\": \"1.2.3.4\"}}" }
+  predict rejection BAD_FIELD:
+    response ERR CommandError { code: "BAD_FIELD", answer: "error: bad field ip" }
+    ini has []
+    firebase has []
+    sammi has []
+
+scenario "rejects BAD_FIELD when a value is a boolean":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" } ]
+    execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
+  when: CreateDocument { collection: "hue", id: "settings", fields: "{\"on\": true}" }
+  predict rejection BAD_FIELD:
+    response ERR CommandError { code: "BAD_FIELD", answer: "error: bad field on" }
+    ini has []
+    firebase has []
+    sammi has []
+
+scenario "rejects BAD_FIELD when a field name is reserved":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" } ]
+    execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
+  when: CreateDocument { collection: "hue", id: "settings", fields: "{\"_t\": 1}" }
+  predict rejection BAD_FIELD:
+    response ERR CommandError { code: "BAD_FIELD", answer: "error: bad field _t" }
+    ini has []
+    firebase has []
+    sammi has []
+
+scenario "rejects BAD_FIELD when the box is a JSON array":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" } ]
+    execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
+  when: CreateDocument { collection: "hue", id: "settings", fields: "[1,2]" }
+  predict rejection BAD_FIELD:
+    response ERR CommandError { code: "BAD_FIELD", answer: "error: bad field" }
+    ini has []
+    firebase has []
+    sammi has []
+
+scenario "rejects TOO_LARGE when a field exceeds 4 KB":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" } ]
+    execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
+  when: CreateDocument { collection: "notes", id: "n1", fields: "{\"body\": \"yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy\"}" }
+  predict rejection TOO_LARGE:
+    response ERR CommandError { code: "TOO_LARGE", answer: "error: too large body" }
+    ini has []
+    firebase has []
+    sammi has []
+
+scenario "rejects TOO_LARGE when the document exceeds 8 KB":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" } ]
+    execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
+  when: CreateDocument { collection: "notes", id: "n1", fields: "{\"a\": \"yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy\", \"b\": \"yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy\", \"c\": \"yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy\"}" }
+  predict rejection TOO_LARGE:
+    response ERR CommandError { code: "TOO_LARGE", answer: "error: too large notes/n1" }
+    ini has []
+    firebase has []
+    sammi has []
+
+scenario "rejects NOT_CONNECTED when nothing is connected":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+  when: CreateDocument { collection: "viewers", id: "12345678", fields: "{\"name\": \"alice\"}" }
+  predict rejection NOT_CONNECTED:
+    response ERR CommandError { code: "NOT_CONNECTED", answer: "error: not connected" }
+    ini has []
+    firebase has []
+    sammi has []
+
+scenario "rejects BAD_COLLECTION_NAME for a name with a capital letter":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" } ]
+    execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
+  when: CreateDocument { collection: "Viewers", id: "12345678", fields: "{\"name\": \"alice\"}" }
+  predict rejection BAD_COLLECTION_NAME:
+    response ERR CommandError { code: "BAD_COLLECTION_NAME", answer: "error: bad collection name Viewers" }
+    ini has []
+    firebase has []
+    sammi has []
+
+scenario "rejects BAD_COLLECTION_NAME for a reserved name":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" } ]
+    execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
+  when: CreateDocument { collection: "_meta", id: "12345678", fields: "{\"name\": \"alice\"}" }
+  predict rejection BAD_COLLECTION_NAME:
+    response ERR CommandError { code: "BAD_COLLECTION_NAME", answer: "error: bad collection name _meta" }
+    ini has []
+    firebase has []
+    sammi has []
+
+scenario "rejects BAD_ID for an id containing a slash":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" } ]
+    execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
+  when: CreateDocument { collection: "viewers", id: "a/b", fields: "{\"name\": \"alice\"}" }
+  predict rejection BAD_ID:
+    response ERR CommandError { code: "BAD_ID", answer: "error: bad id a/b" }
+    ini has []
+    firebase has []
+    sammi has []
+
+scenario "rejects BAD_ID for an id over 64 characters":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" } ]
+    execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
+  when: CreateDocument { collection: "viewers", id: "iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii", fields: "{\"name\": \"alice\"}" }
+  predict rejection BAD_ID:
+    response ERR CommandError { code: "BAD_ID", answer: "error: bad id iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii" }
+    ini has []
+    firebase has []
+    sammi has []

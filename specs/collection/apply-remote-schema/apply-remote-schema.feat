@@ -1,0 +1,72 @@
+feat 1.0
+
+# SPEC-COL-003 — Apply Remote Schema
+# Derived from model/contexts/sammi-firebase.moment, docs/10-domain-model.md and the ADRs in docs/adr/.
+# Harness surfaces (SF-ADR-016): ini = firebase.ini writes · firebase = the user's Realtime Database · sammi = SAMMI variables and triggers.
+
+spec SPEC-COL-003 "Apply Remote Schema"
+context SammiFirebase
+aggregate Collection
+type command
+status agreed
+
+construct:
+  handler at src/features/apply-remote-schema/handler.ts
+  touches src/features/apply-remote-schema/**
+  Issued by the listener when meta/schema/<name> changes on another machine (H1). Merge newest-wins into [schema]; fire CollectionDefined with source remote. Never writes to the cloud.
+
+enforce:
+  apply only when the remote _t is newer than the local declaration
+  rejects REMOTE_SCHEMA_OLDER when the remote declaration is not newer than the local one
+  rejects NOT_CONNECTED when no connection is established
+  rejects REMOTE_SCHEMA_OLDER when the remote declaration is not newer than the local one
+  rejects NOT_CONNECTED when no connection is established
+
+contract:
+  input Input
+  response CommandResponse
+  error CommandError
+  record IniWrite
+  record CloudNode
+  record AuthUser
+  record Trigger
+
+scenario "applies a newer remote declaration":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/meta/schema/hue", value: { fields: ["ip"], strict: true, two_way: true, _t: 1793275100000 } } ]
+    execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
+  when: ApplyRemoteSchema { name: "hue", fields: ["ip", "scene_1"], strict: true, twoWay: false, remoteTimestamp: 1793275199000 }
+  predict success:
+    response OK CommandResponse { answer: "ok" }
+    ini has ordered [
+      IniWrite with IniWrite { section: "schema", key: "hue", json: { fields: ["ip", "scene_1"], strict: true, two_way: false, _t: 1793275199000 } }
+    ]
+    firebase has []
+    sammi has ordered [
+      Trigger with Trigger { name: "Firebase: Collection Defined", pullData: { eventId: any uuid, eventType: "CollectionDefined", timestamp: any timestamp, version: 1, source: "remote", deviceId: "dev1", collection: "hue", strict: true, twoWay: false } }
+    ]
+
+scenario "rejects REMOTE_SCHEMA_OLDER when the local declaration is newer":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/meta/schema/hue", value: { fields: ["ip"], strict: true, two_way: true, _t: 1793275199000 } } ]
+    execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
+  when: ApplyRemoteSchema { name: "hue", fields: ["ip"], strict: false, twoWay: true, remoteTimestamp: 1793275100000 }
+  predict rejection REMOTE_SCHEMA_OLDER:
+    response ERR CommandError { code: "REMOTE_SCHEMA_OLDER", answer: "error: remote schema older" }
+    ini has []
+    firebase has []
+    sammi has []
+
+scenario "rejects NOT_CONNECTED when nothing is connected":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+  when: ApplyRemoteSchema { name: "hue", fields: ["ip"], strict: false, twoWay: true, remoteTimestamp: 1793275200000 }
+  predict rejection NOT_CONNECTED:
+    response ERR CommandError { code: "NOT_CONNECTED", answer: "error: not connected" }
+    ini has []
+    firebase has []
+    sammi has []

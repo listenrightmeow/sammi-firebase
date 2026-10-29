@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/listenrightmeow/sammi-firebase/contracts/collection-variable.json",
+  "title": "CollectionVariable",
+  "description": "The global SAMMI object variable fb_<collection> the extension keeps current, and the delta the poller derives from a two-way collection (SF-ADR-007).",
+  "$defs": {
+    "Variable": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9_-]{1,64}$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "propertyNames": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,31}$"
+        },
+        "additionalProperties": {
+          "oneOf": [
+            {
+              "type": "string",
+              "maxLength": 4096
+            },
+            {
+              "type": "number"
+            }
+          ]
+        },
+        "description": "a document without _t and _d"
+      }
+    },
+    "Delta": {
+      "type": "object",
+      "required": [
+        "collection",
+        "id",
+        "field",
+        "deleted"
+      ],
+      "properties": {
+        "collection": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,31}$"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,64}$"
+        },
+        "field": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,31}$"
+        },
+        "value": {
+          "oneOf": [
+            {
+              "type": "string",
+              "maxLength": 4096
+            },
+            {
+              "type": "number"
+            }
+          ]
+        },
+        "deleted": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/Variable"
+    },
+    {
+      "$ref": "#/$defs/Delta"
+    }
+  ]
+}

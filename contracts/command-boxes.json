@@ -1,0 +1,457 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/listenrightmeow/sammi-firebase/contracts/command-boxes.json",
+  "title": "CommandBoxes",
+  "description": "The box payload SAMMI sends to the extension for each command and query, exactly as ExecuteCommand delivers it (SF-ADR-005). Every command JSON in a shipped deck carries async: 0.",
+  "$defs": {
+    "Base": {
+      "type": "object",
+      "required": [
+        "FromButton",
+        "instanceId"
+      ],
+      "properties": {
+        "FromButton": {
+          "type": "string"
+        },
+        "instanceId": {
+          "type": "integer"
+        }
+      }
+    },
+    "Connect": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        },
+        {
+          "description": "Deck command: resume-only. No config, email or password boxes; the tab passes those to the same handler (SF-ADR-003 \u00a75).",
+          "properties": {
+            "result": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "result"
+          ]
+        }
+      ]
+    },
+    "Disconnect": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        },
+        {
+          "properties": {
+            "result": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "result"
+          ]
+        }
+      ]
+    },
+    "Reconcile": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        },
+        {
+          "properties": {
+            "result": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "result"
+          ]
+        }
+      ]
+    },
+    "DefineCollection": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        },
+        {
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "fields": {
+              "type": "string",
+              "description": "comma-separated"
+            },
+            "strict": {
+              "type": "boolean"
+            },
+            "twoWay": {
+              "type": "boolean"
+            },
+            "result": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name",
+            "result"
+          ]
+        }
+      ]
+    },
+    "UndefineCollection": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        },
+        {
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "result": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name",
+            "result"
+          ]
+        }
+      ]
+    },
+    "CreateDocument": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        },
+        {
+          "properties": {
+            "collection": {
+              "type": "string"
+            },
+            "id": {
+              "type": "string"
+            },
+            "fields": {
+              "type": "string",
+              "description": "JSON object text"
+            },
+            "result": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "collection",
+            "fields",
+            "result"
+          ]
+        }
+      ]
+    },
+    "ReplaceDocument": {
+      "$ref": "#/$defs/CreateDocument"
+    },
+    "UpdateDocument": {
+      "$ref": "#/$defs/CreateDocument"
+    },
+    "SetField": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        },
+        {
+          "properties": {
+            "collection": {
+              "type": "string"
+            },
+            "id": {
+              "type": "string"
+            },
+            "field": {
+              "type": "string"
+            },
+            "value": {
+              "type": "string"
+            },
+            "result": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "collection",
+            "id",
+            "field",
+            "value",
+            "result"
+          ]
+        }
+      ]
+    },
+    "IncrementField": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        },
+        {
+          "properties": {
+            "collection": {
+              "type": "string"
+            },
+            "id": {
+              "type": "string"
+            },
+            "field": {
+              "type": "string"
+            },
+            "by": {
+              "type": "string"
+            },
+            "result": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "collection",
+            "id",
+            "field",
+            "by",
+            "result"
+          ]
+        }
+      ]
+    },
+    "DeleteField": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        },
+        {
+          "properties": {
+            "collection": {
+              "type": "string"
+            },
+            "id": {
+              "type": "string"
+            },
+            "field": {
+              "type": "string"
+            },
+            "result": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "collection",
+            "id",
+            "field",
+            "result"
+          ]
+        }
+      ]
+    },
+    "DeleteDocument": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        },
+        {
+          "properties": {
+            "collection": {
+              "type": "string"
+            },
+            "id": {
+              "type": "string"
+            },
+            "result": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "collection",
+            "id",
+            "result"
+          ]
+        }
+      ]
+    },
+    "GetDocument": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        },
+        {
+          "properties": {
+            "collection": {
+              "type": "string"
+            },
+            "id": {
+              "type": "string"
+            },
+            "unpackPrefix": {
+              "type": "string"
+            },
+            "result": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "collection",
+            "id",
+            "result"
+          ]
+        }
+      ]
+    },
+    "GetField": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        },
+        {
+          "properties": {
+            "collection": {
+              "type": "string"
+            },
+            "id": {
+              "type": "string"
+            },
+            "field": {
+              "type": "string"
+            },
+            "default": {
+              "type": "string"
+            },
+            "result": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "collection",
+            "id",
+            "field",
+            "result"
+          ]
+        }
+      ]
+    },
+    "DocumentExists": {
+      "$ref": "#/$defs/DeleteDocument"
+    },
+    "ListDocuments": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        },
+        {
+          "properties": {
+            "collection": {
+              "type": "string"
+            },
+            "result": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "collection",
+            "result"
+          ]
+        }
+      ]
+    },
+    "CountDocuments": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        },
+        {
+          "properties": {
+            "collection": {
+              "type": "string"
+            },
+            "field": {
+              "type": "string"
+            },
+            "operator": {
+              "enum": [
+                "==",
+                "!=",
+                "<",
+                "<=",
+                ">",
+                ">=",
+                "contains",
+                "exists"
+              ]
+            },
+            "value": {
+              "type": "string"
+            },
+            "result": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "collection",
+            "result"
+          ]
+        }
+      ]
+    },
+    "QueryDocuments": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        },
+        {
+          "properties": {
+            "collection": {
+              "type": "string"
+            },
+            "field": {
+              "type": "string"
+            },
+            "operator": {
+              "enum": [
+                "==",
+                "!=",
+                "<",
+                "<=",
+                ">",
+                ">=",
+                "contains",
+                "exists"
+              ]
+            },
+            "value": {
+              "type": "string"
+            },
+            "orderBy": {
+              "type": "string"
+            },
+            "limit": {
+              "type": "string"
+            },
+            "result": {
+              "type": "string"
+            },
+            "descending": {
+              "type": "string",
+              "description": "'true' to order descending"
+            }
+          },
+          "required": [
+            "collection",
+            "result"
+          ]
+        }
+      ]
+    },
+    "GetStatus": {
+      "$ref": "#/$defs/Disconnect"
+    }
+  }
+}

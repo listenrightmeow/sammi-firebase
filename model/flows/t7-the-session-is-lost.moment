@@ -1,0 +1,38 @@
+// T7 — The session is lost
+// Source: NDD board uXjVEUQjpYg= thread T7 · docs/03-user-journey.md · rulings of 2026-10-29.
+// Part of the model directory; validate with `moment parse model/` (project mode) and `moment test` on this file.
+
+flow "T7 — The session is lost (O7)"
+  description "OBS starts without a session: the record is restored from the ini, or the streamer types the password once; buttons keep working from the mirror throughout"
+
+  lane streamer "Streamer" [External]
+  lane connection "SammiFirebase" [Core]
+  lane auth "FirebaseAuth" [External]
+  branch-lane refusals "Refusals & Edge Cases"
+
+  moment "M1 · OBS starts, no session"
+    // [auth] ResumeSession   (external lane: project mode cannot resolve nodes on it; kept as narrative)
+    connection: SessionRecord
+
+  moment "Record gone or revoked" [branch]
+    when SessionRestored [connection]
+      connection: Connected
+    when SessionRevoked [refusals]
+      connection: RecordSessionLoss
+      refusals: Disconnected
+        returns-to "M1 · OBS starts, no session"
+    when NoRecordAnywhere [refusals]
+      refusals: TabSaysConnectNeeded
+        returns-to "M1 · OBS starts, no session"
+
+  moment "M2 · Buttons keep working"
+    connection: GetDocument
+
+  moment "M3 · You type the password once"
+    // [streamer] ClickConnect   (external lane: project mode cannot resolve nodes on it; kept as narrative)
+    //   triggers Connect
+    connection: Connect
+    connection: Connected
+
+  moment "M4 · Back to normal"
+    connection: GetStatus [terminal]

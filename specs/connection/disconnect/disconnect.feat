@@ -1,0 +1,60 @@
+feat 1.0
+
+# SPEC-CON-002 — Disconnect
+# Derived from model/contexts/sammi-firebase.moment, docs/10-domain-model.md and the ADRs in docs/adr/.
+# Harness surfaces (SF-ADR-016): ini = firebase.ini writes · firebase = the user's Realtime Database · sammi = SAMMI variables and triggers.
+
+spec SPEC-CON-002 "Disconnect"
+context SammiFirebase
+aggregate Connection
+type command
+status agreed
+
+construct:
+  handler at src/features/disconnect/handler.ts
+  touches src/features/disconnect/**
+  Sign out of the SDK, stop the listener and the poller, delete [connection] session, keep the mirror and the config so connecting again is one step (SF-ADR-003 §Disconnect).
+  Fire Disconnected with reason user.
+
+enforce:
+  delete only the session record from firebase.ini; never the config, the schema or any collection
+  fire Disconnected with reason user
+  rejects NOT_CONNECTED when no connection is established
+  rejects NOT_CONNECTED when no connection is established
+
+contract:
+  input Input
+  response CommandResponse
+  error CommandError
+  record IniWrite
+  record IniDelete
+  record CloudNode
+  record AuthUser
+  record Trigger
+
+scenario "disconnects, forgets the session, keeps the mirror":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/collections/hue/settings", value: { ip: "192.168.1.20", scene_1: "3f2c", _t: 1793275150000, _d: "dev2" } } ]
+    execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
+  when: Disconnect { }
+  predict success:
+    response OK CommandResponse { answer: "ok" }
+    ini has ordered [
+      IniDelete with IniDelete { section: "connection", key: "session" }
+    ]
+    firebase has []
+    sammi has ordered [
+      Trigger with Trigger { name: "Firebase: Disconnected", pullData: { eventId: any uuid, eventType: "Disconnected", timestamp: any timestamp, version: 1, source: "local", deviceId: "dev1", reason: "user" } }
+    ]
+
+scenario "rejects NOT_CONNECTED when nothing is connected":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+  when: Disconnect { }
+  predict rejection NOT_CONNECTED:
+    response ERR CommandError { code: "NOT_CONNECTED", answer: "error: not connected" }
+    ini has []
+    firebase has []
+    sammi has []

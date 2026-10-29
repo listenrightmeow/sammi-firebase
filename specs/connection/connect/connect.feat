@@ -1,0 +1,281 @@
+feat 1.0
+
+# SPEC-CON-001 — Connect
+# Derived from model/contexts/sammi-firebase.moment, docs/10-domain-model.md and the ADRs in docs/adr/.
+# Harness surfaces (SF-ADR-016): ini = firebase.ini writes · firebase = the user's Realtime Database · sammi = SAMMI variables and triggers.
+
+spec SPEC-CON-001 "Connect"
+context SammiFirebase
+aggregate Connection
+type command
+status agreed
+
+construct:
+  handler at src/features/connect/handler.ts
+  touches src/features/connect/**
+  Sign in with the stored or supplied FirebaseConfig and the email/password through the FirebaseAuth gateway; resume from [connection] session when present and no password is given (SF-ADR-003).
+  On success: store the session record and email in firebase.ini [connection], read meta/schema and collections/ once, merge the schema newest-wins, reconcile per mirror rules 2, 4, 6 and 7, subscribe, rewrite every fb_<collection> variable, fire Connected then MirrorReconciled (the ReconcileOnConnected policy, SF-ADR-016 §3).
+  A config supplied in the box replaces the stored one; validate it against contracts/firebase-config.json before touching the SDK (SF-ADR-002).
+  A refused sign-in is recorded as ConnectionFailed and surfaced as the trigger; nothing is written (SF-ADR-006, SF-ADR-013).
+
+enforce:
+  validate the config has apiKey, authDomain, projectId, appId and databaseURL; name the missing key in the answer
+  refuse a second Connect while Connected
+  on success write [connection] session and email, rewrite fb_<collection> for every collection in the cloud, fire Connected with the document count, then fire MirrorReconciled with pushed/applied/dropped
+  on a refused credential fire ConnectionFailed with the reason and write nothing
+  rejects CONFIG_INCOMPLETE when a required config key is missing
+  rejects ALREADY_CONNECTED when a connection is already established on this Bridge
+  rejects INVALID_CONFIG when the config block is not a Firebase web-app config
+
+contract:
+  input Input
+  response CommandResponse
+  error CommandError
+  record IniWrite
+  record IniDelete
+  record CloudSet
+  record CloudUpdate
+  record CloudNode
+  record AuthUser
+  record AuthProvider
+  record AuthProject
+  record SetVariable
+  record Trigger
+
+scenario "connects with stored config, reconciles two documents from the cloud, fires Connected then MirrorReconciled":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/meta/schema/hue", value: { fields: ["ip", "scene_1"], strict: true, two_way: true, _t: 1793275100000 } }, node with CloudNode { path: "users/uid-streamer/collections/hue/settings", value: { ip: "192.168.1.20", scene_1: "3f2c", _t: 1793275150000, _d: "dev2" } }, node with CloudNode { path: "users/uid-streamer/collections/counters/deaths", value: { value: 7, _t: 1793275160000, _d: "dev2" } } ]
+  when: Connect { email: "streamer@example.com", password: "correct-horse-battery" }
+  predict success:
+    response OK CommandResponse { answer: "ok", status: { state: "Connected", email: "streamer@example.com", projectId: "sammi-probe", documents: 2, pending: 0 } }
+    ini has ordered [
+      IniWrite with IniWrite { section: "connection", key: "session", value: any string },
+      IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" },
+      IniWrite with IniWrite { section: "schema", key: "hue", json: { fields: ["ip", "scene_1"], strict: true, two_way: true, _t: 1793275100000 } },
+      IniWrite with IniWrite { section: "collection:hue", key: "settings", json: { ip: "192.168.1.20", scene_1: "3f2c", _t: 1793275150000, _d: "dev2" } },
+      IniWrite with IniWrite { section: "collection:counters", key: "deaths", json: { value: 7, _t: 1793275160000, _d: "dev2" } },
+      IniWrite with IniWrite { section: "index", key: "collections", json: ["counters", "hue"] },
+      IniWrite with IniWrite { section: "index", key: "counters", json: ["deaths"] },
+      IniWrite with IniWrite { section: "index", key: "hue", json: ["settings"] },
+      IniWrite with IniWrite { section: "index", key: "hashes", json: { "hue/settings": any string, "counters/deaths": any string } },
+      IniWrite with IniWrite { section: "index", key: "last_sync", value: "1793275200000" }
+    ]
+    firebase has ordered [
+      update with CloudUpdate { path: "users/uid-streamer/meta/devices/dev1", fields: { name: any string, lastSeen: 1793275200000 } }
+    ]
+    sammi has ordered [
+      SetVariable with SetVariable { name: "fb_counters", value: { deaths: { value: 7 } } },
+      SetVariable with SetVariable { name: "fb_hue", value: { settings: { ip: "192.168.1.20", scene_1: "3f2c" } } },
+      Trigger with Trigger { name: "Firebase: Connected", pullData: { eventId: any uuid, eventType: "Connected", timestamp: any timestamp, version: 1, source: "local", deviceId: "dev1", email: "streamer@example.com", projectId: "sammi-probe", documents: 2 } },
+      Trigger with Trigger { name: "Firebase: Mirror Reconciled", pullData: { eventId: any uuid, eventType: "MirrorReconciled", timestamp: any timestamp, version: 1, source: "local", deviceId: "dev1", pushed: 0, applied: 2, dropped: 0, cause: "connect" } }
+    ]
+
+scenario "a config pasted in the box replaces the stored one and is written to [connection]":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" } ]
+  when: Connect { config: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" }, email: "streamer@example.com", password: "correct-horse-battery" }
+  predict success:
+    response OK CommandResponse { answer: "ok", status: { state: "Connected", documents: 0, pending: 0 } }
+    ini has ordered [
+      IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } },
+      IniWrite with IniWrite { section: "connection", key: "session", value: any string },
+      IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" },
+      IniWrite with IniWrite { section: "index", key: "collections", json: [] },
+      IniWrite with IniWrite { section: "index", key: "hashes", json: { } },
+      IniWrite with IniWrite { section: "index", key: "last_sync", value: "1793275200000" }
+    ]
+    firebase has ordered [
+      update with CloudUpdate { path: "users/uid-streamer/meta/devices/dev1", fields: { name: any string, lastSeen: 1793275200000 } }
+    ]
+    sammi has ordered [
+      Trigger with Trigger { name: "Firebase: Connected", pullData: { eventId: any uuid, eventType: "Connected", timestamp: any timestamp, version: 1, source: "local", deviceId: "dev1", email: "streamer@example.com", projectId: "sammi-probe", documents: 0 } },
+      Trigger with Trigger { name: "Firebase: Mirror Reconciled", pullData: { eventId: any uuid, eventType: "MirrorReconciled", timestamp: any timestamp, version: 1, source: "local", deviceId: "dev1", pushed: 0, applied: 0, dropped: 0, cause: "connect" } }
+    ]
+
+scenario "resumes silently from the stored session record when no password is given":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" }, IniWrite with IniWrite { section: "connection", key: "session", value: "opaque-sdk-record-for-uid-streamer" } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" } ]
+  when: Connect { }
+  predict success:
+    response OK CommandResponse { answer: "ok", status: { state: "Connected", email: "streamer@example.com" } }
+    ini has ordered [
+      IniWrite with IniWrite { section: "connection", key: "session", value: any string },
+      IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" },
+      IniWrite with IniWrite { section: "index", key: "collections", json: [] },
+      IniWrite with IniWrite { section: "index", key: "hashes", json: { } },
+      IniWrite with IniWrite { section: "index", key: "last_sync", value: "1793275200000" }
+    ]
+    firebase has ordered [
+      update with CloudUpdate { path: "users/uid-streamer/meta/devices/dev1", fields: { name: any string, lastSeen: 1793275200000 } }
+    ]
+    sammi has ordered [
+      Trigger with Trigger { name: "Firebase: Connected", pullData: { eventId: any uuid, eventType: "Connected", timestamp: any timestamp, version: 1, source: "local", deviceId: "dev1", email: "streamer@example.com", projectId: "sammi-probe", documents: 0 } },
+      Trigger with Trigger { name: "Firebase: Mirror Reconciled", pullData: { eventId: any uuid, eventType: "MirrorReconciled", timestamp: any timestamp, version: 1, source: "local", deviceId: "dev1", pushed: 0, applied: 0, dropped: 0, cause: "connect" } }
+    ]
+
+scenario "pushes a pending write left from an offline session, then reconciles":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" }, IniWrite with IniWrite { section: "collection:counters", key: "deaths", json: { value: 8, _t: 1793275170000, _d: "dev1" } }, IniWrite with IniWrite { section: "index", key: "collections", json: ["counters"] }, IniWrite with IniWrite { section: "index", key: "counters", json: ["deaths"] }, IniWrite with IniWrite { section: "pending", key: "counters/deaths", json: { op: "set_field", field: "value", value: 8, at: 1793275170000 } } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/collections/counters/deaths", value: { value: 7, _t: 1793275160000, _d: "dev2" } } ]
+  when: Connect { email: "streamer@example.com", password: "correct-horse-battery" }
+  predict success:
+    response OK CommandResponse { answer: "ok", status: { state: "Connected", documents: 1, pending: 0 } }
+    ini has ordered [
+      IniWrite with IniWrite { section: "connection", key: "session", value: any string },
+      IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" },
+      IniDelete with IniDelete { section: "pending", key: "counters/deaths" },
+      IniWrite with IniWrite { section: "collection:counters", key: "deaths", json: { value: 8, _t: 1793275200000, _d: "dev1" } },
+      IniWrite with IniWrite { section: "index", key: "collections", json: ["counters"] },
+      IniWrite with IniWrite { section: "index", key: "counters", json: ["deaths"] },
+      IniWrite with IniWrite { section: "index", key: "hashes", json: { "counters/deaths": any string } },
+      IniWrite with IniWrite { section: "index", key: "last_sync", value: "1793275200000" }
+    ]
+    firebase has ordered [
+      update with CloudUpdate { path: "users/uid-streamer/collections/counters/deaths", fields: { value: 8, _t: 1793275200000, _d: "dev1" } },
+      update with CloudUpdate { path: "users/uid-streamer/meta/devices/dev1", fields: { name: any string, lastSeen: 1793275200000 } }
+    ]
+    sammi has ordered [
+      SetVariable with SetVariable { name: "fb_counters", value: { deaths: { value: 8 } } },
+      Trigger with Trigger { name: "Firebase: Connected", pullData: { eventId: any uuid, eventType: "Connected", timestamp: any timestamp, version: 1, source: "local", deviceId: "dev1", email: "streamer@example.com", projectId: "sammi-probe", documents: 1 } },
+      Trigger with Trigger { name: "Firebase: Mirror Reconciled", pullData: { eventId: any uuid, eventType: "MirrorReconciled", timestamp: any timestamp, version: 1, source: "local", deviceId: "dev1", pushed: 1, applied: 0, dropped: 0, cause: "connect" } }
+    ]
+
+scenario "catches up a document edited in the ini while the Bridge was closed; local wins (rule 7, H3)":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" }, IniWrite with IniWrite { section: "collection:hue", key: "settings", json: { ip: "10.0.0.9", scene_1: "3f2c", _t: 1793275150000, _d: "dev2" } }, IniWrite with IniWrite { section: "index", key: "collections", json: ["hue"] }, IniWrite with IniWrite { section: "index", key: "hue", json: ["settings"] }, IniWrite with IniWrite { section: "index", key: "hashes", json: { "hue/settings": "stale-hash" } } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/collections/hue/settings", value: { ip: "192.168.1.77", scene_1: "3f2c", _t: 1793275190000, _d: "dev2" } } ]
+  when: Connect { email: "streamer@example.com", password: "correct-horse-battery" }
+  predict success:
+    response OK CommandResponse { answer: "ok", status: { state: "Connected", documents: 1, pending: 0 } }
+    ini has ordered [
+      IniWrite with IniWrite { section: "connection", key: "session", value: any string },
+      IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" },
+      IniWrite with IniWrite { section: "pending", key: "hue/settings", json: { op: "replace", fields: { ip: "10.0.0.9", scene_1: "3f2c" }, at: 1793275200000 } },
+      IniDelete with IniDelete { section: "pending", key: "hue/settings" },
+      IniWrite with IniWrite { section: "collection:hue", key: "settings", json: { ip: "10.0.0.9", scene_1: "3f2c", _t: 1793275200000, _d: "dev1" } },
+      IniWrite with IniWrite { section: "index", key: "collections", json: ["hue"] },
+      IniWrite with IniWrite { section: "index", key: "hue", json: ["settings"] },
+      IniWrite with IniWrite { section: "index", key: "hashes", json: { "hue/settings": any string } },
+      IniWrite with IniWrite { section: "index", key: "last_sync", value: "1793275200000" }
+    ]
+    firebase has ordered [
+      set with CloudSet { path: "users/uid-streamer/collections/hue/settings", value: { ip: "10.0.0.9", scene_1: "3f2c", _t: 1793275200000, _d: "dev1" } },
+      update with CloudUpdate { path: "users/uid-streamer/meta/devices/dev1", fields: { name: any string, lastSeen: 1793275200000 } }
+    ]
+    sammi has ordered [
+      SetVariable with SetVariable { name: "fb_hue", value: { settings: { ip: "10.0.0.9", scene_1: "3f2c" } } },
+      Trigger with Trigger { name: "Firebase: Document Replaced", pullData: { eventId: any uuid, eventType: "DocumentReplaced", timestamp: any timestamp, version: 1, source: "local", deviceId: "dev1", collection: "hue", id: "settings", fields: matching "10.0.0.9", previous: matching "192.168.1.77" } },
+      Trigger with Trigger { name: "Firebase: Connected", pullData: { eventId: any uuid, eventType: "Connected", timestamp: any timestamp, version: 1, source: "local", deviceId: "dev1", email: "streamer@example.com", projectId: "sammi-probe", documents: 1 } },
+      Trigger with Trigger { name: "Firebase: Mirror Reconciled", pullData: { eventId: any uuid, eventType: "MirrorReconciled", timestamp: any timestamp, version: 1, source: "local", deviceId: "dev1", pushed: 1, applied: 0, dropped: 0, cause: "connect" } }
+    ]
+
+scenario "leaves an ini document that is not valid JSON alone and names it (rule 7)":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" }, IniWrite with IniWrite { section: "collection:hue", key: "settings", value: "{not json" }, IniWrite with IniWrite { section: "index", key: "collections", json: ["hue"] }, IniWrite with IniWrite { section: "index", key: "hue", json: ["settings"] }, IniWrite with IniWrite { section: "index", key: "hashes", json: { "hue/settings": "stale-hash" } } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/collections/hue/settings", value: { ip: "192.168.1.20", scene_1: "3f2c", _t: 1793275150000, _d: "dev2" } } ]
+  when: Connect { email: "streamer@example.com", password: "correct-horse-battery" }
+  predict success:
+    response OK CommandResponse { answer: "ok", status: { state: "Connected", documents: 1, pending: 0, invalidIni: ["hue/settings"] } }
+    ini has ordered [
+      IniWrite with IniWrite { section: "connection", key: "session", value: any string },
+      IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" },
+      IniWrite with IniWrite { section: "collection:hue", key: "settings", json: { ip: "192.168.1.20", scene_1: "3f2c", _t: 1793275150000, _d: "dev2" } },
+      IniWrite with IniWrite { section: "index", key: "collections", json: ["hue"] },
+      IniWrite with IniWrite { section: "index", key: "hue", json: ["settings"] },
+      IniWrite with IniWrite { section: "index", key: "hashes", json: { "hue/settings": any string } },
+      IniWrite with IniWrite { section: "index", key: "last_sync", value: "1793275200000" }
+    ]
+    firebase has ordered [
+      update with CloudUpdate { path: "users/uid-streamer/meta/devices/dev1", fields: { name: any string, lastSeen: 1793275200000 } }
+    ]
+    sammi has ordered [
+      SetVariable with SetVariable { name: "fb_hue", value: { settings: { ip: "192.168.1.20", scene_1: "3f2c" } } },
+      Trigger with Trigger { name: "Firebase: Connected", pullData: { eventId: any uuid, eventType: "Connected", timestamp: any timestamp, version: 1, source: "local", deviceId: "dev1", email: "streamer@example.com", projectId: "sammi-probe", documents: 1 } },
+      Trigger with Trigger { name: "Firebase: Mirror Reconciled", pullData: { eventId: any uuid, eventType: "MirrorReconciled", timestamp: any timestamp, version: 1, source: "local", deviceId: "dev1", pushed: 0, applied: 1, dropped: 0, cause: "connect" } }
+    ]
+
+scenario "rejects CONFIG_INCOMPLETE naming the missing key":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" } ]
+  when: Connect { config: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000" }, email: "streamer@example.com", password: "correct-horse-battery" }
+  predict rejection CONFIG_INCOMPLETE:
+    response ERR CommandError { code: "CONFIG_INCOMPLETE", answer: "error: config incomplete databaseURL" }
+    ini has []
+    firebase has []
+    sammi has []
+
+scenario "rejects INVALID_CONFIG when the block is not a Firebase web-app config":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" } ]
+  when: Connect { config: { apiKey: "short", authDomain: "example.com", projectId: "x", appId: "nope", databaseURL: "http://localhost" }, email: "streamer@example.com", password: "correct-horse-battery" }
+  predict rejection INVALID_CONFIG:
+    response ERR CommandError { code: "INVALID_CONFIG", answer: "error: invalid config" }
+    ini has []
+    firebase has []
+    sammi has []
+
+scenario "rejects ALREADY_CONNECTED on a second Connect":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" } ]
+    execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
+  when: Connect { email: "streamer@example.com", password: "correct-horse-battery" }
+  predict rejection ALREADY_CONNECTED:
+    response ERR CommandError { code: "ALREADY_CONNECTED", answer: "error: already connected" }
+    ini has []
+    firebase has []
+    sammi has []
+
+scenario "a wrong password is refused: ConnectionFailed fires and nothing is written":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" } ]
+  when: Connect { email: "streamer@example.com", password: "wrong" }
+  predict error CREDENTIALS_INVALID:
+    response ERR CommandError { code: "CREDENTIALS_INVALID", answer: "error: credentials invalid" }
+    ini has []
+    firebase has []
+    sammi has ordered [
+      Trigger with Trigger { name: "Firebase: Connection Failed", pullData: { eventId: any uuid, eventType: "ConnectionFailed", timestamp: any timestamp, version: 1, source: "local", deviceId: "dev1", reason: "credentials invalid" } }
+    ]
+
+scenario "an API key the project does not recognise is refused: ConnectionFailed names the setup step":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, project with AuthProject { apiKey: "AIzaSyADifferentProjectKey000000000000", projectId: "sammi-probe" } ]
+  when: Connect { email: "streamer@example.com", password: "correct-horse-battery" }
+  predict error API_KEY_INVALID:
+    response ERR CommandError { code: "API_KEY_INVALID", answer: "error: api key invalid" }
+    ini has []
+    firebase has []
+    sammi has ordered [
+      Trigger with Trigger { name: "Firebase: Connection Failed", pullData: { eventId: any uuid, eventType: "ConnectionFailed", timestamp: any timestamp, version: 1, source: "local", deviceId: "dev1", reason: "api key invalid" } }
+    ]
+
+scenario "a disabled Email/Password provider is refused with the setup step to redo":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, provider with AuthProvider { name: "password", enabled: false } ]
+  when: Connect { email: "streamer@example.com", password: "correct-horse-battery" }
+  predict error PROVIDER_DISABLED:
+    response ERR CommandError { code: "PROVIDER_DISABLED", answer: "error: provider disabled" }
+    ini has []
+    firebase has []
+    sammi has ordered [
+      Trigger with Trigger { name: "Firebase: Connection Failed", pullData: { eventId: any uuid, eventType: "ConnectionFailed", timestamp: any timestamp, version: 1, source: "local", deviceId: "dev1", reason: "provider disabled" } }
+    ]

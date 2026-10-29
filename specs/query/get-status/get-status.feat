@@ -1,0 +1,53 @@
+feat 1.0
+
+# SPEC-QRY-007 — Get Status
+# Derived from model/contexts/sammi-firebase.moment, docs/10-domain-model.md and the ADRs in docs/adr/.
+# Harness surfaces (SF-ADR-016): ini = firebase.ini writes · firebase = the user's Realtime Database · sammi = SAMMI variables and triggers.
+
+spec SPEC-QRY-007 "Get Status"
+context SammiFirebase
+aggregate Connection
+type query
+status agreed
+
+construct:
+  handler at src/features/get-status/handler.ts
+  touches src/features/get-status/**
+  Answer the ConnectionStatus projection as JSON: state, email, projectId, documents, pending, lastSync, deviceId. Works in every state so a deck can branch before it writes; never touches the network.
+
+enforce:
+  answer in Disconnected state without error
+  report pending as the size of [pending]
+  report documents as the number of mirrored documents
+
+contract:
+  input Input
+  response CommandResponse
+  record IniWrite
+  record CloudNode
+  record AuthUser
+
+scenario "reports a connected status":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/meta/schema/viewers", value: { fields: ["name", "points", "tier"], strict: false, two_way: true, _t: 1793275100000 } }, node with CloudNode { path: "users/uid-streamer/collections/viewers/12345678", value: { name: "alice", points: 10, tier: "gold", _t: 1793275150000, _d: "dev2" } }, node with CloudNode { path: "users/uid-streamer/collections/viewers/222", value: { name: "bob", points: 3, _t: 1793275150000, _d: "dev2" } }, node with CloudNode { path: "users/uid-streamer/collections/viewers/333", value: { name: "carol", points: 25, tier: "gold", _t: 1793275150000, _d: "dev2" } } ]
+    execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
+  when: GetStatus { }
+  predict success:
+    response OK CommandResponse { answer: any string, status: { state: "Connected", email: "streamer@example.com", projectId: "sammi-probe", documents: 3, pending: 0, lastSync: 1793275200000, deviceId: "dev1" } }
+
+scenario "reports Disconnected with the mirror still counted":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" }, IniWrite with IniWrite { section: "collection:counters", key: "deaths", json: { value: 7, _t: 1793275200000, _d: "dev1" } }, IniWrite with IniWrite { section: "index", key: "collections", json: ["counters"] }, IniWrite with IniWrite { section: "index", key: "counters", json: ["deaths"] }, IniWrite with IniWrite { section: "pending", key: "counters/deaths", json: { op: "increment", field: "value", by: 1, at: 1793275199000 } } ]
+  when: GetStatus { }
+  predict success:
+    response OK CommandResponse { answer: any string, status: { state: "Disconnected", email: "streamer@example.com", projectId: "sammi-probe", documents: 1, pending: 1, lastSync: absent, deviceId: "dev1" } }
+
+scenario "reports Disconnected with no config at all":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+  when: GetStatus { }
+  predict success:
+    response OK CommandResponse { answer: any string, status: { state: "Disconnected", email: absent, projectId: absent, documents: 0, pending: 0 } }

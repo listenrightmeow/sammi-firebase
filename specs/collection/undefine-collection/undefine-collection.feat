@@ -1,0 +1,76 @@
+feat 1.0
+
+# SPEC-COL-002 — Undefine Collection
+# Derived from model/contexts/sammi-firebase.moment, docs/10-domain-model.md and the ADRs in docs/adr/.
+# Harness surfaces (SF-ADR-016): ini = firebase.ini writes · firebase = the user's Realtime Database · sammi = SAMMI variables and triggers.
+
+spec SPEC-COL-002 "Undefine Collection"
+context SammiFirebase
+aggregate Collection
+type command
+status agreed
+
+construct:
+  handler at src/features/undefine-collection/handler.ts
+  touches src/features/undefine-collection/**
+  Remove the declaration from [schema] and from meta/schema; documents are untouched (SF-ADR-008). Fire CollectionUndefined.
+
+enforce:
+  never touch a [collection:<name>] section or any document
+  rejects NOT_DEFINED when the collection was never defined
+  rejects NOT_CONNECTED when no connection is established
+  rejects NOT_DEFINED when the collection was never defined
+  rejects NOT_CONNECTED when no connection is established
+
+contract:
+  input Input
+  response CommandResponse
+  error CommandError
+  record IniWrite
+  record IniDelete
+  record CloudRemove
+  record CloudNode
+  record AuthUser
+  record Trigger
+
+scenario "removes the declaration and leaves the documents":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/meta/schema/hue", value: { fields: ["ip", "scene_1"], strict: true, two_way: true, _t: 1793275100000 } }, node with CloudNode { path: "users/uid-streamer/collections/hue/settings", value: { ip: "192.168.1.20", scene_1: "3f2c", _t: 1793275150000, _d: "dev2" } } ]
+    execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
+  when: UndefineCollection { name: "hue" }
+  predict success:
+    response OK CommandResponse { answer: "ok" }
+    ini has ordered [
+      IniDelete with IniDelete { section: "schema", key: "hue" }
+    ]
+    firebase has ordered [
+      remove with CloudRemove { path: "users/uid-streamer/meta/schema/hue" }
+    ]
+    sammi has ordered [
+      Trigger with Trigger { name: "Firebase: Collection Undefined", pullData: { eventId: any uuid, eventType: "CollectionUndefined", timestamp: any timestamp, version: 1, source: "local", deviceId: "dev1", collection: "hue" } }
+    ]
+
+scenario "rejects NOT_DEFINED for an undeclared collection":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" } ]
+    execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
+  when: UndefineCollection { name: "hue" }
+  predict rejection NOT_DEFINED:
+    response ERR CommandError { code: "NOT_DEFINED", answer: "error: not defined hue" }
+    ini has []
+    firebase has []
+    sammi has []
+
+scenario "rejects NOT_CONNECTED when nothing is connected":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+  when: UndefineCollection { name: "hue" }
+  predict rejection NOT_CONNECTED:
+    response ERR CommandError { code: "NOT_CONNECTED", answer: "error: not connected" }
+    ini has []
+    firebase has []
+    sammi has []

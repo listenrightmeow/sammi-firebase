@@ -1,0 +1,59 @@
+// T2 — A deck keeps its records
+// Source: NDD board uXjVEUQjpYg= thread T2 · docs/03-user-journey.md · rulings of 2026-10-29.
+// Part of the model directory; validate with `moment parse model/` (project mode) and `moment test` on this file.
+
+flow "T2 — A deck keeps its records (O2)"
+  description "A deck declares its collection once; its settings are written through one command inside the streamer's own button and read back as a variable by any other button"
+
+  lane streamer "Streamer" [External]
+  lane data "SammiFirebase" [Core]
+  lane firebase "FirebaseDatabase" [External]
+  branch-lane refusals "Refusals & Edge Cases"
+
+  moment "M1 · The deck declares its shape"
+    // [streamer] RunStartupButton   (external lane: project mode cannot resolve nodes on it; kept as narrative)
+    //   triggers DefineCollection
+    data: DefineCollection
+    data: CollectionDefined
+    // [firebase] WriteDocument   (external lane: project mode cannot resolve nodes on it; kept as narrative)
+
+  moment "Bad name" [branch]
+    when NameValid [data]
+      data: CollectionDefined
+    when NameInvalid [refusals]
+      refusals: ErrorBadCollectionName
+        returns-to "M1 · The deck declares its shape"
+
+  moment "M2 · You save your settings"
+    // [streamer] PressSettingsButton   (external lane: project mode cannot resolve nodes on it; kept as narrative)
+    //   triggers ReplaceDocument   (the whole settings record; upsert, so the first press creates: DocumentCreated)
+    data: ReplaceDocument
+    data: DocumentReplaced
+    // [firebase] WriteDocument   (external lane: project mode cannot resolve nodes on it; kept as narrative)
+    data: WriteAck
+
+  moment "Unknown field" [branch]
+    when FieldsValid [data]
+      data: DocumentReplaced
+    when UnknownFieldInStrictCollection [refusals]
+      refusals: ErrorUnknownField
+        returns-to "M2 · You save your settings"
+    when DocumentTooLarge [refusals]
+      refusals: ErrorTooLarge
+        returns-to "M2 · You save your settings"
+
+  moment "M3 · Any button reads them back"
+    // [streamer] ReadVariable   (external lane: project mode cannot resolve nodes on it; kept as narrative)
+    data: CollectionVariable
+    data: GetDocument [optional]
+
+  moment "Async ticked" [branch]
+    when AsyncUnticked [data]
+      data: SaveVariableAnswer
+    when AsyncTicked [refusals]
+      refusals: VariableAbsent
+        returns-to "M3 · Any button reads them back"
+
+  moment "M4 · The deck works as before, now durable"
+    // [firebase] WriteAck   (external lane: project mode cannot resolve nodes on it; kept as narrative)
+    data: DocumentUpdated [terminal]

@@ -1,0 +1,40 @@
+// T5 — The internet drops mid-stream
+// Source: NDD board uXjVEUQjpYg= thread T5 · docs/03-user-journey.md · rulings of 2026-10-29.
+// Part of the model directory; validate with `moment parse model/` (project mode) and `moment test` on this file.
+
+flow "T5 — The internet drops mid-stream (O5)"
+  description "The Bridge keeps running while Firebase is unreachable: writes go to the mirror and the pending queue, reads come from the mirror, and the queue replays when the network returns"
+
+  lane streamer "Streamer" [External]
+  lane data "SammiFirebase" [Core]
+  lane firebase "FirebaseDatabase" [External]
+  branch-lane refusals "Refusals & Edge Cases"
+
+  moment "M1 · The cable goes"
+    // [firebase] Unreachable   (external lane: project mode cannot resolve nodes on it; kept as narrative)
+    data: ConnectionStatus
+
+  moment "M2 · You keep saving"
+    // [streamer] PressCounterButton   (external lane: project mode cannot resolve nodes on it; kept as narrative)
+    //   triggers SetField
+    data: SetField
+    data: DocumentUpdated
+    data: DocumentChange
+
+  moment "M3 · You keep reading"
+    // [streamer] ReadVariable   (external lane: project mode cannot resolve nodes on it; kept as narrative)
+    data: GetField [optional]
+
+  moment "M4 · The network returns"
+    data: Reconcile
+    // [firebase] WriteDocument   (external lane: project mode cannot resolve nodes on it; kept as narrative)
+
+  moment "Cloud newer" [branch]
+    when UpdateReplayed [data]
+      data: WriteAck
+    when ReplaceOlderThanRemote [refusals]
+      refusals: DroppedAnnouncedAsRemote
+        returns-to "M4 · The network returns"
+
+  moment "M5 · Pending is zero"
+    data: MirrorReconciled [terminal]

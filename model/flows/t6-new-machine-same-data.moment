@@ -1,0 +1,36 @@
+// T6 — New machine, same data
+// Source: NDD board uXjVEUQjpYg= thread T6 · docs/03-user-journey.md · rulings of 2026-10-29.
+// Part of the model directory; validate with `moment parse model/` (project mode) and `moment test` on this file.
+
+flow "T6 — New machine, same data (O6)"
+  description "A fresh PC: install, paste the saved config, connect; the schema and every document come home before any deck runs"
+
+  lane streamer "Streamer" [External]
+  lane connection "SammiFirebase" [Core]
+  lane auth "FirebaseAuth" [External]
+  lane firebase "FirebaseDatabase" [External]
+
+  moment "M1 · A fresh PC"
+    connection: FirebaseConfig
+    // [streamer] InstallExtension   (external lane: project mode cannot resolve nodes on it; kept as narrative)
+    // [streamer] PasteConfig   (external lane: project mode cannot resolve nodes on it; kept as narrative)
+
+  moment "M2 · You connect"
+    // [streamer] ClickConnect   (external lane: project mode cannot resolve nodes on it; kept as narrative)
+    //   triggers Connect
+    connection: Connect
+    // [auth] SignIn   (external lane: project mode cannot resolve nodes on it; kept as narrative)
+
+  moment "M3 · Everything comes home"
+    // [firebase] ReadAll   (external lane: project mode cannot resolve nodes on it; kept as narrative)
+    connection: ApplyRemoteSchema
+    connection: CollectionDefined
+    connection: Connected
+
+  moment "M3b · The mirror is rebuilt"
+    connection: Reconcile
+      triggered-by Connected
+    connection: MirrorReconciled
+
+  moment "M4 · Decks work at once"
+    connection: CollectionVariable [terminal]

@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/listenrightmeow/sammi-firebase/contracts/registry-entry.json",
+  "title": "RegistryEntry",
+  "description": "The JSON file submitted to SAMMISolutions/SAMMI-Bridge extensions/ so the Bridge can offer updates (SF-ADR-010); shape per extensions/sample.json.",
+  "type": "object",
+  "required": [
+    "extension_name",
+    "latest_version",
+    "download_link"
+  ],
+  "properties": {
+    "extension_name": {
+      "const": "SAMMI Firebase"
+    },
+    "latest_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "download_link": {
+      "type": "string",
+      "pattern": "^https://github\\.com/listenrightmeow/sammi-firebase/releases/download/v\\d+\\.\\d+\\.\\d+/sammi-firebase\\.sef$"
+    },
+    "info_link": {
+      "type": "string",
+      "format": "uri"
+    }
+  }
+}

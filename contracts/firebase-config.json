@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/listenrightmeow/sammi-firebase/contracts/firebase-config.json",
+  "title": "FirebaseConfig",
+  "description": "The web-app config block the streamer pastes into the tab (SF-ADR-002). Five keys are required; the extension names the missing one.",
+  "type": "object",
+  "required": [
+    "apiKey",
+    "authDomain",
+    "projectId",
+    "appId",
+    "databaseURL"
+  ],
+  "properties": {
+    "apiKey": {
+      "type": "string",
+      "minLength": 20
+    },
+    "authDomain": {
+      "type": "string",
+      "pattern": "\\.firebaseapp\\.com$"
+    },
+    "projectId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "appId": {
+      "type": "string",
+      "pattern": "^1:\\d+:web:[0-9a-f]+$"
+    },
+    "databaseURL": {
+      "type": "string",
+      "pattern": "^https://.+\\.(firebaseio\\.com|firebasedatabase\\.app)$"
+    },
+    "storageBucket": {
+      "type": "string"
+    },
+    "messagingSenderId": {
+      "type": "string"
+    },
+    "measurementId": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": true
+}

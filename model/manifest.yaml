@@ -1,0 +1,36 @@
+name: sammi-firebase
+version: 0.1.0
+description: SAMMI Firebase — a SAMMI Bridge extension that keeps a streamer's records in their own Firebase project. Spatial model in contexts/, the eight NDD threads in flows/. Grammar ADR-038; validate with the feat/adr-037-grammar-completeness CLI.
+contexts:
+  - name: SammiFirebase
+    path: contexts/sammi-firebase.moment
+flows:
+  - name: T1 — Your SAMMI talks to your Firebase (O1)
+    path: flows/t1-your-sammi-talks-to-your-firebase.moment
+  - name: T2 — A deck keeps its records (O2)
+    path: flows/t2-a-deck-keeps-its-records.moment
+  - name: T3 — A change made elsewhere reaches the stream (O3)
+    path: flows/t3-a-change-made-elsewhere-reaches-the-stream.moment
+  - name: T4 — The Bridge is closed and the show goes on (O4)
+    path: flows/t4-the-bridge-is-closed-and-the-show-goes-on.moment
+  - name: T5 — The internet drops mid-stream (O5)
+    path: flows/t5-the-internet-drops-mid-stream.moment
+  - name: T6 — New machine, same data (O6)
+    path: flows/t6-new-machine-same-data.moment
+  - name: T7 — The session is lost (O7)
+    path: flows/t7-the-session-is-lost.moment
+  - name: T8 — A viewer counter (O8)
+    path: flows/t8-a-viewer-counter.moment
+generators:
+  - format: typescript
+    outputDir: generated/src
+  - format: gherkin
+    outputDir: generated/features
+  - format: markdown
+    outputDir: generated/docs
+watch:
+  enabled: true
+  debounceMs: 300
+  paths:
+    - contexts
+    - flows

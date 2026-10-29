@@ -1,0 +1,58 @@
+// T1 — Your SAMMI talks to your Firebase
+// Source: NDD board uXjVEUQjpYg= thread T1 · docs/03-user-journey.md · rulings of 2026-10-29.
+// Part of the model directory; validate with `moment parse model/` (project mode) and `moment test` on this file.
+
+flow "T1 — Your SAMMI talks to your Firebase (O1)"
+  description "First-time setup on one machine: the streamer creates their own Firebase project, installs the extension, pastes the config, connects, and sees the status line go green"
+
+  lane streamer "Streamer" [External]
+  lane connection "SammiFirebase" [Core]
+  lane auth "FirebaseAuth" [External]
+  lane firebase "FirebaseDatabase" [External]
+  branch-lane refusals "Refusals & Edge Cases"
+
+  moment "M1 · You set up your own project"
+    connection: FirebaseConfig
+    // [streamer] SetUpFirebaseProject   (external lane: project mode cannot resolve nodes on it; kept as narrative)
+    // [firebase] ProjectOwnedByStreamer   (external lane: project mode cannot resolve nodes on it; kept as narrative)
+
+  moment "M2 · You install and paste"
+    // [streamer] InstallExtension   (external lane: project mode cannot resolve nodes on it; kept as narrative)
+    // [streamer] PasteConfig   (external lane: project mode cannot resolve nodes on it; kept as narrative)
+    connection: FirebaseConfig
+
+  moment "Config incomplete" [branch]
+    when ConfigComplete [connection]
+      connection: FirebaseConfig
+    when ConfigIncomplete [refusals]
+      refusals: TabNamesMissingField
+        returns-to "M2 · You install and paste"
+
+  moment "M3 · You connect"
+    // [streamer] ClickConnect   (external lane: project mode cannot resolve nodes on it; kept as narrative)
+    //   triggers Connect
+    connection: Connect
+    // [auth] SignIn   (external lane: project mode cannot resolve nodes on it; kept as narrative)
+    // [firebase] ReadAll   (external lane: project mode cannot resolve nodes on it; kept as narrative)
+    connection: Connected
+
+  moment "Credentials wrong" [branch]
+    when CredentialsValid [connection]
+      connection: Session
+    when CredentialsWrong [refusals]
+      connection: RecordConnectionFailure
+      refusals: ConnectionFailed
+        returns-to "M3 · You connect"
+    when ProviderDisabled [refusals]
+      refusals: ConnectionFailed
+        returns-to "M3 · You connect"
+    when ApiKeyInvalid [refusals]
+      refusals: ConnectionFailed
+        returns-to "M3 · You connect"
+
+  moment "M4 · Status is green"
+    connection: Reconcile
+      triggered-by Connected
+    connection: MirrorReconciled
+    connection: GetStatus
+    connection: SessionRecord [terminal]

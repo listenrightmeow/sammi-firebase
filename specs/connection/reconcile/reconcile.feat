@@ -1,0 +1,137 @@
+feat 1.0
+
+# SPEC-CON-003 — Reconcile
+# Derived from model/contexts/sammi-firebase.moment, docs/10-domain-model.md and the ADRs in docs/adr/.
+# Harness surfaces (SF-ADR-016): ini = firebase.ini writes · firebase = the user's Realtime Database · sammi = SAMMI variables and triggers.
+
+spec SPEC-CON-003 "Reconcile"
+context SammiFirebase
+aggregate Connection
+type command
+status agreed
+
+construct:
+  handler at src/features/reconcile/handler.ts
+  touches src/features/reconcile/**
+  On demand (H2): one read of meta/schema and collections/, mirror rule 2 per document, rule 4 per pending entry, rule 7 for ini documents whose hash differs, then fire MirrorReconciled with cause command.
+  Reads and writes go through the same gateways as Connect; the listener subscription is left as it is.
+
+enforce:
+  apply a remote document newer than the local one and fire DocumentUpdated with source remote
+  keep a local document newer than the remote one and fire nothing for it
+  replay every pending update and increment; drop a pending create or replace older than the remote and announce the remote version
+  fire MirrorReconciled with pushed, applied and dropped counts and cause command
+  rejects NOT_CONNECTED when no connection is established
+  rejects NOT_CONNECTED when no connection is established
+
+contract:
+  input Input
+  response CommandResponse
+  error CommandError
+  record IniWrite
+  record IniDelete
+  record CloudIncrement
+  record CloudNode
+  record AuthUser
+  record SetVariable
+  record Trigger
+
+scenario "applies a newer remote change and announces it with source remote":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/collections/hue/settings", value: { ip: "192.168.1.20", scene_1: "3f2c", _t: 1793275150000, _d: "dev2" } } ]
+    execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
+    seed firebase [ node with CloudNode { path: "users/uid-streamer/collections/hue/settings", value: { ip: "192.168.1.99", scene_1: "3f2c", _t: 1793275199000, _d: "dev2" } } ]
+  when: Reconcile { }
+  predict success:
+    response OK CommandResponse { answer: "ok", value: { pushed: 0, applied: 1, dropped: 0 } }
+    ini has ordered [
+      IniWrite with IniWrite { section: "collection:hue", key: "settings", json: { ip: "192.168.1.99", scene_1: "3f2c", _t: 1793275199000, _d: "dev2" } },
+      IniWrite with IniWrite { section: "index", key: "hashes", json: { "hue/settings": any string } },
+      IniWrite with IniWrite { section: "index", key: "last_sync", value: "1793275200000" }
+    ]
+    firebase has []
+    sammi has ordered [
+      SetVariable with SetVariable { name: "fb_hue", value: { settings: { ip: "192.168.1.99", scene_1: "3f2c" } } },
+      Trigger with Trigger { name: "Firebase: Document Updated", pullData: { eventId: any uuid, eventType: "DocumentUpdated", timestamp: any timestamp, version: 1, source: "remote", deviceId: "dev2", collection: "hue", id: "settings", changed: matching "ip" } },
+      Trigger with Trigger { name: "Firebase: Mirror Reconciled", pullData: { eventId: any uuid, eventType: "MirrorReconciled", timestamp: any timestamp, version: 1, source: "local", deviceId: "dev1", pushed: 0, applied: 1, dropped: 0, cause: "command" } }
+    ]
+
+scenario "keeps a local document that is newer than the remote (rule 2) and fires nothing for it":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/collections/hue/settings", value: { ip: "192.168.1.20", scene_1: "3f2c", _t: 1793275150000, _d: "dev2" } } ]
+    execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
+    seed firebase [ node with CloudNode { path: "users/uid-streamer/collections/hue/settings", value: { ip: "192.168.1.1", scene_1: "3f2c", _t: 1793275110000, _d: "dev2" } } ]
+  when: Reconcile { }
+  predict success:
+    response OK CommandResponse { answer: "ok", value: { pushed: 0, applied: 0, dropped: 0 } }
+    ini has ordered [
+      IniWrite with IniWrite { section: "index", key: "last_sync", value: "1793275200000" }
+    ]
+    firebase has []
+    sammi has ordered [
+      Trigger with Trigger { name: "Firebase: Mirror Reconciled", pullData: { eventId: any uuid, eventType: "MirrorReconciled", timestamp: any timestamp, version: 1, source: "local", deviceId: "dev1", pushed: 0, applied: 0, dropped: 0, cause: "command" } }
+    ]
+
+scenario "drops a pending replace older than the remote and announces the remote version (rule 4)":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/collections/hue/settings", value: { ip: "192.168.1.20", scene_1: "3f2c", _t: 1793275150000, _d: "dev2" } } ]
+    execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
+    seed ini [ IniWrite with IniWrite { section: "pending", key: "hue/settings", json: { op: "replace", fields: { ip: "10.0.0.1", scene_1: "3f2c" }, at: 1793275180000 } } ]
+    seed firebase [ node with CloudNode { path: "users/uid-streamer/collections/hue/settings", value: { ip: "192.168.1.99", scene_1: "3f2c", _t: 1793275199000, _d: "dev2" } } ]
+  when: Reconcile { }
+  predict success:
+    response OK CommandResponse { answer: "ok", value: { pushed: 0, applied: 1, dropped: 1 } }
+    ini has ordered [
+      IniDelete with IniDelete { section: "pending", key: "hue/settings" },
+      IniWrite with IniWrite { section: "collection:hue", key: "settings", json: { ip: "192.168.1.99", scene_1: "3f2c", _t: 1793275199000, _d: "dev2" } },
+      IniWrite with IniWrite { section: "index", key: "hashes", json: { "hue/settings": any string } },
+      IniWrite with IniWrite { section: "index", key: "last_sync", value: "1793275200000" }
+    ]
+    firebase has []
+    sammi has ordered [
+      SetVariable with SetVariable { name: "fb_hue", value: { settings: { ip: "192.168.1.99", scene_1: "3f2c" } } },
+      Trigger with Trigger { name: "Firebase: Document Updated", pullData: { eventId: any uuid, eventType: "DocumentUpdated", timestamp: any timestamp, version: 1, source: "remote", deviceId: "dev2", collection: "hue", id: "settings", changed: matching "ip" } },
+      Trigger with Trigger { name: "Firebase: Mirror Reconciled", pullData: { eventId: any uuid, eventType: "MirrorReconciled", timestamp: any timestamp, version: 1, source: "local", deviceId: "dev1", pushed: 0, applied: 1, dropped: 1, cause: "command" } }
+    ]
+
+scenario "replays a pending increment regardless of the remote timestamp (increments merge on the server)":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/collections/counters/deaths", value: { value: 7, _t: 1793275150000, _d: "dev2" } } ]
+    execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
+    seed ini [ IniWrite with IniWrite { section: "pending", key: "counters/deaths", json: { op: "increment", field: "value", by: 1, at: 1793275180000 } } ]
+    seed firebase [ node with CloudNode { path: "users/uid-streamer/collections/counters/deaths", value: { value: 9, _t: 1793275199000, _d: "dev2" } } ]
+  when: Reconcile { }
+  predict success:
+    response OK CommandResponse { answer: "ok", value: { pushed: 1, applied: 1, dropped: 0 } }
+    ini has ordered [
+      IniDelete with IniDelete { section: "pending", key: "counters/deaths" },
+      IniWrite with IniWrite { section: "collection:counters", key: "deaths", json: { value: 10, _t: 1793275200000, _d: "dev1" } },
+      IniWrite with IniWrite { section: "index", key: "hashes", json: { "counters/deaths": any string } },
+      IniWrite with IniWrite { section: "index", key: "last_sync", value: "1793275200000" }
+    ]
+    firebase has ordered [
+      increment with CloudIncrement { path: "users/uid-streamer/collections/counters/deaths", field: "value", by: 1 }
+    ]
+    sammi has ordered [
+      SetVariable with SetVariable { name: "fb_counters", value: { deaths: { value: 10 } } },
+      Trigger with Trigger { name: "Firebase: Document Updated", pullData: { eventId: any uuid, eventType: "DocumentUpdated", timestamp: any timestamp, version: 1, source: "remote", deviceId: "dev2", collection: "counters", id: "deaths", changed: matching "value" } },
+      Trigger with Trigger { name: "Firebase: Mirror Reconciled", pullData: { eventId: any uuid, eventType: "MirrorReconciled", timestamp: any timestamp, version: 1, source: "local", deviceId: "dev1", pushed: 1, applied: 1, dropped: 0, cause: "command" } }
+    ]
+
+scenario "rejects NOT_CONNECTED when nothing is connected":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+  when: Reconcile { }
+  predict rejection NOT_CONNECTED:
+    response ERR CommandError { code: "NOT_CONNECTED", answer: "error: not connected" }
+    ini has []
+    firebase has []
+    sammi has []

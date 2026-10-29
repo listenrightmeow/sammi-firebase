@@ -1,0 +1,504 @@
+// SAMMI Firebase — domain model, spatial + temporal, one unified file.
+// Sources: docs/10-domain-model.md (DDD inventory), docs/06-data-model.md, docs/01-decision-record.md (D1–D12),
+//          NDD board "SAMMI Firebase — NDD" https://miro.com/app/board/uXjVEUQjpYg=/ (T1–T8, rulings H1–H5, 2026-10-29).
+// Grammar: ADR-038 (orchestration, external, projection, query, rule, state, gateway); validated with the
+//          feat/adr-037-grammar-completeness CLI. Sift bypassed on this project by maintainer ruling (D11).
+// Causality: flmnt workspace firebase (35904f1a). Truth for execution will be the Feature specs; this file is the model.
+//
+// WHAT THE GRAMMAR CANNOT CARRY (listed, not drawn):
+//  - Connection's Offline sub-state (network loss while Connected) has no command of its own; it is a gateway
+//    observation. States below carry Disconnected and Connected only. T5 shows the offline moments narratively.
+//  - ConnectionFailed and WriteRejected are refusals that SAMMI must still surface as triggers. The palette says a
+//    rejection emits no event; here the refused act happened out of band (a credential, a variable write), so the
+//    fact "it was refused" is recorded as an event of its own, emitted by an explicit command.
+//  - Streamer actions in the flows (PasteConfig, PressButton, …) are actor nodes on an external lane, as the
+//    corpus does for its requestor lane; they resolve to nothing in the spatial model by design.
+
+// ============================================================================
+// EXTERNAL SYSTEMS — domains we depend on
+// ============================================================================
+
+external FirebaseAuth "Firebase Authentication. Email/Password is the only sign-in that completes from the Bridge's file:// origin (verified F1, F2)"
+  gateway SignIn
+    consumes Credentials
+    produces Session
+    description "email + password → a session; the SDK keeps it in localStorage, the extension backs it up to firebase.ini"
+  gateway ResumeSession
+    consumes SessionRecord
+    produces Session
+    description "on Bridge start: the stored record, restored from the ini if the OBS profile lost it"
+
+external FirebaseDatabase "Firebase Realtime Database. users/{uid}/collections/{collection}/{id} = fields + _t + _d; users/{uid}/meta/schema; listener delivers remote changes in about a second (verified F7)"
+  gateway WriteDocument
+    consumes DocumentChange
+    produces WriteAck
+    description "update() for field-level commands, set() for create and replace, increment for IncrementField; _t server timestamp, _d device"
+  gateway ReadAll
+    consumes Session
+    produces CloudSnapshot
+    description "one read of meta/schema and collections/ on connect and on Reconcile"
+  gateway Listen
+    consumes Session
+    produces RemoteChange
+    description "the onValue listener; each delivery becomes an ApplyRemoteChange command"
+
+external SammiCore "SAMMI Core, the host. Runs buttons; pauses a button on a Save Variable box until the extension answers (verified S6); reads and writes ini files; holds the global variables"
+  gateway AnswerButton
+    consumes CommandResult
+    produces SaveVariableAnswer
+    description "SetVariable(name, value, FromButton, instanceId) — the resulting document or value, or error: reason"
+  gateway WriteIni
+    consumes MirrorChange
+    produces IniRecord
+    description "saveIni / loadIni: firebase.ini sections connection, schema, collection:<name>, index, pending"
+  gateway PublishVariables
+    consumes MirrorChange
+    produces CollectionVariable
+    description "fb_<collection> = { id: { field: value } }, rewritten on every change (ruling 2026-10-29)"
+  gateway PollBoundVariables
+    consumes CollectionVariable
+    produces VariableDelta
+    description "every poll_ms (default 500): getVariable per two-way collection, diffed against the last-written snapshot (H5)"
+  gateway FireTrigger
+    consumes DomainEventEnvelope
+    produces ExtensionTrigger
+    description "triggerExt: every event becomes a SAMMI trigger with the reduced PADR-004 envelope as pull data"
+
+external ObsBridge "SAMMI Bridge inside an OBS browser dock (CEF, file://). Hosts the extension; must be open for commands to answer (verified S15); a hidden dock keeps running (O8)"
+
+// The palette's Interface + Actor: the streamer at their SAMMI deck and the Bridge tab. The grammar has no actor
+// construct; an external with gateways is the closest shape, and flows place the streamer's acts on its lane.
+external Streamer "The streamer: presses buttons in SAMMI decks they already have, and uses the SAMMI Firebase tab in the Bridge"
+  gateway BridgeTab
+    consumes FirebaseConfig
+    produces Credentials
+    description "paste the config block, type email and password, Connect / Disconnect, read the status line"
+  gateway DeckButton
+    consumes SaveVariableAnswer
+    produces CommandResult
+    description "a Firebase: command embedded in one of the streamer's own buttons; the answer lands in its Save Variable box"
+
+// ============================================================================
+// THE BOUNDED CONTEXT
+// ============================================================================
+
+context "SammiFirebase" [Core]
+  description "A SAMMI Bridge extension that keeps a streamer's records in their own Firebase project: collections of documents with fields, mirrored locally, surfaced to every button as variables, written through to the cloud, announced as triggers when they change anywhere"
+
+  term "Collection" "A named set of documents, declared locally by a deck (Define Collection) and mirrored to meta/schema; Firebase itself stays schema-less"
+  term "Document" "The unit of storage and the aggregate root for all data: one collection, one id, fields that are strings or numbers"
+  term "Person document" "A document whose id is the streaming provider's user id as delivered in the trigger's pull data; the display name is a field, never the id (ruling 2026-10-29)"
+  term "Mirror" "The projection: in memory, in firebase.ini, and as the fb_<collection> global variables"
+  term "Two-way collection" "A collection whose fb_ variable is also a write surface: the extension polls it and turns changes into document commands (H5)"
+  term "Device" "This machine's identity on the connection (device_id), so it can tell its own writes from others'"
+
+  value-object FirebaseConfig
+    apiKey: string
+    authDomain: string
+    projectId: string
+    appId: string
+    databaseURL: string
+
+  value-object Credentials
+    email: string
+    password: string
+
+  value-object Session
+    uid: string
+    email: string
+
+  value-object SessionRecord
+    record: string
+
+  value-object DocumentChange
+    collection: string
+    id: string
+    fields: string
+    operation: string
+
+  value-object WriteAck
+    collection: string
+    id: string
+    serverTimestamp: number
+
+  value-object CloudSnapshot
+    schema: string
+    collections: string
+
+  value-object RemoteChange
+    collection: string
+    id: string
+    fields: string
+    remoteTimestamp: number
+    remoteDevice: string
+
+  value-object CommandResult
+    document: string
+    value: string
+    error: string
+
+  value-object SaveVariableAnswer
+    variableName: string
+    buttonId: string
+    instanceId: number
+
+  value-object MirrorChange
+    collection: string
+    id: string
+    document: string
+
+  value-object IniRecord
+    section: string
+    key: string
+    value: string
+
+  value-object CollectionVariable
+    name: string
+    documents: string
+
+  value-object VariableDelta
+    collection: string
+    id: string
+    field: string
+    value: string
+    deleted: boolean
+
+  value-object DomainEventEnvelope
+    eventId: UUID
+    eventType: string
+    timestamp: DateTime
+    version: number
+    source: string
+    deviceId: string
+    causationId: string
+
+  value-object ExtensionTrigger
+    name: string
+    pullData: string
+
+  // --------------------------------------------------------------------------
+  // (Context name is one identifier, SammiFirebase, so relationship lines can name it; the board calls it SAMMI Firebase.)
+  // AGGREGATE: Connection — the one link between this Bridge and one Firebase project
+  // --------------------------------------------------------------------------
+  aggregate "Connection"
+    identity deviceId: string
+
+    state initial Disconnected
+    state Disconnected -> Connected on Connect
+    state Connected -> Disconnected on Disconnect
+    state Connected -> Disconnected on RecordSessionLoss
+
+    command Connect
+      input config: FirebaseConfig, email: string, password: string
+      precondition ConfigComplete: "apiKey, authDomain, projectId, appId and databaseURL are all present; the tab names the missing field otherwise"
+      precondition NoOtherConnection: "At most one connection per Bridge"
+      precondition CredentialsValid: "Firebase Auth accepts the email and password, or the stored session resumes; the provider must be enabled (setup step 2) and the user created (step 2b)"
+      emits Connected
+
+    // The refusal of Connect, surfaced to decks as the trigger Firebase: Connection Failed (see header note).
+    command RecordConnectionFailure
+      input reason: string
+      emits ConnectionFailed
+
+    command Disconnect
+      emits Disconnected
+
+    // Session revoked (password changed, user deleted) or absent after a profile reset: observed by ResumeSession.
+    command RecordSessionLoss
+      input reason: string
+      precondition WasConnected: "Only a connected or resuming connection can lose its session"
+      emits Disconnected
+
+    // H2 ruling: both paths. Connect's reconcile runs through the policy below; this command runs it on demand
+    // from any button or any trigger the streamer chooses.
+    command Reconcile
+      precondition IsConnected: "The connection is Connected"
+      emits MirrorReconciled
+
+    invariant CON-01 "Config has apiKey, authDomain, projectId, appId, databaseURL" scope Connection
+    invariant CON-02 "At most one connection per Bridge" scope Connection
+    invariant CON-03 "Email/Password is the only sign-in; popup and redirect providers never complete from file:// (F1)" scope Connection
+
+    event Connected
+      deviceId: string
+      email: string
+      projectId: string
+      documents: number
+      connectedAt: DateTime
+
+    event ConnectionFailed
+      deviceId: string
+      reason: string
+      failedAt: DateTime
+
+    event Disconnected
+      deviceId: string
+      reason: string
+      disconnectedAt: DateTime
+
+    event MirrorReconciled
+      deviceId: string
+      pushed: number
+      applied: number
+      dropped: number
+      cause: string
+      reconciledAt: DateTime
+
+  // --------------------------------------------------------------------------
+  // AGGREGATE: Collection — a locally declared shape, mirrored to the cloud (H1)
+  // --------------------------------------------------------------------------
+  aggregate "Collection"
+    identity name: string
+
+    command DefineCollection
+      input name: string, fields: string[], strict: boolean, twoWay: boolean
+      precondition NameValid: "Collection and field names match [a-z][a-z0-9_]{0,31}; names starting with _ are reserved"
+      emits CollectionDefined
+
+    command UndefineCollection
+      input name: string
+      precondition IsDefined: "The collection was defined; undefining does not delete its documents"
+      emits CollectionUndefined
+
+    // H1 ruling: the declaration also lives at users/{uid}/meta/schema/<name>; on connect the cloud copy is merged
+    // into firebase.ini [schema], newest wins, so a second machine inherits it before its startup button runs.
+    command ApplyRemoteSchema
+      input name: string, fields: string[], strict: boolean, twoWay: boolean, remoteTimestamp: number
+      precondition RemoteSchemaNewer: "The cloud entry's _t is newer than the local one"
+      emits CollectionDefined
+
+    invariant COL-01 "Collection and field names are [a-z][a-z0-9_]{0,31}; the _ prefix is reserved" scope Collection
+    invariant COL-02 "Undefine never deletes documents" scope Collection
+    invariant COL-03 "An undefined collection is open; a strict one rejects unknown fields; two-way (default on) binds its variable for writes" scope Collection
+
+    event CollectionDefined
+      name: string
+      fields: string[]
+      strict: boolean
+      twoWay: boolean
+      source: string
+      definedAt: DateTime
+
+    event CollectionUndefined
+      name: string
+      undefinedAt: DateTime
+
+  // --------------------------------------------------------------------------
+  // AGGREGATE: Document — the aggregate root for all data
+  // --------------------------------------------------------------------------
+  aggregate "Document"
+    identity documentKey: string
+
+    command CreateDocument
+      input collection: string, id: string, fields: string
+      precondition IdValid: "id is [A-Za-z0-9_-]{1,64}, or blank for a generated push id; a person's id is the provider's user id"
+      precondition IdAbsent: "Create refuses an existing id"
+      precondition FieldsValid: "Fields valid for the collection (strict), values string or number, document ≤ 8 KB, field ≤ 4 KB"
+      emits DocumentCreated
+
+    command ReplaceDocument
+      input collection: string, id: string, fields: string
+      precondition Upsert: "Creates the document when absent (then emits DocumentCreated); a settings button needs no Exists check"
+      precondition FieldsValid: "Fields valid for the collection (strict), values string or number, document ≤ 8 KB, field ≤ 4 KB"
+      emits DocumentReplaced
+
+    command UpdateDocument
+      input collection: string, id: string, fields: string
+      precondition DocumentExists: "The document exists (a merge into nothing is a Create)"
+      precondition FieldsValid: "Fields valid for the collection (strict), values string or number, document ≤ 8 KB after merge"
+      emits DocumentUpdated
+
+    command SetField
+      input collection: string, id: string, field: string, value: string
+      precondition FieldValid: "Field valid for the collection; numeric text is stored as a number, a str: prefix forces a string; ≤ 4 KB"
+      precondition Upsert: "Creates the document when absent (then emits DocumentCreated)"
+      emits DocumentUpdated
+
+    command IncrementField
+      input collection: string, id: string, field: string, by: number
+      precondition FieldNumeric: "The field is a number or absent (starts from 0, creating the document when absent); atomic on the server (ServerValue.increment); answers the new total"
+      emits DocumentUpdated
+
+    command DeleteField
+      input collection: string, id: string, field: string
+      precondition DocumentExists: "The document exists"
+      emits DocumentUpdated
+
+    command DeleteDocument
+      input collection: string, id: string
+      precondition DocumentExists: "The document exists; deleting an absent document is refused with missing and emits nothing"
+      emits DocumentDeleted
+
+    // Issued by the FirebaseDatabase Listen gateway for every delivery. The preconditions are the mirror's
+    // consistency rules 2 and 3: an older or own-echo change is refused and emits nothing.
+    command ApplyRemoteChange
+      input collection: string, id: string, fields: string, remoteTimestamp: number, remoteDevice: string
+      precondition RemoteNewer: "remote _t is newer than the local document's _t (rule 2)"
+      precondition NotOwnEcho: "remote _d is not this device with an equal _t (rule 3)"
+      emits DocumentUpdated
+
+    // Issued by the Mirror's PollBoundVariables gateway for every field that differs from the last-written
+    // snapshot of a two-way collection's variable (H5). Goes through the same invariants as UpdateDocument.
+    command ApplyVariableChange
+      input collection: string, id: string, field: string, value: string, deleted: boolean
+      precondition CollectionTwoWay: "The collection is bound (two-way on)"
+      precondition FieldValid: "Field valid for the collection; numeric text is stored as a number, a str: prefix forces a string; ≤ 4 KB"
+      precondition Upsert: "Creates the document when absent (then emits DocumentCreated)"
+      emits DocumentUpdated
+
+    // The refusal of ApplyVariableChange, surfaced to decks as Firebase: Write Rejected; the variable is
+    // restored from the mirror in the same act (see header note).
+    command RecordWriteRejection
+      input collection: string, id: string, field: string, reason: string
+      emits WriteRejected
+
+    invariant DOC-01 "Id is [A-Za-z0-9_-]{1,64}; Create refuses an existing id" scope Document
+    invariant DOC-02 "Field values are strings or numbers; fields starting with _ are reserved" scope Document
+    invariant DOC-03 "A document is at most 8 KB after merge; a field at most 4 KB (SAMMI websocket limit, S12)" scope Document
+    invariant DOC-04 "Increment needs a number or an absent field" scope Document
+    invariant DOC-05 "Deleting an absent document is refused with missing and emits nothing; the last document deleted leaves an empty collection variable" scope Document
+    invariant DOC-06 "A rejection emits no document event; the button receives error: reason" scope Document
+
+    event DocumentCreated
+      collection: string
+      id: string
+      fields: string
+      source: string
+      createdAt: DateTime
+
+    event DocumentReplaced
+      collection: string
+      id: string
+      fields: string
+      previous: string
+      source: string
+      replacedAt: DateTime
+
+    event DocumentUpdated
+      collection: string
+      id: string
+      fields: string
+      previous: string
+      changed: string[]
+      source: string
+      updatedAt: DateTime
+
+    event DocumentDeleted
+      collection: string
+      id: string
+      previous: string
+      source: string
+      deletedAt: DateTime
+
+    event WriteRejected
+      collection: string
+      id: string
+      field: string
+      reason: string
+      rejectedAt: DateTime
+
+  // --------------------------------------------------------------------------
+  // PROJECTIONS (CQRS read side) and QUERIES
+  // --------------------------------------------------------------------------
+  projection Mirror
+    sources DocumentCreated, DocumentReplaced, DocumentUpdated, DocumentDeleted, CollectionDefined, CollectionUndefined, MirrorReconciled
+    description "Every document the connection has seen: in memory, in firebase.ini (section collection:<name>, readable by SAMMI's INI: Load Text when the Bridge is closed), and as the fb_<collection> global variables any button reads without a command. Eventually consistent with Firebase, about a second behind"
+    field collection: string
+    field id: string
+    field document: string
+    field lastWriteTimestamp: number
+    field lastWriteDevice: string
+    gateway VariableSurface
+      consumes MirrorChange
+      produces CollectionVariable
+      description "the interface of the projection: fb_<collection> = { id: { field: value } }, static paths like fb_hue.settings.ip, dynamic ones like fb_viewers./$userId$/.points"
+    gateway IniMirror
+      consumes MirrorChange
+      produces IniRecord
+      description "the durable copy SAMMI can read with the Bridge closed; [index] hashes let the next start notice edits made while the extension was away (rule 7)"
+    gateway PendingQueue
+      consumes DocumentChange
+      produces WriteAck
+      description "[pending] in firebase.ini: the durable write queue, replayed on reconcile under rule 4"
+
+  projection ConnectionStatus
+    sources Connected, ConnectionFailed, Disconnected, MirrorReconciled
+    description "The status line in the Bridge tab and the answer of GetStatus"
+    field state: string
+    field email: string
+    field projectId: string
+    field documents: number
+    field pending: number
+
+  query GetDocument
+    reads Mirror
+    input collection: string, id: string, unpackPrefix: string
+    description "The document as JSON; with a prefix, also one local variable per field. Optional: the same data is already in fb_<collection>"
+
+  query GetField
+    reads Mirror
+    input collection: string, id: string, field: string, default: string
+    description "The field value or the default; the guaranteed read for a dynamic id when nested variable resolution is not wanted"
+
+  query DocumentExists
+    reads Mirror
+    input collection: string, id: string
+    description "1 or 0"
+
+  query ListDocuments
+    reads Mirror
+    input collection: string
+    description "JSON array of ids; push ids sort by creation"
+
+  query QueryDocuments
+    reads Mirror
+    input collection: string, field: string, operator: string, value: string, orderBy: string, limit: number
+    description "JSON array of documents filtered and sorted in the mirror; no Firebase indexes; works offline"
+
+  query CountDocuments
+    reads Mirror
+    input collection: string
+    description "number of documents"
+
+  query GetStatus
+    reads ConnectionStatus
+    description "state · email · project · documents · pending"
+
+  // --------------------------------------------------------------------------
+  // RULES outside the aggregates — the projection's consistency rules (docs/06)
+  // --------------------------------------------------------------------------
+  rule MIR-01 "Order of a local command: validate against the mirror, apply to the mirror, write the ini, rewrite the variable, answer the button, send to Firebase, drop from pending on ack" enforced-by "the command path in commands.js"
+  rule MIR-02 "Document-level last write wins by server _t on a remote change" enforced-by "the ApplyRemoteChange preconditions RemoteNewer and NotOwnEcho"
+  rule MIR-03 "Own echoes are ignored and emit nothing" enforced-by "the ApplyRemoteChange preconditions RemoteNewer and NotOwnEcho"
+  rule MIR-04 "Pending replay: update, set, delete-field and increment are re-sent and merge on the server; a create or replace older than the remote is dropped and announced as DocumentUpdated source remote" enforced-by "the Reconcile command of Connection"
+  rule MIR-05 "A delete is a tombstone in pending until acknowledged; the mirror entry goes at once" enforced-by "the command path in commands.js"
+  rule MIR-06 "Reconcile on connect: one read of meta/schema and collections/, rule 2 per document, rule 4 per pending entry, then subscribe; remote changes that happened while away arrive as one burst of events" enforced-by "the Reconcile command of Connection"
+  rule MIR-07 "Edits made while the extension was not running: an ini document whose hash differs from [index] hashes becomes a pending replace stamped now and wins over remote changes made meanwhile; invalid JSON is left alone and named in the tab; a document removed from the ini by hand is not a delete" enforced-by "the Reconcile command of Connection"
+  rule MIR-08 "Bound-variable writes: a difference between a two-way collection's variable and the last-written snapshot is a local command; a remote change applied between two polls updates snapshot and variable together and is never read back as a local write" enforced-by "the PollBoundVariables gateway"
+  rule MIR-09 "The extension always answers a command within the box timeout, with error: reason if it must; an absent Save Variable means the Bridge was not running" enforced-by "the command path in commands.js"
+
+  // --------------------------------------------------------------------------
+  // POLICIES — when one event, then one command (ADR-038)
+  // --------------------------------------------------------------------------
+  policy ReconcileOnConnected
+    trigger Connected
+    action "Connect's automatic reconcile (H2: the first of the two paths); the explicit Reconcile command is the second"
+    chains-to Reconcile
+
+  // Streamer-side policies are PATTERNS, not part of this model: every user button with a Firebase: … trigger is a
+  // policy whose Then is a SAMMI command of the streamer's choosing (a popup, an overlay refresh, Firebase: Reconcile).
+  // The bundled deck shows two: OnDocumentUpdatedAlert (when DocumentUpdated with source remote, then Popup) and
+  // OnConnectedRefresh (when Connected, then GetDocument of the deck's settings). They chain to commands outside
+  // this context, which the grammar cannot name, so they are listed here and drawn on the board, never modelled.
+
+  relationship SammiFirebase -> FirebaseAuth
+    type Conformist
+    contract "Firebase's SDK and rules as they are; email/password only"
+
+  relationship SammiFirebase -> FirebaseDatabase
+    type Conformist
+    contract "Firebase's tree, server timestamps, listener semantics as they are"
+
+  relationship SammiCore -> SammiFirebase
+    type CustomerSupplier
+    contract "ExecuteCommand payloads with the box values, FromButton and instanceId; SetVariable answers; triggerExt events; saveIni/loadIni"

@@ -1,15 +1,34 @@
 {
   "name": "sammi-firebase",
-  "version": "1.0.0",
-  "description": "",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A SAMMI Bridge extension that keeps a streamer's records in their own Firebase project.",
   "license": "MIT",
-  "author": "",
-  "type": "commonjs",
-  "main": "index.js",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "packageManager": "pnpm@11.20.0",
   "scripts": {
-    "claude:session": "npx @dotenvx/dotenvx run -f .env.local -- claude"
+    "claude:session": "npx @dotenvx/dotenvx run -f .env.local -- claude",
+    "build:sef": "node tools/build/sef.ts",
+    "lint": "eslint . && prettier --check .",
+    "typecheck": "tsc --noEmit",
+    "model": "moment parse model/",
+    "spec": "feat lint && feat generate && feat audit",
+    "test": "feat run --coverage && vitest run",
+    "ci:local": "FEAT_ENVIRONMENT=local sh -c 'set -o pipefail; pnpm lint && pnpm typecheck && pnpm spec && pnpm test && pnpm build:sef --check'"
   },
   "devDependencies": {
-    "@dotenvx/dotenvx": "^2.38.2"
+    "@dotenvx/dotenvx": "^2.38.2",
+    "@mmmnt/cli": "^0.5.0",
+    "@mmmnt/feat-adapter-handler": "^0.1.7",
+    "@mmmnt/feat-adapter-kit": "^0.1.6",
+    "@mmmnt/feat-runtime": "^0.1.19",
+    "@mmmnt/feat-schema-json": "^0.2.0",
+    "@mmmnt/feature": "^0.3.2",
+    "esbuild": "^0.28.2",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5"
   }
 }

@@ -1,0 +1,39 @@
+// T8 — A viewer counter
+// Source: NDD board uXjVEUQjpYg= thread T8 · docs/03-user-journey.md · rulings of 2026-10-29.
+// Part of the model directory; validate with `moment parse model/` (project mode) and `moment test` on this file.
+
+flow "T8 — A viewer counter (O8)"
+  description "A person-keyed document: the streamer's cheer button increments points by the provider's user id, holds the new total from the command's answer, and the leaderboard comes from a query"
+
+  lane streamer "Streamer" [External]
+  lane data "SammiFirebase" [Core]
+  lane firebase "FirebaseDatabase" [External]
+  branch-lane refusals "Refusals & Edge Cases"
+
+  moment "M1 · A viewer earns points"
+    // [streamer] CheerButtonRuns   (external lane: project mode cannot resolve nodes on it; kept as narrative)
+    //   triggers IncrementField
+    data: IncrementField
+    // [firebase] WriteDocument   (external lane: project mode cannot resolve nodes on it; kept as narrative)
+    data: DocumentUpdated
+
+  moment "New viewer" [branch]
+    when DocumentAbsent [data]
+      data: DocumentCreated
+    when FieldNotANumber [refusals]
+      refusals: ErrorNotANumber
+        returns-to "M1 · A viewer earns points"
+
+  moment "M2 · Top viewers on screen"
+    // [streamer] PressLeaderboardButton   (external lane: project mode cannot resolve nodes on it; kept as narrative)
+    data: QueryDocuments
+
+  moment "M3 · Counts and lists"
+    data: CountDocuments
+    data: ListDocuments
+
+  moment "M4 · The overlay updates"
+    data: DomainEventEnvelope [terminal]
+    // [streamer] PolicyButtonRuns   (external lane: project mode cannot resolve nodes on it; kept as narrative)
+    //   triggered-by DocumentUpdated
+    // [streamer] RefreshOverlay [terminal]   (external lane: project mode cannot resolve nodes on it; kept as narrative)
