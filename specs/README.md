@@ -46,7 +46,7 @@ All 23 specs are green against the handlers in `src/features/` and the fake worl
 
 Every command and query of the model has a spec or is the refusal branch of the command that issues it; every event in the model is asserted as a `Trigger` record somewhere (checked by script, zero missing). The nine mirror rules: MIR-01 write order in every document command; MIR-02 and 03 in Apply Remote Change and Reconcile; MIR-04 in Connect, Reconcile, Update and Increment; MIR-05 in Delete Document and Apply Remote Change; MIR-06 in Connect and Reconcile; MIR-07 (ini edits while closed, local wins) in Connect; MIR-08 (variable rewrite) everywhere; MIR-09 (bound-variable writes) in Apply Variable Change.
 
-## Amendments made at build (D20, for ratification)
+## Amendments made at build (D20, ratified Oct 29, 2026)
 
 - **Connect, scenario 1:** documents are applied in key order, as the Realtime Database returns them. The prediction listed them in the order the spec was written.
 - **Eleven specs:** 65 JSON-text predictions were compacted (`{"a":1}`, not `{"a": 1}`). A SAMMI box receives compact JSON; the spacing came from the tool that drafted the specs.

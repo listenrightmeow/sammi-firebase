@@ -287,7 +287,7 @@ Dates are when the decision was made. Facts cited here are tracked, with sources
 
 **Result.** The 23 handlers, the domain core, the fake world with its three adapters, the Bridge entry point and gateways, the `.sef` build, and the CI and release workflows. Every local gate passes: lint and format, types, the model, `feat lint` and `feat audit`, 200 of 200 generated scenarios with the counts asserted, 83 unit tests, merged coverage of 98.8% of lines and 95.5% of branches, the build check, no high-severity advisory, no secret. The `.sef` assembles at 61 KB.
 
-**Spec amendments, for ratification** (listed in `specs/README.md`): document order in Connect follows the database's key order; 65 JSON-text predictions compacted; the four Reconcile givens rebuilt with `later` and `outage` seeds because seeds run before executes; the replayed increment predicts its stamp; ten scenarios added for rules the code needed and no spec stated. None changes a ratified behavior.
+**Spec amendments, ratified Oct 29, 2026** (listed in `specs/README.md`): document order in Connect follows the database's key order; 65 JSON-text predictions compacted; the four Reconcile givens rebuilt with `later` and `outage` seeds because seeds run before executes; the replayed increment predicts its stamp; ten scenarios added for rules the code needed and no spec stated. None changes a ratified behavior.
 
 **Decisions made while building.** TypeScript 6.0 is pinned because typescript-eslint does not support 7. The Firebase SDK's types are declared locally instead of installing the `firebase` package. That package was a types-only dependency whose Node-side code carried eight high-severity advisories. `@mmmnt/cli` 0.5.0 is removed: it cannot parse the ADR-037 grammar the model uses and carried a vulnerable `lodash-es`. The real ini gateway writes an empty value for a removed key and reads empty as absent, the fallback named for T-D2. The bundled deck ships only buttons built from command types verified on hardware; the full eight-button deck waits for the PC tier to confirm the other command ids. Coverage is measured by merging the spec run and the unit run, with the Feature runtime inlined under Vite so natively imported TypeScript maps to the right lines.
 
@@ -299,7 +299,7 @@ Dates are when the decision was made. Facts cited here are tracked, with sources
 
 ## Open decisions
 
-The spec amendments listed in D20 await ratification. On Oct 29, 2026 the maintainer ratified D17 (SF-ADR-017, the revision of SF-ADR-012, attestations) and earlier in one word ("all agreed on") D12 item 4, SF-ADR-009 to 016, and the six agent decisions under D15; see D16 for what the pre-build audit changed as a result. The items below were closed on Oct 29, 2026:
+None. The spec amendments listed in D20 were ratified on Oct 29, 2026 ("all ratified"). On Oct 29, 2026 the maintainer ratified D17 (SF-ADR-017, the revision of SF-ADR-012, attestations) and earlier in one word ("all agreed on") D12 item 4, SF-ADR-009 to 016, and the six agent decisions under D15; see D16 for what the pre-build audit changed as a result. The items below were closed on Oct 29, 2026:
 
 - Final name and command names: D7.
 - Scope of the first release: D9. `Query Documents` and `Increment Field` ship in 1.0.
