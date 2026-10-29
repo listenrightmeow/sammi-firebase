@@ -1,0 +1,31 @@
+# SAMMI Cloud Vars (working title)
+
+A [SAMMI](https://sammi.solutions) Bridge extension that gives SAMMI buttons durable storage outside the streaming PC. Settings and state survive reinstalls, drive failures and new machines, and can be edited from anywhere. The user's data lives in the user's own Firebase project.
+
+**Status: planning.** No code yet. The design is being written down first; see `docs/`.
+
+## Why
+
+SAMMI keeps everything in local files. Lose the machine, lose the setup. Variables do not survive a restart, and the usual workaround is ini files that live next to the executable. This project adds commands such as Cloud: Save and Cloud: Load that behave like SAMMI's INI commands but persist off the machine, with live updates when a value changes elsewhere.
+
+## Documents
+
+| File | What it is |
+| --- | --- |
+| `docs/01-decision-record.md` | Each architectural decision: options, choice, reasons, consequences. Open decisions at the end. |
+| `docs/02-verification-list.md` | Every fact the design relies on, its source, and whether it has been confirmed on hardware. Includes the prototype plan. |
+| `discovery/obs-dock-probe.html` | A self-contained page to load as an OBS browser dock. Reports what the Bridge's environment can and cannot do. |
+
+Planned next: user journey, architecture, authentication flow, data model, failure modes, distribution and updates, test plan.
+
+## Principles
+
+- The target user installs things by clicking. Every step they must perform is counted and justified.
+- Users own their data. The MVP uses the user's own Firebase project; a hosted option can be added later as a preset.
+- Local first. Buttons read and write a local mirror and never wait on the network.
+- Provider-neutral. Commands never mention Firebase; the backend is a setting.
+- Planning before code.
+
+## License
+
+To be chosen before the first release. MIT is the intended license.

@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OBS dock probe</title>
+<style>
+  :root { --bg:#1e1e1e; --fg:#e6e6e6; --ok:#3ddc84; --bad:#ff6b6b; --warn:#ffd166; --muted:#9a9a9a; }
+  body { background:var(--bg); color:var(--fg); font:14px/1.45 system-ui, Segoe UI, sans-serif; margin:0; padding:16px; }
+  h1 { font-size:18px; margin:0 0 4px; }
+  p.sub { color:var(--muted); margin:0 0 14px; }
+  table { border-collapse:collapse; width:100%; }
+  td { padding:6px 8px; border-top:1px solid #333; vertical-align:top; }
+  td:first-child { width:38%; color:var(--muted); }
+  .ok { color:var(--ok); } .bad { color:var(--bad); } .warn { color:var(--warn); }
+  details { margin-top:16px; } summary { cursor:pointer; color:var(--muted); }
+  textarea, input { width:100%; box-sizing:border-box; background:#111; color:var(--fg); border:1px solid #444; padding:6px; font:13px monospace; margin:4px 0; }
+  button { background:#2d6cdf; color:#fff; border:0; padding:8px 12px; border-radius:4px; cursor:pointer; margin-top:6px; }
+  pre { background:#111; padding:8px; overflow:auto; max-height:260px; font-size:12px; }
+</style>
+</head>
+<body>
+<h1>OBS dock probe</h1>
+<p class="sub">Checks what a page loaded the way SAMMI Bridge is loaded can and cannot do. Nothing leaves this machine unless you fill in the optional Firebase section.</p>
+
+<p id="boot" class="warn">Starting… If this line is still here after 10 seconds, the page's script did not run in this browser (module scripts or dynamic import unsupported). Report that as the result.</p>
+<p id="jserr" class="bad"></p>
+<table id="results"></table>
+
+<details>
+  <summary>Optional: real Firebase round trip (needs a project with Email/Password sign-in and a Realtime Database)</summary>
+  <p class="sub">Paste the <code>firebaseConfig</code> object from the Firebase console (Project settings &gt; Your apps). Create a test user under Authentication first. The probe signs in, writes one value under <code>probe/{uid}</code>, listens for it, and reports each step.</p>
+  <textarea id="cfg" rows="7" placeholder='const firebaseConfig = { apiKey: "...", authDomain: "...", databaseURL: "https://...firebasedatabase.app", projectId: "...", appId: "..." };  (paste exactly as the console shows it)'></textarea>
+  <input id="email" type="email" placeholder="test user email">
+  <input id="password" type="password" placeholder="test user password">
+  <button id="run">Run Firebase round trip</button>
+  <pre id="fblog"></pre>
+</details>
+
+<details>
+  <summary>Raw environment</summary>
+  <pre id="env"></pre>
+</details>
+
+<script>
+window.addEventListener("error", e => { document.getElementById("jserr").textContent += "Script error: " + (e.message || e) + "\n"; });
+window.addEventListener("unhandledrejection", e => { document.getElementById("jserr").textContent += "Unhandled promise rejection: " + ((e.reason && (e.reason.message || e.reason.code)) || e.reason) + "\n"; });
+</script>
+<script type="module">
+document.getElementById("boot").remove();
+const rows = document.getElementById("results");
+const add = (name, status, detail) => {
+  const tr = document.createElement("tr");
+  tr.innerHTML = `<td>${name}</td><td class="${status}">${status === "ok" ? "YES" : status === "bad" ? "NO" : "?"} <span style="color:#bbb">${detail || ""}</span></td>`;
+  rows.appendChild(tr);
+};
+const ua = navigator.userAgent;
+const cef = /Chrome\/([\d.]+)/.exec(ua);
+add("Running inside OBS (window.obsstudio present)", window.obsstudio ? "ok" : "bad", window.obsstudio ? `plugin ${window.obsstudio.pluginVersion || "?"}` : "open this file as an OBS Custom Browser Dock to test the real environment");
+add("Chromium version", cef ? "ok" : "warn", cef ? cef[1] : ua);
+add("Page protocol", location.protocol === "file:" ? "warn" : "ok", `${location.protocol} origin=${location.origin}`);
+
+try { localStorage.setItem("__probe", "1"); const v = localStorage.getItem("__probe"); localStorage.removeItem("__probe"); add("localStorage read/write", v === "1" ? "ok" : "bad", v === "1" ? "" : "wrote 1, read back " + v); }
+catch (e) { add("localStorage read/write", "bad", e.message); }
+
+try { sessionStorage.setItem("__probe", "1"); sessionStorage.removeItem("__probe"); add("sessionStorage", "ok"); } catch (e) { add("sessionStorage", "bad", e.message); }
+
+await new Promise(res => {
+  try {
+    const req = indexedDB.open("__probe_db", 1);
+    req.onupgradeneeded = () => req.result.createObjectStore("s");
+    req.onsuccess = () => { req.result.close(); indexedDB.deleteDatabase("__probe_db"); add("IndexedDB open", "ok"); res(); };
+    req.onerror = () => { add("IndexedDB open", "bad", req.error && req.error.message); res(); };
+    req.onblocked = () => { add("IndexedDB open", "warn", "blocked"); res(); };
+  } catch (e) { add("IndexedDB open", "bad", e.message); res(); }
+});
+
+try { const w = window.open("about:blank", "_blank", "width=300,height=200"); if (w) { w.close(); add("window.open (needed for Google sign-in popups)", "ok"); } else add("window.open (needed for Google sign-in popups)", "bad", "returned null, popups are blocked"); }
+catch (e) { add("window.open (needed for Google sign-in popups)", "bad", e.message); }
+
+try {
+  const r = await fetch("https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=probe", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+  const j = await r.json().catch(() => ({}));
+  add("CORS fetch to Firebase Auth REST", "ok", `HTTP ${r.status} ${j.error ? j.error.message : ""} (an error reply is expected; it proves the request path works)`);
+} catch (e) { add("CORS fetch to Firebase Auth REST", "bad", e.message); }
+
+try {
+  const r = await fetch("https://cdn.jsdelivr.net/gh/SAMMISolutions/SAMMI-Websocket@main/dist/sammi-websocket.min.js", { method: "HEAD" });
+  add("CDN reachable (same CDN the Bridge loads from)", r.ok ? "ok" : "warn", `HTTP ${r.status}`);
+} catch (e) { add("CDN reachable (same CDN the Bridge loads from)", "bad", e.message); }
+
+let fb = null;
+try {
+  fb = {
+    app: await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"),
+    auth: await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js"),
+    db: await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js"),
+  };
+  add("Firebase JS SDK loads (ES modules from gstatic)", "ok", "10.12.0");
+} catch (e) { add("Firebase JS SDK loads (ES modules from gstatic)", "bad", e.message); }
+
+if (fb) {
+  try {
+    const app = fb.app.initializeApp({ apiKey: "probe", authDomain: "probe.firebaseapp.com", projectId: "probe", appId: "1:1:web:1" }, "probe");
+    const auth = fb.auth.initializeAuth(app, { persistence: fb.auth.browserLocalPersistence });
+    add("Auth initializes with localStorage persistence", "ok", auth.config.apiKey ? "" : "");
+    try { await fb.auth.signInWithEmailAndPassword(auth, "probe@example.com", "probe"); add("Email/password sign-in call reaches the server", "ok"); }
+    catch (e) { add("Email/password sign-in call reaches the server", /api-key-not-valid|invalid-api-key|network|operation-not-supported/.test(e.code) && !/operation-not-supported/.test(e.code) ? "ok" : (/operation-not-supported/.test(e.code) ? "bad" : "warn"), `${e.code} (api-key-not-valid is the expected answer here)`); }
+    try { await fb.auth.signInWithPopup(auth, new fb.auth.GoogleAuthProvider()); add("Google popup sign-in", "ok"); }
+    catch (e) { add("Google popup sign-in", /operation-not-supported/.test(e.code) ? "bad" : "warn", e.code); }
+  } catch (e) { add("Auth initializes with localStorage persistence", "bad", e.message); }
+}
+
+document.getElementById("env").textContent = JSON.stringify({ userAgent: ua, href: location.href, origin: location.origin, obsstudio: window.obsstudio ? Object.keys(window.obsstudio) : null, cookieEnabled: navigator.cookieEnabled, language: navigator.language }, null, 2);
+
+document.getElementById("run").onclick = async () => {
+  const log = document.getElementById("fblog"); const say = m => { log.textContent += m + "\n"; };
+  log.textContent = "";
+  if (!fb) return say("SDK did not load, see table above.");
+  let cfg; const raw = document.getElementById("cfg").value.trim().replace(/^(const|let|var)\s+\w+\s*=\s*/, "").replace(/;\s*$/, "");
+  try { cfg = JSON.parse(raw); } catch (_) { try { cfg = new Function("return (" + raw + ")")(); } catch (e) { return say("Could not read the config. Paste the firebaseConfig object exactly as the console shows it. " + e.message); } }
+  if (!cfg.apiKey) return say("Config has no apiKey.");
+  if (!cfg.databaseURL) return say("Config has no databaseURL. Open Realtime Database in the console, copy the URL shown above the data tree (https://....firebasedatabase.app) and add it as \"databaseURL\".");
+  try {
+    const app = fb.app.initializeApp(cfg, "roundtrip-" + Date.now());
+    const auth = fb.auth.initializeAuth(app, { persistence: fb.auth.browserLocalPersistence });
+    say("1. auth initialized (localStorage persistence)");
+    const cred = await fb.auth.signInWithEmailAndPassword(auth, document.getElementById("email").value, document.getElementById("password").value);
+    say("2. signed in as uid " + cred.user.uid);
+    const db = fb.db.getDatabase(app);
+    const ref = fb.db.ref(db, `probe/${cred.user.uid}`);
+    let seen = 0;
+    fb.db.onValue(ref, snap => { seen++; say(`   listener fired (#${seen}): ${JSON.stringify(snap.val())}`); });
+    say("3. listener attached");
+    await fb.db.set(ref, { wroteAt: new Date().toISOString(), from: "obs-dock-probe" });
+    say("4. write acknowledged by server");
+    const snap = await fb.db.get(ref);
+    say("5. read back: " + JSON.stringify(snap.val()));
+    say("DONE. Now edit probe/" + cred.user.uid + " in the Firebase console; the listener line above should repeat with the new value.");
+  } catch (e) { say("FAILED: " + (e.code || "") + " " + e.message); }
+};
+</script>
+</body>
+</html>
