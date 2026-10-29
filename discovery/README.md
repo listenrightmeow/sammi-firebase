@@ -1,6 +1,6 @@
 # Discovery: OBS dock probe
 
-`obs-dock-probe.html` (currently v2; the version is printed under the title) is a single self-contained page. Loaded the same way SAMMI Bridge is loaded, as an OBS Custom Browser Dock, it reports what that environment can and cannot do. It answers the **Assumed** rows in `docs/02-verification-list.md` (S14, O5, O6, O7, F2, F7).
+`obs-dock-probe.html` (currently v3; the version is printed under the title) is a single self-contained page. Loaded the same way SAMMI Bridge is loaded, as an OBS Custom Browser Dock, it reports what that environment can and cannot do. It answers the **Assumed** rows in `docs/02-verification-list.md` (S14, O5, O6, O7, F2, F7).
 
 It needs a Windows PC with OBS Studio. SAMMI does not need to be running. Nothing leaves the machine unless you fill in the optional Firebase section.
 
@@ -32,7 +32,7 @@ What the rows mean:
 | Firebase JS SDK loads | YES | NO blocks the whole approach. Report the error text. |
 | Auth initializes with localStorage persistence | YES | Report the error text. |
 | Email/password sign-in call reaches the server | YES with `auth/api-key-not-valid` | `auth/operation-not-supported-in-this-environment` would be bad news. Report it. |
-| Google popup sign-in | Either. YES reads "popup window opened; auth/popup-closed-by-user" and means Google sign-in is possible from the dock. NO with `auth/operation-not-supported-in-this-environment` means it is not. | A small popup window opens for about three seconds and closes itself. `auth/argument-error` means you are running probe v1; use the current file. |
+| Google popup sign-in | "popup window opened" with `auth/api-key-not-valid` (observed Oct 28, 2026). It means the SDK does not refuse popups here. Whether a real sign-in completes is Part 3, step "Google". | NO with `auth/operation-not-supported-in-this-environment` would rule Google sign-in out. `auth/argument-error` means you are running probe v1; use the current file. |
 
 ## Part 3. Real Firebase round trip (15 minutes, optional but valuable)
 
@@ -46,7 +46,8 @@ This proves sign-in, a write, a read and a live listener from inside the dock, w
 4. Still in Authentication, open the **Users** tab → **Add user**. Enter a throwaway email such as `probe@example.com` and a password you will type into the probe. **Add user**.
 5. Left menu: **Build** → **Realtime Database** → **Create Database**. Pick the location nearest you, choose **Start in test mode**, **Enable**. Test mode allows reads and writes for 30 days, which is fine for a probe.
 6. Copy the database URL shown above the empty data tree. It looks like `https://sammi-probe-default-rtdb.firebaseio.com` or `https://sammi-probe-default-rtdb.europe-west1.firebasedatabase.app`.
-7. Click the gear next to **Project Overview** → **Project settings**. Scroll to **Your apps** → click the **</>** (Web) icon. Nickname `probe`, do not tick Firebase Hosting, **Register app**. Copy the whole `const firebaseConfig = { ... };` block that appears. **Continue to console**.
+7. Optional, for the Google sign-in test: back in **Authentication** → **Sign-in method** → **Add new provider** → **Google** → switch **Enable** on, pick a support email when asked, **Save**.
+8. Click the gear next to **Project Overview** → **Project settings**. Scroll to **Your apps** → click the **</>** (Web) icon. Nickname `probe`, do not tick Firebase Hosting, **Register app**. Copy the whole `const firebaseConfig = { ... };` block that appears. **Continue to console**.
 
 ### Run it
 
@@ -68,6 +69,7 @@ This proves sign-in, a write, a read and a live listener from inside the dock, w
 
 5. Back in the Firebase console, **Realtime Database** → **Data**. Expand `probe` → the uid → click the `wroteAt` value, change it to anything, press Enter. Within a second or two a new `listener fired (#3)` line with your edit should appear in the dock. That line is the "cloud edit notifies the Bridge" behavior.
 6. Screenshot the log.
+7. **Google.** Click **Try Google sign-in with this project**. A popup opens to Google's sign-in page. Sign in with any Google account; the probe signs out again right away and stores nothing. Expected good result: `G2. signed in with Google as uid ...` then `GOOGLE SIGN-IN WORKS FROM THIS DOCK.` Expected bad result: `GOOGLE FAILED: auth/unauthorized-domain`, which means Firebase rejects the dock's file origin and Email/Password stays the sign-in method. Screenshot either way.
 
 If a step fails, the log says `FAILED:` with Firebase's error code. The most likely ones: `auth/invalid-credential` means a typo in the email or password; `PERMISSION_DENIED` means the database is not in test mode; a hang at step 4 means the database URL is wrong or websockets are blocked.
 

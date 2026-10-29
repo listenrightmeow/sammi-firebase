@@ -7,7 +7,7 @@ Every fact the design leans on, where it came from, and whether it has been conf
 - **Assumed**: consistent with the sources but not yet observed. Has a verification step.
 - **Open**: not yet researched.
 
-Last updated: Oct 28, 2026. Hardware results from probe v1 are in `discovery/results/2026-10-28-notes.md`.
+Last updated: Oct 29, 2026. Hardware results from probe v1 are in `discovery/results/2026-10-28-notes.md`.
 
 ## SAMMI and SAMMI Bridge
 
@@ -39,19 +39,19 @@ Last updated: Oct 28, 2026. Hardware results from probe v1 are in `discovery/res
 | O4 | All file-URL docks on one machine share a single localStorage namespace, so keys collide across docks. | Verified (source) | OBS forum thread 131768 |
 | O5 | `window.open` is unavailable or blocked in the dock. | **Contradicted (hardware)** | Probe v1, Oct 28, 2026: `window.open` returns a window in the OBS dock (obs-browser 2.26.9). Whether Firebase's popup sign-in accepts the `file://` origin is a separate question, F1 |
 | O6 | Cross-origin `fetch` from the dock to Google endpoints works. | Verified (hardware) | Probe v1 in OBS dock, Oct 28, 2026: HTTP 400 with a JSON error body from identitytoolkit.googleapis.com |
-| O7 | Websocket connections from the dock to `*.firebaseio.com` work. | Assumed | Probe round trip, step 3 to 5 |
+| O7 | Websocket connections from the dock to `*.firebaseio.com` work. | Verified (hardware) | Probe round trip in the OBS dock, Oct 29, 2026: write acknowledged, read back, listener delivered a console edit |
 
 ## Firebase
 
 | # | Fact | Status | Source or verification step |
 | --- | --- | --- | --- |
-| F1 | Popup and redirect sign-in require an http, https or chrome-extension origin and web storage; otherwise `auth/operation-not-supported-in-this-environment`. | Verified (source), hardware pending | Firebase Auth error reference; firebase-js-sdk issue 558. Probe v1 could not test it (probe defect: Auth initialized without `popupRedirectResolver`, giving `auth/argument-error`). Probe v2 row "Google popup sign-in" answers it; a NO here closes the question, a YES reopens D4 |
-| F2 | Email/Password sign-in has no origin restriction and works from a file URL. | Verified (hardware, partial) | Probe v1 in OBS dock, Oct 28, 2026: the call reached the server and failed only on the fake API key. A full sign-in is round-trip step 2, not yet run |
+| F1 | Popup and redirect sign-in require an http, https or chrome-extension origin and web storage; otherwise `auth/operation-not-supported-in-this-environment`. | **Contradicted (hardware), end to end open** | Firebase Auth error reference; firebase-js-sdk issue 558. Probe v2 in the OBS dock, Oct 28, 2026: SDK 10.12.0 opened the popup from `file://` and failed only on the fake API key; the environment refusal did not fire. Whether a real project completes the sign-in (authorized-domain check against a page with no hostname) is probe v3's "Try Google sign-in" button. |
+| F2 | Email/Password sign-in has no origin restriction and works from a file URL. | Verified (hardware) | Probe round trip in the OBS dock, Oct 29, 2026: signed in against a real project and received a uid |
 | F3 | The Auth SDK can be initialized with localStorage or in-memory persistence instead of IndexedDB. | Verified (source) | Firebase JS SDK reference, `initializeAuth`, `browserLocalPersistence`, `inMemoryPersistence` |
 | F4 | ID tokens last one hour; the refresh token lasts until revoked and is exchanged at `securetoken.googleapis.com/v1/token`. | Verified (source) | Firebase Auth REST reference |
 | F5 | Realtime Database realtime listeners (`onValue`) deliver changes made from any client, including the console, within about a second. | Verified (source) | Firebase Realtime Database documentation |
 | F6 | Realtime Database free tier: 1 GB stored, 10 GB per month downloaded, 100 simultaneous connections per project. | Verified (source) | Firebase pricing page |
-| F7 | Realtime Database works from inside the OBS dock, including the live listener. | Assumed | Probe round trip; edit the value in the console and watch the listener line repeat |
+| F7 | Realtime Database works from inside the OBS dock, including the live listener. | Verified (hardware) | Probe round trip in the OBS dock, Oct 29, 2026: a value edited in the Firebase console arrived through `onValue` in the dock |
 | F8 | The Realtime Database web SDK has no disk persistence; its offline queue is in memory. | Verified (source) | Firebase documentation (web SDK offline capabilities) |
 | F9 | Security rules can restrict each signed-in user to `users/{uid}` with a four-line rule set that never needs editing. | Verified (source) | Firebase Realtime Database rules documentation |
 
@@ -59,7 +59,7 @@ Last updated: Oct 28, 2026. Hardware results from probe v1 are in `discovery/res
 
 Two small prototypes close every **Assumed** row above. Neither is product code.
 
-1. **OBS dock probe** (`discovery/obs-dock-probe.html`). Load as an OBS Custom Browser Dock on the Windows machine. Covers S14, O5, O6, O7, F1, F2, F7. Record the result table and the round-trip log in `discovery/results/` with the OBS version and the Chromium version the probe reports. **Status:** v1 table run Oct 28, 2026, see results. Remaining: v2 table (for the popup row) and the round trip (O7, F7, rest of F2).
+1. **OBS dock probe** (`discovery/obs-dock-probe.html`). Load as an OBS Custom Browser Dock on the Windows machine. Covers S14, O5, O6, O7, F1, F2, F7. Record the result table and the round-trip log in `discovery/results/` with the OBS version and the Chromium version the probe reports. **Status:** v1 table run Oct 28, 2026, see results. v2 popup row run Oct 28, 2026; round trip run Oct 29, 2026 and passed (O7, F2, F7 verified). Remaining: the v3 Google sign-in button (end-to-end F1).
 2. **One-command extension.** A `.sef` with a single command that has a text box and a type 37 Save Variable box, whose script echoes the text back. Covers S6 and S15. Also records what the button sees when the Bridge is closed.
 
-Both must pass before the architecture document is written, because S6 and F7 decide the shape of Cloud: Load and of the live update path.
+Both must pass before the architecture document is written, because S6 and F7 decide the shape of Cloud: Load and of the live update path. F7 passed Oct 29, 2026; the live update path is confirmed. S6 (prototype 2) is still open.

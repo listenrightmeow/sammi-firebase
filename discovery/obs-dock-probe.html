@@ -21,7 +21,7 @@
 </head>
 <body>
 <h1>OBS dock probe</h1>
-<p class="sub">Probe v2. Checks what a page loaded the way SAMMI Bridge is loaded can and cannot do. Nothing leaves this machine unless you fill in the optional Firebase section.</p>
+<p class="sub">Probe v3. Checks what a page loaded the way SAMMI Bridge is loaded can and cannot do. Nothing leaves this machine unless you fill in the optional Firebase section.</p>
 
 <p id="boot" class="warn">Starting… If this line is still here after 10 seconds, the page's script did not run in this browser (module scripts or dynamic import unsupported). Report that as the result.</p>
 <p id="jserr" class="bad"></p>
@@ -34,6 +34,7 @@
   <input id="email" type="email" placeholder="test user email">
   <input id="password" type="password" placeholder="test user password">
   <button id="run">Run Firebase round trip</button>
+  <button id="google">Try Google sign-in with this project</button>
   <pre id="fblog"></pre>
 </details>
 
@@ -124,13 +125,33 @@ if (fb) {
 
 document.getElementById("env").textContent = JSON.stringify({ userAgent: ua, href: location.href, origin: location.origin, obsstudio: window.obsstudio ? Object.keys(window.obsstudio) : null, cookieEnabled: navigator.cookieEnabled, language: navigator.language }, null, 2);
 
-document.getElementById("run").onclick = async () => {
-  const log = document.getElementById("fblog"); const say = m => { log.textContent += m + "\n"; };
-  log.textContent = "";
-  if (!fb) return say("SDK did not load, see table above.");
+const log = document.getElementById("fblog"); const say = m => { log.textContent += m + "\n"; };
+function readConfig() {
+  if (!fb) { say("SDK did not load, see table above."); return null; }
   let cfg; const raw = document.getElementById("cfg").value.trim().replace(/^(const|let|var)\s+\w+\s*=\s*/, "").replace(/;\s*$/, "");
-  try { cfg = JSON.parse(raw); } catch (_) { try { cfg = new Function("return (" + raw + ")")(); } catch (e) { return say("Could not read the config. Paste the firebaseConfig object exactly as the console shows it. " + e.message); } }
-  if (!cfg.apiKey) return say("Config has no apiKey.");
+  try { cfg = JSON.parse(raw); } catch (_) { try { cfg = new Function("return (" + raw + ")")(); } catch (e) { say("Could not read the config. Paste the firebaseConfig object exactly as the console shows it. " + e.message); return null; } }
+  if (!cfg.apiKey) { say("Config has no apiKey."); return null; }
+  return cfg;
+}
+
+document.getElementById("google").onclick = async () => {
+  log.textContent = "";
+  const cfg = readConfig(); if (!cfg) return;
+  try {
+    const app = fb.app.initializeApp(cfg, "google-" + Date.now());
+    const auth = fb.auth.initializeAuth(app, { persistence: fb.auth.browserLocalPersistence, popupRedirectResolver: fb.auth.browserPopupRedirectResolver });
+    say("G1. auth initialized; opening the Google popup (sign in with any Google account; it only needs to be a real one, nothing is stored)");
+    const cred = await fb.auth.signInWithPopup(auth, new fb.auth.GoogleAuthProvider());
+    say("G2. signed in with Google as uid " + cred.user.uid + " (" + (cred.user.email || "no email") + ")");
+    say("GOOGLE SIGN-IN WORKS FROM THIS DOCK.");
+    await fb.auth.signOut(auth);
+    say("G3. signed out again");
+  } catch (e) { say("GOOGLE FAILED: " + (e.code || "") + " " + e.message + (/unauthorized-domain/.test(e.code) ? "\n   (Firebase rejects the file:// origin. This is the expected failure if Google sign-in is impossible here.)" : "")); }
+};
+
+document.getElementById("run").onclick = async () => {
+  log.textContent = "";
+  const cfg = readConfig(); if (!cfg) return;
   if (!cfg.databaseURL) return say("Config has no databaseURL. Open Realtime Database in the console, copy the URL shown above the data tree (https://....firebasedatabase.app) and add it as \"databaseURL\".");
   try {
     const app = fb.app.initializeApp(cfg, "roundtrip-" + Date.now());
