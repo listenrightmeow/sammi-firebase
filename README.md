@@ -43,6 +43,17 @@ Spec first. Every fact the design relies on was verified on a streaming PC or in
 | [Feature](https://feature.mmmnt.ai/) | Executable specs, drift detection and test generation (`specs/`) |
 | [flmnt](https://flmnt.ai/) | Agent memory and decision causality |
 
+## The design board
+
+The design is laid out on a public Miro board: [SAMMI Firebase — NDD](https://miro.com/app/board/uXjVEUQjpYg=/). NDD stands for narrative-driven development, a way of modelling a product as the stories its users live through, moment by moment, before any code exists.
+
+The board has two halves:
+
+- **The architecture palette.** A context map of the extension, Firebase, SAMMI Core and the OBS dock, then one frame per aggregate (Connection, Collection, Document) with its commands, events and invariants, the local mirror and its queries, the policies streamers wire up, and a table of which component enforces each rule.
+- **Eight narrative threads, T1 to T8.** One per outcome in the PRD, from "your SAMMI talks to your Firebase" to "a viewer counter". Each thread reads left to right as a film strip of moments, with lanes for what the streamer does, what the extension decides, what the systems do, and the branches where something is refused.
+
+Sticky colours follow a legend on the board. Green notes mark what was discovered or challenged during review, so the board also records how the design changed. The board is the narrative; the Feature specs in `specs/` are the source of truth wherever the two differ.
+
 ## Development
 
 Node 24 and pnpm 11 (`.tool-versions`).
