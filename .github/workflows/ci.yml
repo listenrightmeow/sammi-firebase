@@ -17,11 +17,11 @@ jobs:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: pnpm
@@ -46,7 +46,7 @@ jobs:
       - name: "8 · Coverage (spec + unit, merged)"
         run: node tools/build/coverage-gate.ts
       - name: "9 · Secrets"
-        uses: gitleaks/gitleaks-action@v2
+        uses: gitleaks/gitleaks-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: "9 · Dependencies (no HIGH or CRITICAL)"
@@ -57,7 +57,7 @@ jobs:
         run: pnpm build:sef --check
       - name: "11 · Evidence"
         run: pnpm exec feat report --junit && pnpm exec feat report --evidence
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: evidence-${{ github.sha }}
