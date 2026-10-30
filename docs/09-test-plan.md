@@ -85,7 +85,7 @@ Setup: SAMMI 2025.2.0+, OBS with the Bridge dock, a throwaway Firebase project c
 | T-A3 | Inspect localStorage key name on the pinned SDK version | Matches the pattern the restore code expects | 05-auth-flow |
 | T-P3 | Change the password in the console; restart OBS | Tab: "Connect needed"; one alert; `Disconnected` reason `session`; queries still answer | failure 5 |
 | T-P4 | Uninstall extension, delete deck, reinstall, connect | All documents back; count matches | journey 3 |
-| T-D2 | Gateway probe `.sef` (SF-ADR-016 layer 4): ini write, load and **delete** of a key in section `collection:test`; `setVariable` with an object then `getVariable`; `triggerExt` | Every step prints pass; the delete leaves no key (or the fallback the probe reports is adopted by the `ini` gateway); output saved as the fidelity fixture `evidence/pc/gateway-probe.json` | the fakes' assumptions |
+| T-D2 | Gateway probe `.sef` (`pnpm build:probe`; steps and run guide in `tools/probe/README.md`): ini write, load and **delete** of a key in section `collection:test`; `setVariable` with an object then `getVariable`; `triggerExt` | Every step prints pass; the delete leaves no key (or the fallback the probe reports is adopted by the `ini` gateway); output saved as the fidelity fixture `evidence/pc/gateway-probe.json` | the fakes' assumptions |
 | T-D1 | `INI: Load Text` file `firebase.ini`, section `collection:test`, key `a` from a plain button | Returns the document JSON (confirms `:` in section names; otherwise the section becomes `collection_<name>`, SF-ADR-004) | SF-ADR-004 |
 
 ### Offline and Bridge-closed

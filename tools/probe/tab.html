@@ -1,0 +1,13 @@
+<div style="font-family: system-ui, sans-serif; font-size: 13px">
+  <h4 style="margin: 4px 0">Gateway Probe</h4>
+  <p style="margin: 4px 0">
+    Writes only to <code>firebase-probe.ini</code> and the global <code>fb_probe</code>. Press Run, tick the box once
+    SAMMI shows the <span id="gpTrigger"></span> trigger, then copy the result into
+    <code>evidence/pc/gateway-probe.json</code>.
+  </p>
+  <button id="gpRun" type="button">Run</button>
+  <label><input id="gpSeen" type="checkbox" /> SAMMI showed the trigger with n = 7</label>
+  <button id="gpCopy" type="button">Copy result</button>
+  <p id="gpStatus" style="margin: 4px 0">Ready.</p>
+  <textarea id="gpOut" rows="16" style="width: 100%" readonly></textarea>
+</div>

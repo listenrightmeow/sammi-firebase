@@ -12,6 +12,7 @@
   "scripts": {
     "claude:session": "npx @dotenvx/dotenvx run -f .env.local -- claude",
     "build:sef": "node tools/build/sef.ts",
+    "build:probe": "node tools/probe/build.ts",
     "lint": "eslint . && prettier --check .",
     "typecheck": "tsc --noEmit",
     "spec": "feat lint && feat audit && feat generate",

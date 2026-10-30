@@ -1,8 +1,11 @@
+import { existsSync, readFileSync } from "node:fs";
 import { beforeEach, describe, expect, it } from "vitest";
+import type { ProbeReport } from "../probe/steps.ts";
+import { STEPS } from "../probe/steps.ts";
 import { world } from "./world.ts";
 
 // H2 (docs/09): the fake behaves like the real surface. Each case names the fact it rests on.
-// The gateway probe's recorded fixture (T-D2, evidence/pc/gateway-probe.json) is asserted here
+// The gateway probe's recorded fixture (T-D2, evidence/pc/gateway-probe.json) is asserted at the end
 // once it exists; until then the cases cite the verified sources in docs/02.
 
 const w = world("2026-10-29T12:00:00Z");
@@ -132,5 +135,25 @@ describe("ports", () => {
     expect(p().now()).toBe(Date.parse("2026-10-29T12:00:00Z"));
     expect(p().uuid()).toMatch(/^[0-9a-f-]{36}$/);
     expect(p().pushId()).toMatch(/^[A-Za-z0-9_-]{20}$/);
+  });
+});
+
+const FIXTURE = "evidence/pc/gateway-probe.json";
+
+// T-D2: the real Bridge, recorded on the streaming PC, behaves the way the cases above assume.
+describe.skipIf(!existsSync(FIXTURE))("gateway probe fixture (T-D2)", () => {
+  const report = (): ProbeReport & { triggerSeenInSammi?: boolean } =>
+    JSON.parse(readFileSync(FIXTURE, "utf8")) as ProbeReport & { triggerSeenInSammi?: boolean };
+
+  it("ran every step the probe defines", () => {
+    expect(report().steps.map((s) => s.id)).toEqual(STEPS.map((s) => s.id));
+  });
+  it.each(STEPS.map((s) => s.id))("%s matches the fakes", (id) => {
+    const step = report().steps.find((s) => s.id === id);
+    expect(step?.error).toBeUndefined();
+    expect(step?.observed).toEqual(step?.expected);
+  });
+  it("SAMMI showed the probe's trigger", () => {
+    expect(report().triggerSeenInSammi).toBe(true);
   });
 });
