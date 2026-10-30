@@ -15,8 +15,8 @@ importers:
         specifier: ^10.0.1
         version: 10.0.1(eslint@10.13.0(supports-color@8.1.1))
       '@mmmnt/cli':
-        specifier: 0.6.0
-        version: 0.6.0
+        specifier: 0.6.1
+        version: 0.6.1
       '@mmmnt/feat-adapter-handler':
         specifier: ^0.1.7
         version: 0.1.7
@@ -357,21 +357,21 @@ packages:
   '@keyv/serialize@1.1.1':
     resolution: {integrity: sha512-dXn3FZhPv0US+7dtJsIi2R+c7qWYiReoEh5zUntWCf4oSpMNib8FDhSoed6m3QyZdx5hK7iLFkYk3rNxwt8vTA==}
 
-  '@mmmnt/cli@0.6.0':
-    resolution: {integrity: sha512-Dz981cI2kX0J2+uT1c8xp7N4SPl0jr0KYnuktgVNC2aEd/i4R47UgH77MKcrvnltkvbpn+pm0JajQBEKEV2i8w==}
+  '@mmmnt/cli@0.6.1':
+    resolution: {integrity: sha512-GsPYSlXAzBH5BSvvksCeH+nXsXkKAhgXEg1yc2gau8J770MR4gcatJGiQPdgF5YXxPxAzY24pdtGcTlvUINjkg==}
     engines: {node: '>=22'}
     hasBin: true
 
-  '@mmmnt/core@0.6.0':
-    resolution: {integrity: sha512-cIguNswBDwiZSUNJMQQA4oSge/SYxacmz+iK5walejsOl4NdR3bH50/apjm8QT5G+vZS9OCHbYC6I+39MLzeCg==}
+  '@mmmnt/core@0.6.1':
+    resolution: {integrity: sha512-Sr/FsaYORq1Wk04tBS4Ny5WqZbolD4U0JnJT/J0n8n7hDlvtiCHmoTIOZijkMbSfImTqPaOwfbWusdO/il4T4g==}
     engines: {node: '>=22'}
 
-  '@mmmnt/derive@0.6.0':
-    resolution: {integrity: sha512-tncVkleZY6nk8cazS2kAdNSTL7JC2klJystQ27noJTMB0wNOi0POar9r4mxvJ3g9N/dfrNDFO4I35X1OiijX3g==}
+  '@mmmnt/derive@0.6.1':
+    resolution: {integrity: sha512-ro5UpcUg2QMxs+CI2qDkU+AUESv8O8lKlNxJN2b8bXYFi2BbgDVsQfqMux6lJLrOPX7dtmAA4Rh5RBCBpHr2Hg==}
     engines: {node: '>=22'}
 
-  '@mmmnt/emit-ts@0.6.0':
-    resolution: {integrity: sha512-aPNqqSn6lK04HeH1vwvmHb/PVdYlZQgAQ4xuto+mzR5qwkLfWw+rNquUcm2dRPxUbjE8ru4vd6iz4S1hOzhW6w==}
+  '@mmmnt/emit-ts@0.6.1':
+    resolution: {integrity: sha512-a/WK8p94jGcCqBEkAZf6TVF8EAoOusT63FOpK2gXoSCp51hk13QcHzKe+/6ZwGTsKNFIm4aD7g9He2RluWMt4g==}
     engines: {node: '>=22'}
 
   '@mmmnt/feat-adapter-handler@0.1.7':
@@ -412,24 +412,24 @@ packages:
     resolution: {integrity: sha512-3i6PbvyG2VXFfZLNt/1udwtYYfGd56PrOC93l5dPDQz5jJJbMBb156NZpoUMxWAbdSJ7BL8bR0pe0eu3T0inng==}
     hasBin: true
 
-  '@mmmnt/generate@0.6.0':
-    resolution: {integrity: sha512-q+E4CazwR4R8lq4F8+AZDVX/vtyGah4uLOzPdKyUE/M80WsbWuUSi/J1Q/qCUoiVMyfCINjoVi6KojGv82kSTw==}
+  '@mmmnt/generate@0.6.1':
+    resolution: {integrity: sha512-npY9lUDR97wTKonhDVfhWuKoIaT7rkL+OKa4FFLNlKzZ1zdNlZo+uTSNNcLCI4bQdwl/upYjtSi9ExXP9jw4hg==}
     engines: {node: '>=22'}
 
-  '@mmmnt/harness@0.6.0':
-    resolution: {integrity: sha512-llSHlDGCdmBiaW/rR6uXBYR6O0UgbwIZT/dLjiD2AZK2g4kHrYmNMQwtp+P0vqlL5GdK4I78wJk+qPpblk/upg==}
+  '@mmmnt/harness@0.6.1':
+    resolution: {integrity: sha512-cN6MPSFUngFWvdybaBk+vLknTdAVUygZVchCiP08iJ1sy9k1nw3j9BlOtcAXsN1uV+L9OUpItgecx5SY1EEgMg==}
     engines: {node: '>=22'}
 
-  '@mmmnt/schema@0.6.0':
-    resolution: {integrity: sha512-bfGgnKOnAQg3NJSfsHJSjsnKbHFgaTBQ9rjE7c+07jFn+9BF1YOZFE/S2RIAgx/8stL8ASfQfzoztaeBtK5R2A==}
+  '@mmmnt/schema@0.6.1':
+    resolution: {integrity: sha512-gLWwL68ZJ3sfjopeSmlMy0puJ46S2Lc0PCuA+bqV/AWmWVRrSPwuSRLa6ISfInYQlvUZStvEMdye50DX3vKepw==}
     engines: {node: '>=22'}
 
-  '@mmmnt/sync@0.6.0':
-    resolution: {integrity: sha512-qjGqUDKqfRUkKRKS2NZxpnOZQSz6dmlMy7Ap/XVDhmdnvM6I/vdNEPiUpfyM3n7+etk0+xlyszUZaG97Wio44g==}
+  '@mmmnt/sync@0.6.1':
+    resolution: {integrity: sha512-6MhB/LAo3f8F44vyyN5c+Lj/gf2/0utEcpxXNqpTeMkNua8bKE4B3lzQjMbalVshqWAKKPDxhv3j+lvxW+8LTA==}
     engines: {node: '>=22'}
 
-  '@mmmnt/viz@0.6.0':
-    resolution: {integrity: sha512-Jsv/043V6e1bR2mZvgncB4oCoWXEVT6mCafNcGyFk0K3TCryDYYAkRNo5K1RwRiKGQFWwBopMrr0Q22DVYSNzg==}
+  '@mmmnt/viz@0.6.1':
+    resolution: {integrity: sha512-D8fygUTBGF1qt01HL04W6rN6LcrtHn11pgm2uVN8zrawm3sMz5KTxPCjVFS2D63saBJofeDRvHIiYfrD65QtSg==}
     engines: {node: '>=22'}
 
   '@oclif/core@4.14.0':
@@ -1802,31 +1802,31 @@ snapshots:
 
   '@keyv/serialize@1.1.1': {}
 
-  '@mmmnt/cli@0.6.0':
+  '@mmmnt/cli@0.6.1':
     dependencies:
-      '@mmmnt/core': 0.6.0
-      '@mmmnt/derive': 0.6.0
-      '@mmmnt/emit-ts': 0.6.0
-      '@mmmnt/generate': 0.6.0
-      '@mmmnt/harness': 0.6.0
-      '@mmmnt/schema': 0.6.0
-      '@mmmnt/sync': 0.6.0
-      '@mmmnt/viz': 0.6.0
+      '@mmmnt/core': 0.6.1
+      '@mmmnt/derive': 0.6.1
+      '@mmmnt/emit-ts': 0.6.1
+      '@mmmnt/generate': 0.6.1
+      '@mmmnt/harness': 0.6.1
+      '@mmmnt/schema': 0.6.1
+      '@mmmnt/sync': 0.6.1
+      '@mmmnt/viz': 0.6.1
 
-  '@mmmnt/core@0.6.0':
+  '@mmmnt/core@0.6.1':
     dependencies:
       chokidar: 5.0.0
       langium: 4.4.0
       yaml: 2.9.1
 
-  '@mmmnt/derive@0.6.0':
+  '@mmmnt/derive@0.6.1':
     dependencies:
-      '@mmmnt/core': 0.6.0
+      '@mmmnt/core': 0.6.1
 
-  '@mmmnt/emit-ts@0.6.0':
+  '@mmmnt/emit-ts@0.6.1':
     dependencies:
-      '@mmmnt/core': 0.6.0
-      '@mmmnt/derive': 0.6.0
+      '@mmmnt/core': 0.6.1
+      '@mmmnt/derive': 0.6.1
 
   '@mmmnt/feat-adapter-handler@0.1.7':
     dependencies:
@@ -1884,29 +1884,29 @@ snapshots:
       '@mmmnt/feat-types': 0.1.13
       '@oclif/core': 4.14.0
 
-  '@mmmnt/generate@0.6.0':
+  '@mmmnt/generate@0.6.1':
     dependencies:
-      '@mmmnt/core': 0.6.0
-      '@mmmnt/derive': 0.6.0
+      '@mmmnt/core': 0.6.1
+      '@mmmnt/derive': 0.6.1
 
-  '@mmmnt/harness@0.6.0':
+  '@mmmnt/harness@0.6.1':
     dependencies:
-      '@mmmnt/core': 0.6.0
-      '@mmmnt/derive': 0.6.0
+      '@mmmnt/core': 0.6.1
+      '@mmmnt/derive': 0.6.1
 
-  '@mmmnt/schema@0.6.0':
+  '@mmmnt/schema@0.6.1':
     dependencies:
-      '@mmmnt/core': 0.6.0
+      '@mmmnt/core': 0.6.1
 
-  '@mmmnt/sync@0.6.0':
+  '@mmmnt/sync@0.6.1':
     dependencies:
-      '@mmmnt/emit-ts': 0.6.0
+      '@mmmnt/emit-ts': 0.6.1
       isomorphic-git: 1.44.8
       typescript: 5.9.3
 
-  '@mmmnt/viz@0.6.0':
+  '@mmmnt/viz@0.6.1':
     dependencies:
-      '@mmmnt/core': 0.6.0
+      '@mmmnt/core': 0.6.1
       chokidar: 5.0.0
       picomatch: 4.0.7
 

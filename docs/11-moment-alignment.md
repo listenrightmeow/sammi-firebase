@@ -4,7 +4,7 @@ The methodology's gate before the spec layer: every event, command, aggregate an
 
 ## The model
 
-`model/` is a Moment project in the ADR-037 grammar, held to the palette by ADR-038 (`@mmmnt/cli` 0.6.0, pinned exactly as a dev dependency; run it as `pnpm exec moment`). Moment releases before 0.6.0 have no `external`, `projection`, `query`, `rule`, `state` or `gateway` and will not parse these files.
+`model/` is a Moment project in the ADR-037 grammar, held to the palette by ADR-038 (`@mmmnt/cli` 0.6.1, pinned exactly as a dev dependency; run it as `pnpm exec moment`). Moment releases before 0.6.0 have no `external`, `projection`, `query`, `rule`, `state` or `gateway` and will not parse these files.
 
 | File | Holds |
 | --- | --- |
