@@ -24,7 +24,7 @@
   "devDependencies": {
     "@dotenvx/dotenvx": "^2.38.2",
     "@eslint/js": "^10.0.1",
-    "@mmmnt/cli": "0.6.1",
+    "@mmmnt/cli": "0.6.2",
     "@mmmnt/feat-adapter-handler": "^0.1.7",
     "@mmmnt/feat-adapter-kit": "^0.1.6",
     "@mmmnt/feat-runtime": "^0.1.19",

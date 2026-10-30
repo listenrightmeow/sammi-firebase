@@ -24,7 +24,7 @@ Every push and pull request runs these stages in order on GitHub Actions (`ubunt
 | --- | --- | --- | --- | --- |
 | 1 | Lint and format | `eslint .` · `prettier --check .` | zero findings | kept |
 | 2 | Types | `tsc --noEmit` (the strict tsconfig the build uses) | zero errors | kept |
-| 3 | Model | `moment parse model/` (`pnpm model`) with `@mmmnt/cli` 0.6.1 (ADR-037 and ADR-038 first shipped in 0.6.0), pinned exactly in `package.json` | zero diagnostics | ours: the model is a gate input here |
+| 3 | Model | `moment parse model/` (`pnpm model`) with `@mmmnt/cli` 0.6.2 (ADR-037 and ADR-038 first shipped in 0.6.0), pinned exactly in `package.json` | zero diagnostics | ours: the model is a gate input here |
 | 4 | Spec lint and audit | `feat lint` · `feat audit` | zero ERROR; B1 handler present, B2 rejects ↔ rejection, B3 touches present | kept |
 | 5 | Generate | `feat generate` | succeeds; output gitignored; **generated-suite count equals spec count** (23) | kept; count check per §5e(1) |
 | 6 | Run | `feat run --coverage` | 100% scenarios green, zero unpredicted and zero missing effects on every service; **executed test count equals scenario count** (190, read from `feat lint` output, never hard-coded) | kept; the runner refuses to spawn on zero files |
