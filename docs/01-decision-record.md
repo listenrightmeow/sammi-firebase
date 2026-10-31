@@ -295,9 +295,17 @@ Dates are when the decision was made. Facts cited here are tracked, with sources
 
 **Moment 0.6.0, Oct 29, 2026.** Moment 0.6.0 is on npm with ADR-037, ADR-038 and ADR-039. The model stage now runs `@mmmnt/cli`, pinned exactly as a dev dependency, instead of building commit `bebd994`. Under 0.6.0 the model parsed with exit 0 and five V17 warnings, one per flow with more than one `returns-to`; Moment's CLI printed only errors before 0.6.0. Each of those flows has separate loops that retry one step, which V17 was never meant to flag. Moment 0.6.1, released the same day, warns only when one loop nests inside or crosses another, and the pin moved to 0.6.1. The model now parses with zero diagnostics, as SF-ADR-012 requires.
 
-**Next.** Milestone 2 is the PC tier: the gateway probe (T-D2), the on-PC matrix, and the full bundled deck.
+**Next.** Milestone 2 is the PC tier: the gateway probe (T-D2), the on-PC matrix, and the full bundled deck (D21).
 
 ---
+
+## D21. The Moment detour closed; the bundled deck complete
+
+**Context.** D20's one outside blocker was CI's model stage building Moment from an unpushed commit. Resolving it became Moment work: `@mmmnt` 0.6.0 (the ADR-037 to ADR-039 grammar on Langium 4.4 and Node 22), 0.6.1 (V17 warns only on nested or crossing `returns-to` loops, which cleared five false warnings on this model) and 0.6.2 (string escapes, a `@hono/node-server` advisory, coverage restored). CLI bugs found while modelling this project were fixed on the way.
+
+**Decision.** The model stage runs `@mmmnt/cli` pinned exactly, now 0.6.2, with zero diagnostics. Milestone 2 continues with the bundled deck built in full now, rather than waiting for the PC: the Hue Scenes deck, run on the same SAMMI, confirmed the command ids it needs (If, String Get Length, INI Load, Popup, Wait, the SAMMI Startup trigger). The deck's Comment was written as command 2 by mistake; it is command 6, as the discovery probe used. The two policy buttons ship without triggers, because SAMMI's extension-trigger JSON is not confirmed; the button says how to attach `Firebase: Document Updated` and `Firebase: Connected` with Edit Triggers. The gateway probe (T-D2) is built and waits for the PC.
+
+**Consequences.** Eight buttons: Help, Status, Local Notice, Startup (two `Define Collection` examples, after a 20 s wait for OBS), Example: Replace Document, Example: Get with fallback, Policy: changed elsewhere, Policy: refresh on connect. A build test fails if a deck command or box is not registered by the extension. Trigger Pull Data and Trigger Button are not yet confirmed on hardware; T-K1 checks them. SAMMI stops a button when a `/$obj.path$/` is missing from a parsed object (found by the Hue deck on SAMMI 2026.6), so the fallback example shows the raw document rather than reading a field of it.
 
 ## Open decisions
 

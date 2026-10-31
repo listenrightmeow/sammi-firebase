@@ -2,7 +2,23 @@ import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { alert, comment, deck, deleteVariable, extension, extensionCommands, setString } from "./deck.ts";
+import {
+  alert,
+  comment,
+  deck,
+  deleteVariable,
+  extension,
+  extensionCommands,
+  ifThen,
+  iniLoad,
+  popup,
+  setString,
+  strLen,
+  triggerButton,
+  triggerPull,
+  waitMs,
+} from "./deck.ts";
+import { COMMANDS } from "../../src/ext/commands.ts";
 import { assemble, bundle, check, run, SEF_MAX } from "./sef.ts";
 import { gate } from "./coverage-gate.ts";
 
@@ -26,6 +42,62 @@ describe("the bundled deck", () => {
       async: 0,
     });
   });
+  it("builds the other command types with SAMMI's ids", () => {
+    expect(popup("p")).toMatchObject({ cmd: 141, b0: "p", v0: 0 });
+    expect(waitMs(5)).toMatchObject({ cmd: 190, b0: "5" });
+    expect(strLen("n", "t")).toMatchObject({ cmd: 83, b0: "n", b1: "t" });
+    expect(iniLoad("f", "s", "k", "v")).toMatchObject({ cmd: 127, b0: "f", b1: "s", b2: "k", b3: "v" });
+    expect(triggerPull("v", "source")).toMatchObject({ cmd: 66, b0: "v", b1: "source" });
+    expect(triggerButton("b")).toMatchObject({ cmd: 132, b0: "b", b1: "0" });
+    const [head, ...rest] = ifThen("a", "==", "1", [alert("x"), alert("y")], [alert("z")]);
+    expect(head).toMatchObject({ cmd: 7, b0: "a", b1: "==", b2: "1", v0: 2, v1: 1, v2: 1 });
+    expect(rest).toHaveLength(3);
+  });
+
+  const buttons = (deck("x").button_list as Record<string, unknown>[]) ?? [];
+
+  it("ships the PRD's eight buttons, none overlapping", () => {
+    expect(buttons.map((b) => b.button_id)).toEqual([
+      "fbHelp",
+      "fbStatus",
+      "fbLocalNotice",
+      "fbStartup",
+      "fbExampleReplace",
+      "fbExampleGet",
+      "fbOnDocumentUpdated",
+      "fbOnConnected",
+    ]);
+    const cells = buttons.map((b) => `${String(b.x)},${String(b.y)}`);
+    expect(new Set(cells).size).toBe(cells.length);
+  });
+
+  it("uses only commands and boxes the extension registers", () => {
+    const registered = new Map(COMMANDS.map((c) => [c.name, Object.keys(c.boxes)]));
+    for (const b of buttons)
+      for (const c of b.command_list as Record<string, unknown>[]) {
+        if (c.cmd !== 0) continue;
+        const boxes = registered.get(String(c.extcmd));
+        expect(boxes, `${String(b.button_id)}: ${String(c.extcmd)}`).toBeDefined();
+        const used = Object.keys(c).filter((k) => !/^(b\d+|v\d+|cmd|ext|extcmd|async|ms|sel|dis|xpan|pos)$/.test(k));
+        for (const k of used) expect(boxes, `${String(b.button_id)}: box ${k}`).toContain(k);
+      }
+  });
+
+  it("keeps every If block inside its button and flags the startup trigger", () => {
+    for (const b of buttons) {
+      const list = b.command_list as Record<string, unknown>[];
+      list.forEach((c, i) => {
+        expect(c.pos).toBe(i);
+        if (c.cmd === 7) expect(i + Number(c.v0) + Number(c.v1)).toBeLessThan(list.length);
+      });
+      const triggers = b.triggers as Record<string, unknown>[];
+      expect((Number(b.functions) & 16) !== 0).toBe(triggers.length > 0);
+      for (const t of triggers) expect(t.button_id).toBe(b.button_id);
+    }
+    const startup = buttons.find((b) => b.button_id === "fbStartup");
+    expect(startup?.triggers).toEqual([{ trg: 10, type: "SAMMI Startup", group_id: "", button_id: "fbStartup" }]);
+  });
+
   it("finds commands in release lists too, and tolerates a deck without buttons", () => {
     const d = { button_list: [{ release_list: [extension("X", {})] }] };
     expect(extensionCommands(d)).toEqual([{ name: "X", async: 0 }]);

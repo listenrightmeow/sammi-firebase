@@ -35,6 +35,7 @@ Setup: SAMMI 2025.2.0+, OBS with the Bridge dock, a throwaway Firebase project c
 | T-I2 | Install with the Bridge closed | SAMMI refuses with a clear message | S13 |
 | T-I3 | Paste a config missing `databaseURL` | Tab names the missing field | failure 6 |
 | T-I4 | Connect from the tab with the user created in the console | Tab shows connected; `Firebase: Connected` trigger fires | journey 1 step 8 |
+| T-K1 | Run each bundled-deck button with Run Button; restart SAMMI; attach the two policy triggers and fire them (edit `hue/settings` in the console; reconnect) | Help shows its popup; Startup runs on start and defines `hue` and `viewers`; Replace and Get answer; with the Bridge closed Get shows the local notice and the ini copy; the policies alert and unpack `hue_*` | bundled deck (D21): If, Popup, INI Load, Trigger Pull Data, Trigger Button |
 
 ### Commands
 
