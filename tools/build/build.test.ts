@@ -16,7 +16,7 @@ describe("the bundled deck", () => {
     for (const c of cmds) expect(c.async).toBe(0);
   });
   it("builds the verified command types", () => {
-    expect(comment("c").cmd).toBe(2);
+    expect(comment("c")).toMatchObject({ cmd: 6, b0: "c", v0: 1 });
     expect(alert("a").cmd).toBe(142);
     expect(deleteVariable("v").cmd).toBe(78);
     expect(setString("v", "t")).toMatchObject({ cmd: 20, b0: "v", b1: "t" });

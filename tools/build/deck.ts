@@ -1,5 +1,5 @@
 // The bundled deck (SF-ADR-005). Release 1 ships eight buttons; this milestone ships the ones built
-// only from SAMMI command types verified on hardware: 0 extension command, 142 alert, 2 comment,
+// only from SAMMI command types verified on hardware: 0 extension command, 142 alert, 6 comment,
 // 78 delete variable, 20 set string (discovery/build_echo_sef.py). Every extension command carries
 // "async": 0.0, without which SAMMI does not wait for the Save Variable box (S6).
 
@@ -37,7 +37,8 @@ const cmd = (type: number, fields: Record<string, unknown>): Cmd => ({
   ...fields,
 });
 
-export const comment = (text: string): Cmd => cmd(2, { b0: text });
+// Comment is command 6; v0 is its color index (discovery/build_echo_sef.py, and the Hue Scenes deck on hardware).
+export const comment = (text: string): Cmd => cmd(6, { b0: text, v0: 1 });
 export const alert = (text: string): Cmd => cmd(142, { b0: text });
 export const deleteVariable = (name: string): Cmd => cmd(78, { b0: name });
 export const setString = (name: string, text: string): Cmd => cmd(20, { b0: name, b1: text, v0: false });
