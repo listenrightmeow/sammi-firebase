@@ -307,6 +307,16 @@ Dates are when the decision was made. Facts cited here are tracked, with sources
 
 **Consequences.** Eight buttons: Help, Status, Local Notice, Startup (two `Define Collection` examples, after a 20 s wait for OBS), Example: Replace Document, Example: Get with fallback, Policy: changed elsewhere, Policy: refresh on connect. A build test fails if a deck command or box is not registered by the extension. Trigger Pull Data and Trigger Button are not yet confirmed on hardware; T-K1 checks them. SAMMI stops a button when a `/$obj.path$/` is missing from a parsed object (found by the Hue deck on SAMMI 2026.6), so the fallback example shows the raw document rather than reading a field of it.
 
+## D22. What the first PC session changed
+
+**Decided:** Nov 1, 2026 (maintainer: "do the hue rename and the help fix").
+
+**Result so far.** The gateway probe (T-D2) passed all ten steps on SAMMI 2026.6.0.0 and OBS 33.0.1, recorded in `evidence/pc/gateway-probe.json`. The rest of the on-PC matrix is still open.
+
+**Decision.** (1) The example collection is `example`, not `hue`, in the deck, specs, tests, model and current docs; its fields do not change. Earlier entries of this record keep the name they used. (2) The Help popup no longer shows a `/$...$/` example, because SAMMI replaces it with the variable's value. A build test now rejects `/$` in any deck popup. (3) The tab reads the Firebase config by key and string value, in `src/core/config-block.ts`. Its first version rewrote the text into JSON and broke on the colons in `databaseURL` and `appId`, so no real config could connect. (4) Every deck command now carries the base fields of the probe deck verified on hardware (`obsid`, `vis`, `ms`, `sel`, `dis`, `xpan`), with no empty padding boxes, after SAMMI's command editor crashed drawing **Firebase Status** (`REAL argument incorrect type undefined`). The crash did not return when the deck was run again on the PC.
+
+---
+
 ## Open decisions
 
 None. The spec amendments listed in D20 were ratified on Oct 29, 2026 ("all ratified"). On Oct 29, 2026 the maintainer ratified D17 (SF-ADR-017, the revision of SF-ADR-012, attestations) and earlier in one word ("all agreed on") D12 item 4, SF-ADR-009 to 016, and the six agent decisions under D15; see D16 for what the pre-build audit changed as a result. The items below were closed on Oct 29, 2026:

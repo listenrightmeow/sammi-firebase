@@ -1,0 +1,259 @@
+{
+  "probe": "gateway-probe",
+  "version": "1.0.0",
+  "ranAt": "2026-11-01T22:06:19.182Z",
+  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.252 OBS/33.0.1 Safari/537.36",
+  "bridgeHelpers": [
+    "alert",
+    "changeDeckStatus",
+    "close",
+    "deleteArray",
+    "deleteVariable",
+    "editButton",
+    "extCommand",
+    "generateMessage",
+    "getActiveButtons",
+    "getDeck",
+    "getDeckList",
+    "getDeckStatus",
+    "getImage",
+    "getModifiedButtons",
+    "getSum",
+    "getTwitchList",
+    "getVariable",
+    "httpRequest",
+    "insertArray",
+    "loadIni",
+    "modifyButton",
+    "notification",
+    "openURL",
+    "popUp",
+    "releaseButton",
+    "saveIni",
+    "setVariable",
+    "stayInformed",
+    "testTrigger",
+    "trigger",
+    "triggerButton",
+    "triggerExt"
+  ],
+  "steps": [
+    {
+      "id": "ini-read-shape",
+      "question": "Does loadIni reply with the saved text under .Value (the gateways' replyValue)?",
+      "replies": [
+        {
+          "id": "4",
+          "rq": "SaveIni",
+          "status": 200
+        },
+        {
+          "id": "5",
+          "Value": "hello",
+          "rq": "LoadIni",
+          "status": 200
+        }
+      ],
+      "observed": "hello",
+      "expected": "hello",
+      "pass": true
+    },
+    {
+      "id": "ini-number-text",
+      "question": "Is a numeric-looking value saved as text read back as the string \"42\", not a number?",
+      "replies": [
+        {
+          "id": "6",
+          "rq": "SaveIni",
+          "status": 200
+        },
+        {
+          "id": "7",
+          "Value": "42",
+          "rq": "LoadIni",
+          "status": 200
+        }
+      ],
+      "observed": "42",
+      "expected": "42",
+      "pass": true
+    },
+    {
+      "id": "ini-json-value",
+      "question": "Does a one-line JSON document with = ; # [ ] quotes, backslash and non-ASCII survive the round trip?",
+      "replies": [
+        {
+          "id": "8",
+          "rq": "SaveIni",
+          "status": 200
+        },
+        {
+          "id": "9",
+          "Value": "{\"name\":\"a=b; c # d [e]\",\"n\":3,\"ok\":true,\"note\":\"say \\\"hi\\\" \\\\ é :tada:\"}",
+          "rq": "LoadIni",
+          "status": 200
+        }
+      ],
+      "observed": "{\"name\":\"a=b; c # d [e]\",\"n\":3,\"ok\":true,\"note\":\"say \\\"hi\\\" \\\\ é :tada:\"}",
+      "expected": "{\"name\":\"a=b; c # d [e]\",\"n\":3,\"ok\":true,\"note\":\"say \\\"hi\\\" \\\\ é :tada:\"}",
+      "pass": true
+    },
+    {
+      "id": "ini-colon-section",
+      "question": "T-D1: does a section named collection:test round-trip (SF-ADR-004)?",
+      "replies": [
+        {
+          "id": "10",
+          "rq": "SaveIni",
+          "status": 200
+        },
+        {
+          "id": "11",
+          "Value": "{\"name\":\"a=b; c # d [e]\",\"n\":3,\"ok\":true,\"note\":\"say \\\"hi\\\" \\\\ é :tada:\"}",
+          "rq": "LoadIni",
+          "status": 200
+        }
+      ],
+      "observed": "{\"name\":\"a=b; c # d [e]\",\"n\":3,\"ok\":true,\"note\":\"say \\\"hi\\\" \\\\ é :tada:\"}",
+      "expected": "{\"name\":\"a=b; c # d [e]\",\"n\":3,\"ok\":true,\"note\":\"say \\\"hi\\\" \\\\ é :tada:\"}",
+      "pass": true
+    },
+    {
+      "id": "ini-slash-key",
+      "question": "Does a [pending] key containing / (viewers/alice) round-trip (docs/06 T-D1)?",
+      "replies": [
+        {
+          "id": "12",
+          "rq": "SaveIni",
+          "status": 200
+        },
+        {
+          "id": "13",
+          "Value": "1",
+          "rq": "LoadIni",
+          "status": 200
+        }
+      ],
+      "observed": "1",
+      "expected": "1",
+      "pass": true
+    },
+    {
+      "id": "ini-absent-key",
+      "question": "What does loadIni return for a key that was never written? The gateway treats it as absent.",
+      "replies": [
+        {
+          "id": "14",
+          "Value": "",
+          "rq": "LoadIni",
+          "status": 200
+        }
+      ],
+      "observed": "absent",
+      "expected": "absent",
+      "pass": true
+    },
+    {
+      "id": "ini-delete-fallback",
+      "question": "T-D2: after saving \"\" over a key, does it read as absent (the gateway's delete fallback)?",
+      "replies": [
+        {
+          "id": "15",
+          "rq": "SaveIni",
+          "status": 200
+        },
+        {
+          "id": "16",
+          "rq": "SaveIni",
+          "status": 200
+        },
+        {
+          "id": "17",
+          "Value": "",
+          "rq": "LoadIni",
+          "status": 200
+        }
+      ],
+      "observed": "absent",
+      "expected": "absent",
+      "pass": true
+    },
+    {
+      "id": "variable-object",
+      "question": "S16: does setVariable with an object come back from getVariable as the same object?",
+      "replies": [
+        {
+          "id": "18",
+          "rq": "SetVariable",
+          "status": 200
+        },
+        {
+          "id": "19",
+          "value": {
+            "d": {
+              "n": 1,
+              "s": "x"
+            },
+            "list": [
+              1,
+              2
+            ]
+          },
+          "rq": "GetVariable",
+          "status": 200
+        }
+      ],
+      "observed": {
+        "d": {
+          "n": 1,
+          "s": "x"
+        },
+        "list": [
+          1,
+          2
+        ]
+      },
+      "expected": {
+        "d": {
+          "n": 1,
+          "s": "x"
+        },
+        "list": [
+          1,
+          2
+        ]
+      },
+      "pass": true
+    },
+    {
+      "id": "variable-absent",
+      "question": "What does getVariable return for a global that does not exist?",
+      "replies": [
+        {
+          "id": "20",
+          "Value": null,
+          "rq": "GetVariable",
+          "status": 200
+        }
+      ],
+      "observed": "absent",
+      "expected": "absent",
+      "pass": true
+    },
+    {
+      "id": "trigger",
+      "question": "S11: does triggerExt resolve? (Confirm in SAMMI that \"Gateway Probe: Ping\" fired with pull data n = 7.)",
+      "replies": [
+        {
+          "id": "21",
+          "rq": "ExtensionTrigger",
+          "status": 200
+        }
+      ],
+      "observed": "resolved",
+      "expected": "resolved",
+      "pass": true
+    }
+  ],
+  "triggerSeenInSammi": true
+}
