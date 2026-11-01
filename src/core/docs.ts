@@ -11,6 +11,21 @@ export function docText(doc: StoredDoc): string {
   return JSON.stringify(toWire(doc));
 }
 
+export function sameFields(a: Fields, b: Fields): boolean {
+  const keys = Object.keys(a);
+  return keys.length === Object.keys(b).length && keys.every((k) => a[k] === b[k]);
+}
+
+/**
+ * Mirror rule 2 (docs/06): a newer stamp wins, and so does an edit made outside the extension, such
+ * as in the Firebase console, which changes a field and leaves _t and _d as they were. Equal stamps
+ * from two devices keep local.
+ */
+export function remoteWins(remote: StoredDoc, local: StoredDoc): boolean {
+  if (remote.t !== local.t) return remote.t > local.t;
+  return remote.d === local.d && !sameFields(remote.fields, local.fields);
+}
+
 /** Parse a stored document; undefined when the value is not a valid document. */
 export function fromWire(value: unknown): StoredDoc | undefined {
   if (typeof value !== "object" || value === null || Array.isArray(value)) return undefined;

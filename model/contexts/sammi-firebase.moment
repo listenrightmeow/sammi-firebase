@@ -333,7 +333,7 @@ context "SammiFirebase" [Core]
     // consistency rules 2 and 3: an older or own-echo change is refused and emits nothing.
     command ApplyRemoteChange
       input collection: string, id: string, fields: string, remoteTimestamp: number, remoteDevice: string
-      precondition RemoteNewer: "remote _t is newer than the local document's _t (rule 2)"
+      precondition RemoteNewer: "remote _t is newer than the local document's _t, or the stamps match and the fields differ (rule 2)"
       precondition NotOwnEcho: "remote _d is not this device with an equal _t (rule 3)"
       emits DocumentUpdated
 

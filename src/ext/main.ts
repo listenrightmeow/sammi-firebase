@@ -1,6 +1,6 @@
 import { host, installHost } from "../core/host.ts";
 import { parseConfigBlock } from "../core/config-block.ts";
-import { fromWire } from "../core/docs.ts";
+import { fromWire, remoteWins } from "../core/docs.ts";
 import { boot } from "../core/store.ts";
 import * as applyRemoteChange from "../features/apply-remote-change/handler.ts";
 import * as applyRemoteSchema from "../features/apply-remote-schema/handler.ts";
@@ -60,7 +60,8 @@ function onDocuments(tree: Record<string, Record<string, unknown>>): void {
         seen.add(`${collection}/${id}`);
         const doc = fromWire(wire);
         const local = state.mirror.get(collection)?.get(id);
-        if (doc && (!local || doc.t > local.t)) await applyRemoteChange.handle({ collection, id, document: wire });
+        if (doc && (!local || remoteWins(doc, local)))
+          await applyRemoteChange.handle({ collection, id, document: wire });
       }
     }
     for (const [collection, docs] of state.mirror)

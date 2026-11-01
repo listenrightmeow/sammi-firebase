@@ -1,5 +1,5 @@
 import { ok, refuse, type Answer } from "../../core/answers.ts";
-import { fieldsText, fromWire, type Fields } from "../../core/docs.ts";
+import { fieldsText, fromWire, remoteWins, sameFields, type Fields } from "../../core/docs.ts";
 import { current, target } from "../../core/document.ts";
 import { emit } from "../../core/events.ts";
 import { host } from "../../core/host.ts";
@@ -7,7 +7,7 @@ import { run } from "../../core/run.ts";
 import { dropDoc, publish, putDoc, writeHashes } from "../../core/store.ts";
 
 // SPEC-DOC-008. Issued by the database listener for every delivery. Rule 2 (newer wins, ties keep
-// local), rule 3 (own echoes are ignored), rule 5 (a null snapshot is a remote delete). Never
+// local, an edit that leaves the stamps as they were is applied), rule 3 (own echoes are ignored), rule 5 (a null snapshot is a remote delete). Never
 // writes to the cloud.
 export async function handle(input: { collection?: string; id?: string; document?: unknown }): Promise<Answer> {
   return run(async () => {
@@ -28,8 +28,10 @@ export async function handle(input: { collection?: string; id?: string; document
     }
     const doc = fromWire(input.document);
     if (!doc) refuse("bad field");
-    if (before && doc.d === host().state.deviceId && doc.t === before.t) refuse("own echo");
-    if (before && doc.t <= before.t) refuse("remote older");
+    if (before && doc.d === host().state.deviceId && doc.t === before.t && sameFields(doc.fields, before.fields)) {
+      refuse("own echo");
+    }
+    if (before && !remoteWins(doc, before)) refuse("remote older");
     await putDoc(t.collection, t.id, doc);
     await writeHashes();
     await publish(t.collection);

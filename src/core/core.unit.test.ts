@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { world } from "../../tools/feat-adapters/world.ts";
 import { Refusal, fail, ok } from "./answers.ts";
-import { byteSize, fromWire, parseDocText } from "./docs.ts";
+import { byteSize, fromWire, parseDocText, remoteWins, sameFields } from "./docs.ts";
 import { boxValue, parseFieldsBox } from "./document.ts";
 import { host, installHost } from "./host.ts";
 import { select } from "./query.ts";
@@ -233,5 +233,26 @@ describe("reconcile edges", () => {
     host().state.connected = true;
     installHost(w.ports());
     expect(host().state.connected).toBe(false);
+  });
+});
+
+describe("mirror rule 2", () => {
+  const doc = (t: number, d: string, fields: Record<string, string | number>) => ({ t, d, fields });
+  it("a newer stamp wins and an older one loses, whatever the fields", () => {
+    expect(remoteWins(doc(2, "a", { n: 1 }), doc(1, "a", { n: 1 }))).toBe(true);
+    expect(remoteWins(doc(1, "a", { n: 2 }), doc(2, "a", { n: 1 }))).toBe(false);
+  });
+  it("equal stamps win only when the fields differ, an edit made outside the extension", () => {
+    expect(remoteWins(doc(1, "a", { n: 2 }), doc(1, "a", { n: 1 }))).toBe(true);
+    expect(remoteWins(doc(1, "a", { n: 1, m: 2 }), doc(1, "a", { n: 1 }))).toBe(true);
+    expect(remoteWins(doc(1, "a", { n: 1 }), doc(1, "a", { n: 1, m: 2 }))).toBe(true);
+    expect(remoteWins(doc(1, "a", { n: 1 }), doc(1, "a", { n: 1 }))).toBe(false);
+  });
+  it("an equal timestamp from another device keeps local", () => {
+    expect(remoteWins(doc(1, "b", { n: 2 }), doc(1, "a", { n: 1 }))).toBe(false);
+  });
+  it("compares fields regardless of key order", () => {
+    expect(sameFields({ a: 1, b: 2 }, { b: 2, a: 1 })).toBe(true);
+    expect(sameFields({ a: 1 }, { a: "1" })).toBe(false);
   });
 });

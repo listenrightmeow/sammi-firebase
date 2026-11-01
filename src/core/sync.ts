@@ -1,6 +1,6 @@
 import { host } from "./host.ts";
 import { crc32 } from "./crc32.ts";
-import { fieldsText, fromWire, toWire, without, type Fields } from "./docs.ts";
+import { fieldsText, fromWire, remoteWins, toWire, without, type Fields } from "./docs.ts";
 import { emit } from "./events.ts";
 import { docKey } from "./names.ts";
 import type { PendingOp, StoredDoc } from "./state.ts";
@@ -144,7 +144,7 @@ export async function reconcile(cause: Cause, iniEdits: Set<string> = new Set())
       remote.set(key, doc);
       if (state.pending.has(key)) continue;
       const local = getDoc(collection, id);
-      if (local && local.t >= doc.t) continue;
+      if (local && !remoteWins(doc, local)) continue;
       await putDoc(collection, id, doc, { index });
       counts.applied++;
       touched.add(collection);
