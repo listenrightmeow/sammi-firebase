@@ -115,8 +115,11 @@ export function deck(uniqueId: string): Record<string, unknown> {
       ]),
       button("fbLocalNotice", "Firebase\nLocal Notice", 0.4, 0.0, bgr(200, 120, 40), [
         comment("Helper (D10, H4): call it when a Firebase command answered nothing. Tells you once per session."),
-        setString("fbLocalNoticeShown", "yes"),
-        alert("SAMMI Firebase: the Bridge is not connected, so this deck is using the copy saved on this PC."),
+        // An empty compare value tests for an undefined variable; the button's local variables persist until SAMMI restarts.
+        ...ifThen("fbLocalNoticeShown", "==", "", [
+          setString("fbLocalNoticeShown", "yes"),
+          alert("SAMMI Firebase: the Bridge is not connected, so this deck is using the copy saved on this PC."),
+        ]),
       ]),
       button(
         "fbStartup",
@@ -187,7 +190,9 @@ export function deck(uniqueId: string): Record<string, unknown> {
         triggerPull("fbSource", "source"),
         triggerPull("fbCollection", "collection"),
         triggerPull("fbId", "id"),
-        ...ifThen("fbSource", "==", '"remote"', [alert("SAMMI Firebase: /$fbCollection$//$fbId$/ changed elsewhere")]),
+        ...ifThen("fbSource", "==", '"remote"', [
+          alert("SAMMI Firebase: /$fbId$/ in /$fbCollection$/ changed elsewhere"),
+        ]),
       ]),
       button("fbOnConnected", "Policy:\nrefresh on connect", 0.6, 0.125, bgr(150, 90, 200), [
         comment(
@@ -198,7 +203,7 @@ export function deck(uniqueId: string): Record<string, unknown> {
         extension("Firebase: Get Document", {
           collection: "example",
           id: "settings",
-          unpack: "example_",
+          unpack: "example",
           result: "fbRefresh",
         }),
       ]),

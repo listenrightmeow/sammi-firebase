@@ -238,6 +238,19 @@ describe("deck command format", () => {
     expect(popups.length).toBeGreaterThan(0);
     for (const c of popups) expect(String(c.b0)).not.toContain("/$");
   });
+  it("never sets two variable references side by side, because SAMMI drops a slash between them", () => {
+    for (const c of commands) expect(JSON.stringify(c)).not.toContain("$//$");
+  });
+  it("gives the refresh policy the prefix the variable names are documented with", () => {
+    const refresh = commands.find((c) => c.extcmd === "Firebase: Get Document" && c.unpack);
+    expect(refresh?.unpack).toBe("example");
+  });
+  it("shows the local notice only while its flag is undefined", () => {
+    const notice = (deck("test").button_list as Record<string, unknown>[]).find((b) => b.button_id === "fbLocalNotice");
+    const list = notice?.command_list as Record<string, unknown>[];
+    expect(list.map((c) => c.cmd)).toEqual([6, 7, 20, 142]);
+    expect(list[1]).toMatchObject({ b0: "fbLocalNoticeShown", b1: "==", b2: "", v0: 2, v1: 0 });
+  });
   it("gives every command the base fields of the deck verified on hardware", () => {
     expect(commands.length).toBeGreaterThan(0);
     for (const c of commands) expect(c).toMatchObject({ obsid: "Main", vis: 1, ms: 0, sel: false, dis: 0, xpan: 0 });

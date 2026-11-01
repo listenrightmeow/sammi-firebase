@@ -10,7 +10,7 @@ Every behavior in `specs/` is an executable assertion. `feat lint && feat audit 
 | --- | --- | --- |
 | H1 | Adapter conformance: `@mmmnt/feat-adapter-kit` `serviceAdapterContract` for each of the three adapters | capture-window discipline, record shape, reset and seed semantics the runtime relies on |
 | H2 | Fake fidelity: unit tests on the fake world, one per documented behavior of the real surface, each citing its verified fact (S10 ini strings one key at a time; RTDB `update` with null removes, `increment` from a missing field starts at 0, server timestamp is the clock; S16 `setVariable` with an object) and asserting the fixture recorded by T-D2 | the fakes behave like the Bridge and the SDK |
-| H3 | The generated suites: 200 scenarios across 23 specs | every command, query, precondition, event and mirror rule |
+| H3 | The generated suites: 204 scenarios across 23 specs | every command, query, precondition, event and mirror rule |
 | H4 | Coverage: vitest with all-files instrumentation on `src/features/**`, `tools/feat-adapters/**`, `tools/build/**`; `src/ext/**` excluded by name (host wiring, Layer 3) | at least 95% lines and branches (SF-ADR-017) |
 
 ## Layer 2. Build and static checks, any machine (SF-ADR-011, SF-ADR-012)
@@ -96,7 +96,7 @@ Setup: SAMMI 2025.2.0+, OBS with the Bridge dock, a throwaway Firebase project c
 | T-O1 | Disable the PC's network; `Set Field` `test`/`b` `n`=`2`; `Get Field` | command answers `ok`; query answers `2`; tab shows 1 pending | failure 3 |
 | T-O2 | Re-enable network | Pending goes to 0; console shows `test/b` | replay |
 | T-O3 | Offline here, `Replace Document` `test/b`; meanwhile edit `test/b` in the console (newer); reconnect | Local takes the console's version; `Document Updated` fires with `source: remote` | rule 4 |
-| T-B1 | Close OBS; run the bundled fallback example button twice | First run: the Local Notice popup, then the alert with the mirror document via INI: Load Text; second run: no popup; SAMMI output shows "Bridge disconnected" | S15, failure 1, D10 |
+| T-B1 | Close OBS; run the bundled fallback example button twice | First run: the alert with the mirror document via INI: Load Text, and the Local Notice alert, in either order because Trigger Button runs the notice separately; second run: no notice; SAMMI output shows "Bridge disconnected" | S15, failure 1, D10 |
 | T-B2 | Reopen OBS | Tab green; no duplicate triggers | reconnect |
 | T-B3 | Close OBS; `INI: Save Text` a changed document to `collection:test`, key `a`; meanwhile edit the same document in the console; reopen OBS | Alert "1 local change pushed"; console shows the local version; `Document Updated` with `source: local` | D10, rule 7 |
 | T-B4 | Close OBS; write invalid JSON to a document key; reopen OBS | Tab reports the key; cloud untouched; the document keeps its last good value in memory | rule 7 |
