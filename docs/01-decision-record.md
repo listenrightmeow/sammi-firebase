@@ -329,6 +329,16 @@ Dates are when the decision was made. Facts cited here are tracked, with sources
 
 ---
 
+## D24. SAMMI's disconnect message replaces the Local Notice
+
+**Decided:** Nov 1, 2026 (maintainer: "remove the local notice, disconnect is enough.").
+
+**Decision.** The bundled deck no longer ships `Firebase: Local Notice`, which leaves seven buttons. This replaces the notify step of D10, the helper it kept in the agreed decisions, and the Local Notice fix in D23. With the Bridge closed, SAMMI itself says "Bridge disconnected", and the fallback still reads the copy in `firebase.ini`.
+
+**Consequences.** The user is told on every run rather than once per session. In the deck check, the notice's once-per-session guard never showed anything, so it shipped unproven. The deck no longer uses Trigger Button, so the deck check does not depend on it. Startup moves into the freed slot in the top row. The public design board has not been updated for this or for the rename in D22.
+
+---
+
 ## Open decisions
 
 None. The spec amendments listed in D20 were ratified on Oct 29, 2026 ("all ratified"). On Oct 29, 2026 the maintainer ratified D17 (SF-ADR-017, the revision of SF-ADR-012, attestations) and earlier in one word ("all agreed on") D12 item 4, SF-ADR-009 to 016, and the six agent decisions under D15; see D16 for what the pre-build audit changed as a result. The items below were closed on Oct 29, 2026:
@@ -336,6 +346,6 @@ None. The spec amendments listed in D20 were ratified on Oct 29, 2026 ("all rati
 - Final name and command names: D7.
 - Scope of the first release: D9. `Query Documents` and `Increment Field` ship in 1.0.
 - Ini layout: as [06-data-model.md](06-data-model.md), one file `firebase.ini`; collection sections frozen.
-- Bundled deck: Help, Status, startup button with two `Define Collection` examples, Example: Replace Document, Example: Get Document with fallback, the two example policies, and `Firebase: Local Notice` (D10). Eight buttons.
+- Bundled deck: Help, Status, startup button with two `Define Collection` examples, Example: Replace Document, Example: Get Document with fallback, and the two example policies. Seven buttons (D24 removed `Firebase: Local Notice`).
 - Bridge closed behavior: D10.
 - Build and test tooling: as [08-distribution-updates.md](08-distribution-updates.md) and [09-test-plan.md](09-test-plan.md), good for now.

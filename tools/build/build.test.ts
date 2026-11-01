@@ -14,7 +14,6 @@ import {
   popup,
   setString,
   strLen,
-  triggerButton,
   triggerPull,
   waitMs,
 } from "./deck.ts";
@@ -48,7 +47,6 @@ describe("the bundled deck", () => {
     expect(strLen("n", "t")).toMatchObject({ cmd: 83, b0: "n", b1: "t" });
     expect(iniLoad("f", "s", "k", "v")).toMatchObject({ cmd: 127, b0: "f", b1: "s", b2: "k", b3: "v" });
     expect(triggerPull("v", "source")).toMatchObject({ cmd: 66, b0: "v", b1: "source" });
-    expect(triggerButton("b")).toMatchObject({ cmd: 132, b0: "b", b1: "0" });
     const [head, ...rest] = ifThen("a", "==", "1", [alert("x"), alert("y")], [alert("z")]);
     expect(head).toMatchObject({ cmd: 7, b0: "a", b1: "==", b2: "1", v0: 2, v1: 1, v2: 1 });
     expect(rest).toHaveLength(3);
@@ -56,11 +54,10 @@ describe("the bundled deck", () => {
 
   const buttons = (deck("x").button_list as Record<string, unknown>[]) ?? [];
 
-  it("ships the PRD's eight buttons, none overlapping", () => {
+  it("ships the PRD's seven buttons, none overlapping", () => {
     expect(buttons.map((b) => b.button_id)).toEqual([
       "fbHelp",
       "fbStatus",
-      "fbLocalNotice",
       "fbStartup",
       "fbExampleReplace",
       "fbExampleGet",
@@ -245,11 +242,12 @@ describe("deck command format", () => {
     const refresh = commands.find((c) => c.extcmd === "Firebase: Get Document" && c.unpack);
     expect(refresh?.unpack).toBe("example");
   });
-  it("shows the local notice only while its flag is undefined", () => {
-    const notice = (deck("test").button_list as Record<string, unknown>[]).find((b) => b.button_id === "fbLocalNotice");
-    const list = notice?.command_list as Record<string, unknown>[];
-    expect(list.map((c) => c.cmd)).toEqual([6, 7, 20, 142]);
-    expect(list[1]).toMatchObject({ b0: "fbLocalNoticeShown", b1: "==", b2: "", v0: 2, v1: 0 });
+  it("falls back to the ini copy when the Bridge answers nothing", () => {
+    const get = (deck("test").button_list as Record<string, unknown>[]).find((b) => b.button_id === "fbExampleGet");
+    const list = get?.command_list as Record<string, unknown>[];
+    const branch = list.findIndex((c) => c.cmd === 7);
+    expect(list[branch]).toMatchObject({ b0: "exampleSettingsLen", b1: "==", b2: "0", v0: 1, v1: 0 });
+    expect(list[branch + 1]).toMatchObject({ cmd: 127, b0: "firebase.ini", b1: "collection:example", b2: "settings" });
   });
   it("gives every command the base fields of the deck verified on hardware", () => {
     expect(commands.length).toBeGreaterThan(0);

@@ -35,7 +35,7 @@ Setup: SAMMI 2025.2.0+, OBS with the Bridge dock, a throwaway Firebase project c
 | T-I2 | Install with the Bridge closed | SAMMI refuses with a clear message | S13 |
 | T-I3 | Paste a config missing `databaseURL` | Tab names the missing field | failure 6 |
 | T-I4 | Connect from the tab with the user created in the console | Tab shows connected; `Firebase: Connected` trigger fires | journey 1 step 8 |
-| T-K1 | Run each bundled-deck button with Run Button; restart SAMMI; attach the two policy triggers and fire them (edit `example/settings` in the console; reconnect) | Help shows its popup; Startup runs on start and defines `example` and `viewers`; Replace and Get answer; with the Bridge closed Get shows the local notice and the ini copy; the policies alert and unpack `example_*` | bundled deck (D21): If, Popup, INI Load, Trigger Pull Data, Trigger Button |
+| T-K1 | Run each bundled-deck button with Run Button; restart SAMMI; attach the two policy triggers and fire them (edit `example/settings` in the console; reconnect) | Help shows its popup; Startup runs on start and defines `example` and `viewers`; Replace and Get answer; with the Bridge closed Get shows the ini copy; the policies alert and unpack `example_*` | bundled deck (D21, D24): If, Popup, INI Load, Trigger Pull Data |
 
 ### Commands
 
@@ -96,7 +96,7 @@ Setup: SAMMI 2025.2.0+, OBS with the Bridge dock, a throwaway Firebase project c
 | T-O1 | Disable the PC's network; `Set Field` `test`/`b` `n`=`2`; `Get Field` | command answers `ok`; query answers `2`; tab shows 1 pending | failure 3 |
 | T-O2 | Re-enable network | Pending goes to 0; console shows `test/b` | replay |
 | T-O3 | Offline here, `Replace Document` `test/b`; meanwhile edit `test/b` in the console (newer); reconnect | Local takes the console's version; `Document Updated` fires with `source: remote` | rule 4 |
-| T-B1 | Close OBS; run the bundled fallback example button twice | First run: the alert with the mirror document via INI: Load Text, and the Local Notice alert, in either order because Trigger Button runs the notice separately; second run: no notice; SAMMI output shows "Bridge disconnected" | S15, failure 1, D10 |
+| T-B1 | Close OBS; run the bundled fallback example button twice | Both runs: the alert with the mirror document via INI: Load Text, and SAMMI's "Bridge disconnected" message | S15, failure 1, D10, D24 |
 | T-B2 | Reopen OBS | Tab green; no duplicate triggers | reconnect |
 | T-B3 | Close OBS; `INI: Save Text` a changed document to `collection:test`, key `a`; meanwhile edit the same document in the console; reopen OBS | Alert "1 local change pushed"; console shows the local version; `Document Updated` with `source: local` | D10, rule 7 |
 | T-B4 | Close OBS; write invalid JSON to a document key; reopen OBS | Tab reports the key; cloud untouched; the document keeps its last good value in memory | rule 7 |

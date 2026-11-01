@@ -19,7 +19,7 @@ Buttons run during a live stream. They cannot wait on the network and must keep 
 3. Remote changes: document-level last write wins by server `_t`; own echoes (`_d` equal to this device with equal `_t`) are ignored and emit nothing.
 4. `[pending]` is the durable write queue, replayed on reconnect: update, set-field, delete-field and increment merge on the server in any order; a create or replace older than the remote is dropped and announced as `DocumentUpdated` with source `remote`.
 5. Reconcile on connect: one read of `meta/schema` and `collections/`, rule 3 per document, rule 4 per pending entry, then subscribe. Connect reconciles automatically; `Firebase: Reconcile` does it on demand (H2).
-6. Bridge closed: a deck reads with `INI: Load Text` from the frozen section and tells the user once per session through the bundled `Firebase: Local Notice` helper (H4). A deck may write a document with `INI: Save Text`; on the next start the extension hashes every ini document against `[index] hashes`, queues the changed ones as pending replaces stamped now, and pushes them; local wins over remote changes made meanwhile (H3). Deletes while closed are unsupported.
+6. Bridge closed: a deck reads with `INI: Load Text` from the frozen section, and SAMMI's own "Bridge disconnected" message tells the user (D24). A deck may write a document with `INI: Save Text`; on the next start the extension hashes every ini document against `[index] hashes`, queues the changed ones as pending replaces stamped now, and pushes them; local wins over remote changes made meanwhile (H3). Deletes while closed are unsupported.
 
 ## Rationale
 

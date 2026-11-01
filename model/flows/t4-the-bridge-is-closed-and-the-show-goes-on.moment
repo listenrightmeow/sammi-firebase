@@ -17,10 +17,9 @@ flow "T4 — The Bridge is closed and the show goes on (O4)"
     // [sammi] BridgeDisconnected   (external lane: project mode cannot resolve nodes on it; kept as narrative)
     // [sammi] SaveVariableAbsent   (external lane: project mode cannot resolve nodes on it; kept as narrative)
 
-  moment "M2 · The deck notices and tells you"
+  moment "M2 · SAMMI tells you"
     data: ConnectionStatus
-    // [sammi] LocalNotice   (external lane: project mode cannot resolve nodes on it; kept as narrative)
-    // [streamer] PopupLocalCopy   (external lane: project mode cannot resolve nodes on it; kept as narrative)
+    // [streamer] SeesBridgeDisconnected   (external lane: project mode cannot resolve nodes on it; kept as narrative)
 
   moment "M3 · Reads keep working"
     data: IniRecord

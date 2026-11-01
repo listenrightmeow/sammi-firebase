@@ -42,8 +42,8 @@ In:
 - Queries: Get Document (with unpack), Get Field, Document Exists, List Documents, Query Documents, Count Documents, Get Status.
 - Triggers: Connected, Connection Failed, Disconnected, Mirror Reconciled, Collection Defined, Collection Undefined, Document Created, Document Replaced, Document Updated, Document Deleted, Write Rejected.
 - The variable surface `fb_<collection>`, two-way for bound collections.
-- The local mirror in `firebase.ini`, the pending queue, reconcile on connect and on demand, Bridge-closed fallback with the local notice and catch-up on reopen.
-- A bundled deck of eight buttons: help, status, a startup button with two Define Collection examples, example replace, example get with the fallback, two example policies, the local notice helper.
+- The local mirror in `firebase.ini`, the pending queue, reconcile on connect and on demand, Bridge-closed fallback and catch-up on reopen.
+- A bundled deck of seven buttons: help, status, a startup button with two Define Collection examples, example replace, example get with the fallback, two example policies.
 - A setup guide with one screenshot per console step.
 
 Out, by decision:

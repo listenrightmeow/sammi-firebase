@@ -1,8 +1,8 @@
-// The bundled deck (SF-ADR-005): the eight buttons of the PRD. Command ids and box layouts follow SAMMI's
+// The bundled deck (SF-ADR-005): the seven buttons of the PRD. Command ids and box layouts follow SAMMI's
 // docs; 0 extension command, 6 comment, 20 set string, 78 delete variable and 142 alert were confirmed
 // by discovery/build_echo_sef.py, and 7 If, 83 String Get Length, 127 INI Load, 141 Popup, 190 Wait and
-// the SAMMI Startup trigger by the Hue Scenes deck on the same SAMMI. 66 Trigger Pull Data and
-// 132 Trigger Button are not yet confirmed on hardware (docs/09, deck check). Every extension command
+// the SAMMI Startup trigger by the Hue Scenes deck on the same SAMMI. 66 Trigger Pull Data was
+// confirmed by the deck check (D23). Every extension command
 // carries "async": 0.0, without which SAMMI does not wait for the Save Variable box (S6).
 
 export const SAMMI_MIN = "2025.2.0";
@@ -27,7 +27,6 @@ export const strLen = (save: string, text: string): Cmd => cmd(83, { b0: save, b
 export const iniLoad = (file: string, section: string, key: string, save: string): Cmd =>
   cmd(127, { b0: file, b1: section, b2: key, b3: save });
 export const triggerPull = (save: string, key: string): Cmd => cmd(66, { b0: save, b1: key });
-export const triggerButton = (id: string): Cmd => cmd(132, { b0: id, b1: "0", v0: false });
 
 /** If (7): SAMMI stores 20 condition slots; v0 is the then-block size, v1 the else-block size. */
 export function ifThen(left: string, op: string, right: string, then: Cmd[], otherwise: Cmd[] = []): Cmd[] {
@@ -113,18 +112,10 @@ export function deck(uniqueId: string): Record<string, unknown> {
         extension("Firebase: Get Status", { result: "fbStatus" }),
         alert("SAMMI Firebase: /$fbStatus$/"),
       ]),
-      button("fbLocalNotice", "Firebase\nLocal Notice", 0.4, 0.0, bgr(200, 120, 40), [
-        comment("Helper (D10, H4): call it when a Firebase command answered nothing. Tells you once per session."),
-        // An empty compare value tests for an undefined variable; the button's local variables persist until SAMMI restarts.
-        ...ifThen("fbLocalNoticeShown", "==", "", [
-          setString("fbLocalNoticeShown", "yes"),
-          alert("SAMMI Firebase: the Bridge is not connected, so this deck is using the copy saved on this PC."),
-        ]),
-      ]),
       button(
         "fbStartup",
         "Firebase\nStartup",
-        0.6,
+        0.4,
         0.0,
         bgr(45, 160, 90),
         [
@@ -165,8 +156,8 @@ export function deck(uniqueId: string): Record<string, unknown> {
       ]),
       button("fbExampleGet", "Example:\nGet with fallback", 0.2, 0.125, bgr(45, 127, 249), [
         comment(
-          "Reads example/settings. With the Bridge closed the command answers nothing, so the button shows the local " +
-            "notice once and reads the copy in firebase.ini instead (D10).",
+          "Reads example/settings. With the Bridge closed the command answers nothing and SAMMI says the Bridge is " +
+            "disconnected, so the button reads the copy in firebase.ini instead (D10, D24).",
         ),
         setString("exampleSettings", ""),
         extension("Firebase: Get Document", {
@@ -177,7 +168,6 @@ export function deck(uniqueId: string): Record<string, unknown> {
         }),
         strLen("exampleSettingsLen", "/$exampleSettings$/"),
         ...ifThen("exampleSettingsLen", "==", "0", [
-          triggerButton("fbLocalNotice"),
           iniLoad("firebase.ini", "collection:example", "settings", "exampleSettings"),
         ]),
         alert("SAMMI Firebase: example/settings = /$exampleSettings$/"),

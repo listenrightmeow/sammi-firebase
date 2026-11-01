@@ -80,7 +80,7 @@ The connection is configured once, in the extension, and is global to the Bridge
 
 Buttons that run a Cloud command get no answer: the button continues at once and the Save Variable is absent (S15). Two layers handle it:
 
-1. **Documented deck pattern**, shown in the bundled example: after `Firebase: Get Document`, `If exampleSettings does not exist` → `Trigger Button fbLocalNotice` (one popup per session, "using the local copy") → `INI: Load Text` file `firebase.ini`, section `collection:example`, key `settings` → `Parse`. Reads keep working with zero dependency on the Bridge (D6, D10).
+1. **Documented deck pattern**, shown in the bundled example: after `Firebase: Get Document`, `If exampleSettings is empty` → `INI: Load Text` file `firebase.ini`, section `collection:example`, key `settings` → `Parse`. Reads keep working with zero dependency on the Bridge, and SAMMI's own "Bridge disconnected" message tells the user (D6, D10, D24).
 2. **Writes while closed** go to the same section and key with `INI: Save Text`, as JSON of the fields. On its next start the extension finds them by comparing each document's hash with `[index] hashes`, queues them as pending replaces stamped with the start time, pushes them, and alerts once with the count (D10, data model rule 7).
 3. **Internet lost while the Bridge is open** is the other case and needs nothing from the deck: the extension is running, commands go to the mirror and `[pending]`, and reconnect replays them (rules 4 and 6).
 
