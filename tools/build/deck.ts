@@ -100,7 +100,7 @@ export function deck(uniqueId: string): Record<string, unknown> {
         popup(
           "SAMMI Firebase\n\n" +
             "Connect once in the Bridge's SAMMI Firebase tab (config, email, password). After that:\n" +
-            "- Read any document as a variable: /$fb_hue.settings.ip$/\n" +
+            "- Read any document as a variable: in a yellow box, type fb_hue.settings.ip\n" +
             "- Write with one Firebase command inside your own buttons (Set Field, Increment Field, Replace Document...).\n" +
             "- Leave the Async box on Firebase commands unticked.\n" +
             "- Firebase: Startup declares this deck's collections; the Example buttons show a write, a read with the " +

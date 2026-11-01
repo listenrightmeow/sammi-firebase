@@ -233,6 +233,11 @@ describe("deck command format", () => {
   const commands = (deck("test").button_list as Record<string, unknown>[]).flatMap(
     (b) => b.command_list as Record<string, unknown>[],
   );
+  it("shows no variable reference in a popup, because SAMMI would replace a syntax example with its value", () => {
+    const popups = commands.filter((c) => c.cmd === 141);
+    expect(popups.length).toBeGreaterThan(0);
+    for (const c of popups) expect(String(c.b0)).not.toContain("/$");
+  });
   it("gives every command the base fields of the deck verified on hardware", () => {
     expect(commands.length).toBeGreaterThan(0);
     for (const c of commands) expect(c).toMatchObject({ obsid: "Main", vis: 1, ms: 0, sel: false, dis: 0, xpan: 0 });
