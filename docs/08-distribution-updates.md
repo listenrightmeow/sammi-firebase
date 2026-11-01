@@ -45,7 +45,7 @@ To be listed: one pull request adding `registry/sammi-firebase.json` to the `ext
 | --- | --- | --- |
 | SAMMI Core | 2025.2.0 | `sammi_version` in `[insert_over]` (S5, S13) |
 | SAMMI Bridge | the version shipped with SAMMI 2025.2.0 (type 37 in its box table) | documented; older Bridges forward the box type anyway, SAMMI Core does the waiting |
-| OBS browser plugin | any CEF with ES modules and dynamic import; verified on 127 (Oct 28, 2026) | documented |
+| OBS browser plugin | any CEF with ES modules and dynamic import; verified on CEF 127 (Oct 28, 2026) and on Chrome 150 in OBS 33.0.1 (Nov 1, 2026) | documented |
 | Firebase JS SDK | pinned, 10.12.0 at planning time | the import URL |
 
 ## Testing in a real Bridge without hand-editing bridge.html

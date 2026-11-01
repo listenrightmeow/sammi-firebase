@@ -317,6 +317,18 @@ Dates are when the decision was made. Facts cited here are tracked, with sources
 
 ---
 
+## D23. What the deck check found
+
+**Decided:** Nov 1, 2026 (maintainer, asked whether a value edited in the Firebase console should fire triggers: "yes").
+
+**Result.** The bundled deck ran on SAMMI 2026.6.0.0. Startup ran from the SAMMI Startup trigger; Help, Status, Replace and Get answered; both policy triggers fired; with the Bridge closed, Get read the copy in `firebase.ini`; the Bridge reconnected by itself. This confirms Trigger Pull Data, Trigger Button and INI Load on hardware. The fixes below have not yet been run on the PC.
+
+**Decision.** (1) Mirror rule 2 also applies an edit made outside the extension. A console edit changes a field and leaves `_t` and `_d` as they were, so the rule that only a newer `_t` wins dropped it silently, as the check showed. Equal stamps with different fields now win; equal timestamps from two devices still keep local. The stamps stay as they were, because a listener never writes to the cloud. (2) Connect strips a trailing slash from the database URL, because the console shows the URL with one. (3) Three deck fixes: the refresh policy's prefix is `example`, so the variables are `example_ip` and so on, not `example__ip`; the Local Notice shows once until SAMMI restarts, using an If with an empty compare value; the changed-elsewhere alert no longer puts two variable references side by side, because SAMMI dropped the slash between them. (4) The README carries the setup guide; the screenshots the PRD asks for are still to do. (5) The fake world is now asserted against the probe recording, not only the recording against itself.
+
+**Consequences.** The notice can follow the data rather than precede it, because Trigger Button runs it separately; T-B1 allows either order. T-K1, T-B1 and T-L1 must be run again with this deck.
+
+---
+
 ## Open decisions
 
 None. The spec amendments listed in D20 were ratified on Oct 29, 2026 ("all ratified"). On Oct 29, 2026 the maintainer ratified D17 (SF-ADR-017, the revision of SF-ADR-012, attestations) and earlier in one word ("all agreed on") D12 item 4, SF-ADR-009 to 016, and the six agent decisions under D15; see D16 for what the pre-build audit changed as a result. The items below were closed on Oct 29, 2026:

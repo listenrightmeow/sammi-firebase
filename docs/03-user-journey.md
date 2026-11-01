@@ -14,7 +14,7 @@ Target: under fifteen minutes, with screenshots for every console step. Steps 1 
 | 2 | Firebase console | Authentication → Get started → Email/Password → Enable → Save. | The only sign-in that works from the Bridge (D4, verified F1). |
 | 2b | Firebase console | Authentication → Users → Add user: an email and a password. | No account management in the extension (D9); the user is created here. |
 | 3 | Firebase console | Realtime Database → Create → nearest location → start in **locked** mode. | The store (D3). Locked mode because step 4 replaces the rules. |
-| 4 | Firebase console | Rules tab → select all → paste the four-line rule set from our README → Publish. | Each user may only read and write their own subtree (F9). |
+| 4 | Firebase console | Rules tab → select all → paste the rule set from our README → Publish. | Each user may only read and write their own subtree (F9). |
 | 5 | Firebase console | Project settings → Your apps → Web → Register → copy the config block. | The extension needs the API key, auth domain, project id, app id and database URL. |
 | 6 | SAMMI Core | Bridge → Install an Extension → pick the `.sef`. | Standard SAMMI install (S2). The SAMMI Firebase tab appears in the Bridge and a small deck is added. |
 | 7 | Bridge, SAMMI Firebase tab | Paste the config block into the one big box. The tab says what is missing if anything is. | Validation is the extension's job, not the user's. |

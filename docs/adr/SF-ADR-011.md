@@ -17,7 +17,7 @@ A `.sef` is a text file with fixed sections; `[insert_script]` is plain JavaScri
 1. Source is TypeScript under `src/`. One module per feature folder exports the handler the specs name (`src/features/<feature>/handler.ts`), taking the box payload and a context of gateways (ini, firebase, sammi, clock) and returning `{ status: "OK" | "ERR", body }`. Handlers are pure with respect to the host: every side effect goes through the gateway context.
 2. `tools/build/sef.ts` (run with `pnpm build:sef`) uses esbuild's API to bundle `src/ext/main.ts` (which wires the gateways to the real Bridge helpers and the Firebase SDK) into a single IIFE, then assembles the `.sef` sections around it with the version and the bundled deck.
 3. The same handler modules run in the Feature harness with fake gateways (SF-ADR-016). No code path is special-cased for tests.
-4. Node 22 or newer for tooling; the extension itself targets the Chromium in OBS 30+ (CEF 127 verified).
+4. Node 22 or newer for tooling; the extension itself targets the Chromium in OBS 30+ (verified on CEF 127 and on Chrome 150 in OBS 33.0.1).
 
 ## Rationale
 

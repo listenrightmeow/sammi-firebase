@@ -6,7 +6,7 @@ Layer 4 of the methodology: one `.feat` spec per command and query of the Moment
 feat lint && feat audit && feat generate && feat run
 ```
 
-All 23 specs are green against the handlers in `src/features/` and the fake world in `tools/feat-adapters/` (milestone 1, Oct 29, 2026): 200 scenarios, 200 passing.
+All 23 specs are green against the handlers in `src/features/` and the fake world in `tools/feat-adapters/` (milestone 1, Oct 29, 2026): 204 scenarios, 204 passing.
 
 ## Vocabulary
 
@@ -52,6 +52,11 @@ Every command and query of the model has a spec or is the refusal branch of the 
 - **Eleven specs:** 65 JSON-text predictions were compacted (`{"a":1}`, not `{"a": 1}`). A SAMMI box receives compact JSON; the spacing came from the tool that drafted the specs.
 - **Reconcile, four scenarios:** the givens seeded the "later" cloud change and pending entry after `execute Connect`, but the harness runs every seed first, so Connect consumed them. They now use `later` writes and an `outage`; the replayed increment also predicts its `_t`/`_d` stamp, as Increment Field and Connect's replay do.
 - **Ten scenarios added**, each a rule the code needed and no spec stated: Connect on a machine that never connected writes a generated device id; no config at all names `apiKey`; a password with no email, a deck Connect with no stored session, and a stored session the SDK rejects are each refused as invalid credentials; Apply Remote Change ignores a removal of an unknown document and refuses a malformed snapshot; Apply Variable Change reverts a clear of a missing field; Define Collection accepts no fields; Increment Field reads `by` typed as text.
+
+## Amendments from the first PC session (D23, Nov 1, 2026)
+
+- **Apply Remote Change and Reconcile:** rule 2 also applies an edit made outside the extension, whose `_t` and `_d` match the local document and whose fields differ. Rule 3's own echo now also requires the same fields. Three scenarios added.
+- **Connect:** a database URL pasted with a trailing slash is stored without it. One scenario added.
 
 ## Assumptions the PC tier must confirm
 
