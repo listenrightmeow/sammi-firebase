@@ -1,4 +1,5 @@
 import { host, installHost } from "../core/host.ts";
+import { parseConfigBlock } from "../core/config-block.ts";
 import { fromWire } from "../core/docs.ts";
 import { boot } from "../core/store.ts";
 import * as applyRemoteChange from "../features/apply-remote-change/handler.ts";
@@ -159,11 +160,8 @@ function wireTab(): void {
       const raw = ($<HTMLTextAreaElement>("fbConfig")?.value ?? "").trim();
       let config: Record<string, unknown> | undefined;
       if (raw) {
-        // Accept the console's snippet as pasted: `const firebaseConfig = { ... };`
-        const body = raw.slice(raw.indexOf("{"), raw.lastIndexOf("}") + 1).replace(/(\w+)\s*:/g, '"$1":');
-        try {
-          config = JSON.parse(body) as Record<string, unknown>;
-        } catch {
+        config = parseConfigBlock(raw);
+        if (!config) {
           show("That does not look like the config block from step 5 of the setup guide.");
           return;
         }
