@@ -153,6 +153,28 @@ describe.skipIf(!existsSync(FIXTURE))("gateway probe fixture (T-D2)", () => {
     expect(step?.error).toBeUndefined();
     expect(step?.observed).toEqual(step?.expected);
   });
+  it("the fake world does what the recording shows the Bridge doing", async () => {
+    const seen = (id: string) => report().steps.find((s) => s.id === id)?.observed;
+    const absent = (v: unknown) => v ?? "absent";
+    const w = world();
+    const { ini, sammi } = w.ports();
+    const roundTrip = async (section: string, key: string, value: string) => {
+      await ini.write(section, key, value);
+      return ini.read(section, key);
+    };
+    expect(await roundTrip("probe", "number", "42")).toBe(seen("ini-number-text"));
+    const json = String(seen("ini-json-value"));
+    expect(await roundTrip("probe", "json", json)).toBe(json);
+    expect(await roundTrip("collection:test", "a", json)).toBe(seen("ini-colon-section"));
+    expect(await roundTrip("pending", "viewers/alice", "1")).toBe(seen("ini-slash-key"));
+    expect(absent(await ini.read("probe", "never-written"))).toBe(seen("ini-absent-key"));
+    await ini.write("collection:test", "gone", "x");
+    await ini.remove("collection:test", "gone");
+    expect(absent(await ini.read("collection:test", "gone"))).toBe(seen("ini-delete-fallback"));
+    await sammi.setVariable("fb_probe", seen("variable-object"));
+    expect(w.variables.get("fb_probe")).toEqual(seen("variable-object"));
+    expect(absent(w.variables.get("fb_probe_never_set"))).toBe(seen("variable-absent"));
+  });
   it("SAMMI showed the probe's trigger", () => {
     expect(report().triggerSeenInSammi).toBe(true);
   });
