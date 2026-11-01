@@ -42,23 +42,23 @@ scenario "a field set through the variable is written like Set Field":
   given:
     clock at "2026-10-29T12:00:00Z"
     seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
-    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/meta/schema/hue", value: { fields: ["ip", "scene_1"], strict: true, two_way: true, _t: 1793275100000 } }, node with CloudNode { path: "users/uid-streamer/collections/hue/settings", value: { ip: "192.168.1.20", scene_1: "3f2c", _t: 1793275150000, _d: "dev2" } } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/meta/schema/example", value: { fields: ["ip", "scene_1"], strict: true, two_way: true, _t: 1793275100000 } }, node with CloudNode { path: "users/uid-streamer/collections/example/settings", value: { ip: "192.168.1.20", scene_1: "3f2c", _t: 1793275150000, _d: "dev2" } } ]
     execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
-  when: ApplyVariableChange { collection: "hue", id: "settings", field: "ip", value: "10.0.0.9" }
+  when: ApplyVariableChange { collection: "example", id: "settings", field: "ip", value: "10.0.0.9" }
   predict success:
     response OK CommandResponse { answer: "10.0.0.9", value: "10.0.0.9" }
     ini has ordered [
-      IniWrite with IniWrite { section: "collection:hue", key: "settings", json: { ip: "10.0.0.9", scene_1: "3f2c", _t: 1793275200000, _d: "dev1" } },
-      IniWrite with IniWrite { section: "index", key: "hashes", json: { "hue/settings": any string } },
-      IniWrite with IniWrite { section: "pending", key: "hue/settings", json: { op: "set_field", field: "ip", value: "10.0.0.9", at: 1793275200000 } },
-      IniDelete with IniDelete { section: "pending", key: "hue/settings" }
+      IniWrite with IniWrite { section: "collection:example", key: "settings", json: { ip: "10.0.0.9", scene_1: "3f2c", _t: 1793275200000, _d: "dev1" } },
+      IniWrite with IniWrite { section: "index", key: "hashes", json: { "example/settings": any string } },
+      IniWrite with IniWrite { section: "pending", key: "example/settings", json: { op: "set_field", field: "ip", value: "10.0.0.9", at: 1793275200000 } },
+      IniDelete with IniDelete { section: "pending", key: "example/settings" }
     ]
     firebase has ordered [
-      update with CloudUpdate { path: "users/uid-streamer/collections/hue/settings", fields: { ip: "10.0.0.9", _t: 1793275200000, _d: "dev1" } }
+      update with CloudUpdate { path: "users/uid-streamer/collections/example/settings", fields: { ip: "10.0.0.9", _t: 1793275200000, _d: "dev1" } }
     ]
     sammi has ordered [
-      SetVariable with SetVariable { name: "fb_hue", value: { settings: { ip: "10.0.0.9", scene_1: "3f2c" } } },
-      Trigger with Trigger { name: "Firebase: Document Updated", pullData: { eventId: any uuid, eventType: "DocumentUpdated", timestamp: any timestamp, version: 1, source: "local", deviceId: "dev1", collection: "hue", id: "settings", changed: "{\"ip\":\"10.0.0.9\"}", causationId: "variable" } }
+      SetVariable with SetVariable { name: "fb_example", value: { settings: { ip: "10.0.0.9", scene_1: "3f2c" } } },
+      Trigger with Trigger { name: "Firebase: Document Updated", pullData: { eventId: any uuid, eventType: "DocumentUpdated", timestamp: any timestamp, version: 1, source: "local", deviceId: "dev1", collection: "example", id: "settings", changed: "{\"ip\":\"10.0.0.9\"}", causationId: "variable" } }
     ]
 
 scenario "a new document appearing in the variable is created":
@@ -113,16 +113,16 @@ scenario "an unknown field on a strict collection is reverted in the variable an
   given:
     clock at "2026-10-29T12:00:00Z"
     seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
-    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/meta/schema/hue", value: { fields: ["ip", "scene_1"], strict: true, two_way: true, _t: 1793275100000 } }, node with CloudNode { path: "users/uid-streamer/collections/hue/settings", value: { ip: "192.168.1.20", scene_1: "3f2c", _t: 1793275150000, _d: "dev2" } } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/meta/schema/example", value: { fields: ["ip", "scene_1"], strict: true, two_way: true, _t: 1793275100000 } }, node with CloudNode { path: "users/uid-streamer/collections/example/settings", value: { ip: "192.168.1.20", scene_1: "3f2c", _t: 1793275150000, _d: "dev2" } } ]
     execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
-  when: ApplyVariableChange { collection: "hue", id: "settings", field: "colour", value: "red" }
+  when: ApplyVariableChange { collection: "example", id: "settings", field: "colour", value: "red" }
   predict error UNKNOWN_FIELD:
     response ERR CommandError { code: "UNKNOWN_FIELD", answer: "error: unknown field colour" }
     ini has []
     firebase has []
     sammi has ordered [
-      SetVariable with SetVariable { name: "fb_hue", value: { settings: { ip: "192.168.1.20", scene_1: "3f2c" } } },
-      Trigger with Trigger { name: "Firebase: Write Rejected", pullData: { eventId: any uuid, eventType: "WriteRejected", timestamp: any timestamp, version: 1, source: "local", deviceId: "dev1", collection: "hue", id: "settings", field: "colour", reason: "unknown field colour", causationId: "variable" } }
+      SetVariable with SetVariable { name: "fb_example", value: { settings: { ip: "192.168.1.20", scene_1: "3f2c" } } },
+      Trigger with Trigger { name: "Firebase: Write Rejected", pullData: { eventId: any uuid, eventType: "WriteRejected", timestamp: any timestamp, version: 1, source: "local", deviceId: "dev1", collection: "example", id: "settings", field: "colour", reason: "unknown field colour", causationId: "variable" } }
     ]
 
 scenario "a too-large value is reverted and announced (compensating)":
@@ -145,27 +145,27 @@ scenario "a boolean written into the variable is reverted and announced (compens
   given:
     clock at "2026-10-29T12:00:00Z"
     seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
-    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/collections/hue/settings", value: { ip: "192.168.1.20", scene_1: "3f2c", _t: 1793275150000, _d: "dev2" } } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/collections/example/settings", value: { ip: "192.168.1.20", scene_1: "3f2c", _t: 1793275150000, _d: "dev2" } } ]
     execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
-  when: ApplyVariableChange { collection: "hue", id: "settings", field: "ip", value: true }
+  when: ApplyVariableChange { collection: "example", id: "settings", field: "ip", value: true }
   predict error BAD_FIELD:
     response ERR CommandError { code: "BAD_FIELD", answer: "error: bad field ip" }
     ini has []
     firebase has []
     sammi has ordered [
-      SetVariable with SetVariable { name: "fb_hue", value: { settings: { ip: "192.168.1.20", scene_1: "3f2c" } } },
-      Trigger with Trigger { name: "Firebase: Write Rejected", pullData: { eventId: any uuid, eventType: "WriteRejected", timestamp: any timestamp, version: 1, source: "local", deviceId: "dev1", collection: "hue", id: "settings", field: "ip", reason: "bad field ip", causationId: "variable" } }
+      SetVariable with SetVariable { name: "fb_example", value: { settings: { ip: "192.168.1.20", scene_1: "3f2c" } } },
+      Trigger with Trigger { name: "Firebase: Write Rejected", pullData: { eventId: any uuid, eventType: "WriteRejected", timestamp: any timestamp, version: 1, source: "local", deviceId: "dev1", collection: "example", id: "settings", field: "ip", reason: "bad field ip", causationId: "variable" } }
     ]
 
 scenario "rejects NOT_TWO_WAY for a collection bound read-only (poller must not have issued it)":
   given:
     clock at "2026-10-29T12:00:00Z"
     seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
-    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/meta/schema/hue", value: { fields: ["ip", "scene_1"], strict: true, two_way: false, _t: 1793275100000 } }, node with CloudNode { path: "users/uid-streamer/collections/hue/settings", value: { ip: "192.168.1.20", scene_1: "3f2c", _t: 1793275150000, _d: "dev2" } } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/meta/schema/example", value: { fields: ["ip", "scene_1"], strict: true, two_way: false, _t: 1793275100000 } }, node with CloudNode { path: "users/uid-streamer/collections/example/settings", value: { ip: "192.168.1.20", scene_1: "3f2c", _t: 1793275150000, _d: "dev2" } } ]
     execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
-  when: ApplyVariableChange { collection: "hue", id: "settings", field: "ip", value: "10.0.0.9" }
+  when: ApplyVariableChange { collection: "example", id: "settings", field: "ip", value: "10.0.0.9" }
   predict rejection NOT_TWO_WAY:
-    response ERR CommandError { code: "NOT_TWO_WAY", answer: "error: not two-way hue" }
+    response ERR CommandError { code: "NOT_TWO_WAY", answer: "error: not two-way example" }
     ini has []
     firebase has []
     sammi has []
@@ -173,7 +173,7 @@ scenario "rejects NOT_TWO_WAY for a collection bound read-only (poller must not 
 scenario "rejects NOT_CONNECTED when nothing is connected":
   given:
     clock at "2026-10-29T12:00:00Z"
-  when: ApplyVariableChange { collection: "hue", id: "settings", field: "ip", value: "10.0.0.9" }
+  when: ApplyVariableChange { collection: "example", id: "settings", field: "ip", value: "10.0.0.9" }
   predict rejection NOT_CONNECTED:
     response ERR CommandError { code: "NOT_CONNECTED", answer: "error: not connected" }
     ini has []
@@ -212,7 +212,7 @@ scenario "rejects BAD_ID for an id containing a slash":
     seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
     seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" } ]
     execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
-  when: ApplyVariableChange { collection: "hue", id: "a/b", field: "ip", value: "10.0.0.9" }
+  when: ApplyVariableChange { collection: "example", id: "a/b", field: "ip", value: "10.0.0.9" }
   predict rejection BAD_ID:
     response ERR CommandError { code: "BAD_ID", answer: "error: bad id a/b" }
     ini has []
@@ -225,7 +225,7 @@ scenario "rejects BAD_ID for an id over 64 characters":
     seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
     seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" } ]
     execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
-  when: ApplyVariableChange { collection: "hue", id: "iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii", field: "ip", value: "10.0.0.9" }
+  when: ApplyVariableChange { collection: "example", id: "iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii", field: "ip", value: "10.0.0.9" }
   predict rejection BAD_ID:
     response ERR CommandError { code: "BAD_ID", answer: "error: bad id iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii" }
     ini has []
@@ -237,14 +237,14 @@ scenario "clearing a field the document does not have is reverted and announced 
   given:
     clock at "2026-10-29T12:00:00Z"
     seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
-    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/collections/hue/settings", value: { ip: "192.168.1.20", scene_1: "3f2c", _t: 1793275150000, _d: "dev2" } } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/collections/example/settings", value: { ip: "192.168.1.20", scene_1: "3f2c", _t: 1793275150000, _d: "dev2" } } ]
     execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
-  when: ApplyVariableChange { collection: "hue", id: "settings", field: "colour", value: null }
+  when: ApplyVariableChange { collection: "example", id: "settings", field: "colour", value: null }
   predict error MISSING:
-    response ERR CommandError { code: "MISSING", answer: "error: missing hue/settings colour" }
+    response ERR CommandError { code: "MISSING", answer: "error: missing example/settings colour" }
     ini has []
     firebase has []
     sammi has ordered [
-      SetVariable with SetVariable { name: "fb_hue", value: { settings: { ip: "192.168.1.20", scene_1: "3f2c" } } },
-      Trigger with Trigger { name: "Firebase: Write Rejected", pullData: { eventId: any uuid, timestamp: any timestamp, version: 1, eventType: "WriteRejected", source: "local", deviceId: "dev1", collection: "hue", id: "settings", field: "colour", reason: "missing hue/settings colour", causationId: "variable" } }
+      SetVariable with SetVariable { name: "fb_example", value: { settings: { ip: "192.168.1.20", scene_1: "3f2c" } } },
+      Trigger with Trigger { name: "Firebase: Write Rejected", pullData: { eventId: any uuid, timestamp: any timestamp, version: 1, eventType: "WriteRejected", source: "local", deviceId: "dev1", collection: "example", id: "settings", field: "colour", reason: "missing example/settings colour", causationId: "variable" } }
     ]

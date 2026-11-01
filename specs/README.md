@@ -13,7 +13,7 @@ All 23 specs are green against the handlers in `src/features/` and the fake worl
 - **Services:** `ini` (writes and deletes to `firebase.ini`), `firebase` (writes to the user's Realtime Database), `sammi` (variable publications and triggers). A scenario predicts every service; `has []` is an assertion that nothing happened there.
 - **Seed vocabulary of the fake world:** `node` (database contents), `user`, `provider` (Email/Password switched off), `project` (the API key the project really has), `later` (a write by another device that lands after the Bridge's first full read, unseen by its listener), `outage { writes }` (the next N document writes fail, as when the network drops). Seeds always run before `execute` steps, so anything that must happen after Connect is a `later` write or comes from a command issued during an `outage`.
 - **Clock:** every scenario runs at `2026-10-29T12:00:00Z`; `_t` written by this device is `1793275200000` and the fixtures seed older timestamps from `dev2`.
-- **Fixtures:** user `uid-streamer` on project `sammi-probe`, device `dev1`; collections `hue` (strict, two-way), `viewers` (open, keyed by provider user id), `counters`, `notes`, `log`.
+- **Fixtures:** user `uid-streamer` on project `sammi-probe`, device `dev1`; collections `example` (strict, two-way), `viewers` (open, keyed by provider user id), `counters`, `notes`, `log`.
 - **Answers:** `response OK CommandResponse { answer, document | value | ids | documents | count | status | variables }` or `response ERR CommandError { code, answer }`, per SF-ADR-013. Every `rejects` line names a code from `contracts/command-answer.json`; `feat lint` holds each to a `predict rejection` scenario.
 
 ## Coverage

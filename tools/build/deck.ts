@@ -100,7 +100,7 @@ export function deck(uniqueId: string): Record<string, unknown> {
         popup(
           "SAMMI Firebase\n\n" +
             "Connect once in the Bridge's SAMMI Firebase tab (config, email, password). After that:\n" +
-            "- Read any document as a variable: in a yellow box, type fb_hue.settings.ip\n" +
+            "- Read any document as a variable: in a yellow box, type fb_example.settings.ip\n" +
             "- Write with one Firebase command inside your own buttons (Set Field, Increment Field, Replace Document...).\n" +
             "- Leave the Async box on Firebase commands unticked.\n" +
             "- Firebase: Startup declares this deck's collections; the Example buttons show a write, a read with the " +
@@ -130,13 +130,13 @@ export function deck(uniqueId: string): Record<string, unknown> {
               "PC and writes them to the cloud so a second PC inherits them. Waits 20 s for OBS and the Bridge.",
           ),
           waitMs(20000),
-          deleteVariable("fbDefineHue"),
+          deleteVariable("fbDefineExample"),
           extension("Firebase: Define Collection", {
-            name: "hue",
+            name: "example",
             fields: "ip, scene_1, scene_1_name",
             strict: "true",
             twoWay: "true",
-            result: "fbDefineHue",
+            result: "fbDefineExample",
           }),
           deleteVariable("fbDefineViewers"),
           extension("Firebase: Define Collection", {
@@ -150,10 +150,10 @@ export function deck(uniqueId: string): Record<string, unknown> {
         [STARTUP_TRIGGER],
       ),
       button("fbExampleReplace", "Example:\nReplace Document", 0.0, 0.125, bgr(45, 127, 249), [
-        comment("A settings button (T2): writes one whole document. Read it anywhere as /$fb_hue.settings.ip$/."),
+        comment("A settings button (T2): writes one whole document. Read it anywhere as /$fb_example.settings.ip$/."),
         deleteVariable("fbReplaceResult"),
         extension("Firebase: Replace Document", {
-          collection: "hue",
+          collection: "example",
           id: "settings",
           fields: '{"ip":"192.168.1.20","scene_1":"relax","scene_1_name":"Relax"}',
           result: "fbReplaceResult",
@@ -162,17 +162,22 @@ export function deck(uniqueId: string): Record<string, unknown> {
       ]),
       button("fbExampleGet", "Example:\nGet with fallback", 0.2, 0.125, bgr(45, 127, 249), [
         comment(
-          "Reads hue/settings. With the Bridge closed the command answers nothing, so the button shows the local " +
+          "Reads example/settings. With the Bridge closed the command answers nothing, so the button shows the local " +
             "notice once and reads the copy in firebase.ini instead (D10).",
         ),
-        setString("hueSettings", ""),
-        extension("Firebase: Get Document", { collection: "hue", id: "settings", unpack: "", result: "hueSettings" }),
-        strLen("hueSettingsLen", "/$hueSettings$/"),
-        ...ifThen("hueSettingsLen", "==", "0", [
+        setString("exampleSettings", ""),
+        extension("Firebase: Get Document", {
+          collection: "example",
+          id: "settings",
+          unpack: "",
+          result: "exampleSettings",
+        }),
+        strLen("exampleSettingsLen", "/$exampleSettings$/"),
+        ...ifThen("exampleSettingsLen", "==", "0", [
           triggerButton("fbLocalNotice"),
-          iniLoad("firebase.ini", "collection:hue", "settings", "hueSettings"),
+          iniLoad("firebase.ini", "collection:example", "settings", "exampleSettings"),
         ]),
-        alert("SAMMI Firebase: hue/settings = /$hueSettings$/"),
+        alert("SAMMI Firebase: example/settings = /$exampleSettings$/"),
       ]),
       button("fbOnDocumentUpdated", "Policy:\nchanged elsewhere", 0.4, 0.125, bgr(150, 90, 200), [
         comment(
@@ -187,10 +192,15 @@ export function deck(uniqueId: string): Record<string, unknown> {
       button("fbOnConnected", "Policy:\nrefresh on connect", 0.6, 0.125, bgr(150, 90, 200), [
         comment(
           "POLICY. Attach the trigger yourself: right-click > Edit Triggers > Add > Extension Trigger, name " +
-            "'Firebase: Connected'. Copies hue/settings into local variables hue_ip, hue_scene_1, ...",
+            "'Firebase: Connected'. Copies example/settings into local variables example_ip, example_scene_1, ...",
         ),
         deleteVariable("fbRefresh"),
-        extension("Firebase: Get Document", { collection: "hue", id: "settings", unpack: "hue_", result: "fbRefresh" }),
+        extension("Firebase: Get Document", {
+          collection: "example",
+          id: "settings",
+          unpack: "example_",
+          result: "fbRefresh",
+        }),
       ]),
     ],
   };

@@ -52,7 +52,7 @@ The full surface, with invariants and payloads, is [10-domain-model.md](10-domai
 | --- | --- | --- |
 | Commands (write side) | `Firebase: Create Document`, `Replace Document`, `Update Document`, `Set Field`, `Increment Field`, `Delete Field`, `Delete Document`, `Define Collection`, `Undefine Collection`, `Connect`, `Disconnect`, `Reconcile` | the resulting document as JSON, the new value for Increment, counts for Reconcile, or `error: <reason>` |
 | Write side, by variable | setting a field inside a two-way collection's `fb_<collection>` variable; the extension polls, diffs and issues the command itself (H5 ruling) | none; `WriteRejected` fires on an invariant violation |
-| Read side, primary | the global variables `fb_<collection>` written by the extension; any button reads `/$fb_hue.settings.ip$/` with no command (maintainer ruling, Oct 29, 2026) | not a command |
+| Read side, primary | the global variables `fb_<collection>` written by the extension; any button reads `/$fb_example.settings.ip$/` with no command (maintainer ruling, Oct 29, 2026) | not a command |
 | Queries (read side, secondary) | `Firebase: Get Document`, `Get Field`, `Document Exists`, `List Documents`, `Query Documents`, `Count Documents`, `Get Status` | the value, JSON, or the default |
 | Events (triggers) | `Firebase: Connected`, `Connection Failed`, `Disconnected`, `Mirror Reconciled`, `Collection Defined`, `Collection Undefined`, `Document Created`, `Document Updated`, `Document Replaced`, `Document Deleted`, `Write Rejected` | pull data per the envelope in the domain model |
 
@@ -80,7 +80,7 @@ The connection is configured once, in the extension, and is global to the Bridge
 
 Buttons that run a Cloud command get no answer: the button continues at once and the Save Variable is absent (S15). Two layers handle it:
 
-1. **Documented deck pattern**, shown in the bundled example: after `Firebase: Get Document`, `If hueSettings does not exist` → `Trigger Button fbLocalNotice` (one popup per session, "using the local copy") → `INI: Load Text` file `firebase.ini`, section `collection:hue`, key `settings` → `Parse`. Reads keep working with zero dependency on the Bridge (D6, D10).
+1. **Documented deck pattern**, shown in the bundled example: after `Firebase: Get Document`, `If exampleSettings does not exist` → `Trigger Button fbLocalNotice` (one popup per session, "using the local copy") → `INI: Load Text` file `firebase.ini`, section `collection:example`, key `settings` → `Parse`. Reads keep working with zero dependency on the Bridge (D6, D10).
 2. **Writes while closed** go to the same section and key with `INI: Save Text`, as JSON of the fields. On its next start the extension finds them by comparing each document's hash with `[index] hashes`, queues them as pending replaces stamped with the start time, pushes them, and alerts once with the count (D10, data model rule 7).
 3. **Internet lost while the Bridge is open** is the other case and needs nothing from the deck: the extension is running, commands go to the mirror and `[pending]`, and reconnect replays them (rules 4 and 6).
 

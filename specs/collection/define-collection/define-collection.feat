@@ -42,17 +42,17 @@ scenario "declares a strict two-way collection locally and in the cloud":
     seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
     seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" } ]
     execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
-  when: DefineCollection { name: "hue", fields: "ip, scene_1", strict: true, twoWay: true }
+  when: DefineCollection { name: "example", fields: "ip, scene_1", strict: true, twoWay: true }
   predict success:
     response OK CommandResponse { answer: "ok" }
     ini has ordered [
-      IniWrite with IniWrite { section: "schema", key: "hue", json: { fields: ["ip", "scene_1"], strict: true, two_way: true, _t: 1793275200000 } }
+      IniWrite with IniWrite { section: "schema", key: "example", json: { fields: ["ip", "scene_1"], strict: true, two_way: true, _t: 1793275200000 } }
     ]
     firebase has ordered [
-      set with CloudSet { path: "users/uid-streamer/meta/schema/hue", value: { fields: ["ip", "scene_1"], strict: true, two_way: true, _t: 1793275200000 } }
+      set with CloudSet { path: "users/uid-streamer/meta/schema/example", value: { fields: ["ip", "scene_1"], strict: true, two_way: true, _t: 1793275200000 } }
     ]
     sammi has ordered [
-      Trigger with Trigger { name: "Firebase: Collection Defined", pullData: { eventId: any uuid, eventType: "CollectionDefined", timestamp: any timestamp, version: 1, source: "local", deviceId: "dev1", collection: "hue", fields: matching "scene_1", strict: true, twoWay: true } }
+      Trigger with Trigger { name: "Firebase: Collection Defined", pullData: { eventId: any uuid, eventType: "CollectionDefined", timestamp: any timestamp, version: 1, source: "local", deviceId: "dev1", collection: "example", fields: matching "scene_1", strict: true, twoWay: true } }
     ]
 
 scenario "defaults to open and two-way when the flags are omitted":
@@ -78,19 +78,19 @@ scenario "redeclaring a collection replaces its declaration":
   given:
     clock at "2026-10-29T12:00:00Z"
     seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
-    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/meta/schema/hue", value: { fields: ["ip"], strict: true, two_way: true, _t: 1793275100000 } } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/meta/schema/example", value: { fields: ["ip"], strict: true, two_way: true, _t: 1793275100000 } } ]
     execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
-  when: DefineCollection { name: "hue", fields: "ip, scene_1", strict: false }
+  when: DefineCollection { name: "example", fields: "ip, scene_1", strict: false }
   predict success:
     response OK CommandResponse { answer: "ok" }
     ini has ordered [
-      IniWrite with IniWrite { section: "schema", key: "hue", json: { fields: ["ip", "scene_1"], strict: false, two_way: true, _t: 1793275200000 } }
+      IniWrite with IniWrite { section: "schema", key: "example", json: { fields: ["ip", "scene_1"], strict: false, two_way: true, _t: 1793275200000 } }
     ]
     firebase has ordered [
-      set with CloudSet { path: "users/uid-streamer/meta/schema/hue", value: { fields: ["ip", "scene_1"], strict: false, two_way: true, _t: 1793275200000 } }
+      set with CloudSet { path: "users/uid-streamer/meta/schema/example", value: { fields: ["ip", "scene_1"], strict: false, two_way: true, _t: 1793275200000 } }
     ]
     sammi has ordered [
-      Trigger with Trigger { name: "Firebase: Collection Defined", pullData: { eventId: any uuid, eventType: "CollectionDefined", timestamp: any timestamp, version: 1, source: "local", deviceId: "dev1", collection: "hue", strict: false, twoWay: true } }
+      Trigger with Trigger { name: "Firebase: Collection Defined", pullData: { eventId: any uuid, eventType: "CollectionDefined", timestamp: any timestamp, version: 1, source: "local", deviceId: "dev1", collection: "example", strict: false, twoWay: true } }
     ]
 
 scenario "rejects BAD_COLLECTION_NAME for a capitalised name":
@@ -99,9 +99,9 @@ scenario "rejects BAD_COLLECTION_NAME for a capitalised name":
     seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
     seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" } ]
     execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
-  when: DefineCollection { name: "Hue", fields: "ip" }
+  when: DefineCollection { name: "Example", fields: "ip" }
   predict rejection BAD_COLLECTION_NAME:
-    response ERR CommandError { code: "BAD_COLLECTION_NAME", answer: "error: bad collection name Hue" }
+    response ERR CommandError { code: "BAD_COLLECTION_NAME", answer: "error: bad collection name Example" }
     ini has []
     firebase has []
     sammi has []
@@ -112,7 +112,7 @@ scenario "rejects BAD_COLLECTION_NAME for a reserved field":
     seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
     seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" } ]
     execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
-  when: DefineCollection { name: "hue", fields: "ip, _t" }
+  when: DefineCollection { name: "example", fields: "ip, _t" }
   predict rejection BAD_COLLECTION_NAME:
     response ERR CommandError { code: "BAD_COLLECTION_NAME", answer: "error: bad collection name _t" }
     ini has []
@@ -135,7 +135,7 @@ scenario "rejects BAD_COLLECTION_NAME for a name over 32 characters":
 scenario "rejects NOT_CONNECTED when nothing is connected":
   given:
     clock at "2026-10-29T12:00:00Z"
-  when: DefineCollection { name: "hue", fields: "ip" }
+  when: DefineCollection { name: "example", fields: "ip" }
   predict rejection NOT_CONNECTED:
     response ERR CommandError { code: "NOT_CONNECTED", answer: "error: not connected" }
     ini has []

@@ -134,9 +134,9 @@ scenario "rejects UNKNOWN_FIELD on a strict collection":
   given:
     clock at "2026-10-29T12:00:00Z"
     seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
-    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/meta/schema/hue", value: { fields: ["ip", "scene_1"], strict: true, two_way: true, _t: 1793275100000 } } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/meta/schema/example", value: { fields: ["ip", "scene_1"], strict: true, two_way: true, _t: 1793275100000 } } ]
     execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
-  when: CreateDocument { collection: "hue", id: "settings", fields: "{\"ip\":\"1.2.3.4\",\"colour\":\"red\"}" }
+  when: CreateDocument { collection: "example", id: "settings", fields: "{\"ip\":\"1.2.3.4\",\"colour\":\"red\"}" }
   predict rejection UNKNOWN_FIELD:
     response ERR CommandError { code: "UNKNOWN_FIELD", answer: "error: unknown field colour" }
     ini has []
@@ -149,7 +149,7 @@ scenario "rejects BAD_FIELD when the box is not JSON":
     seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
     seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" } ]
     execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
-  when: CreateDocument { collection: "hue", id: "settings", fields: "ip=1.2.3.4" }
+  when: CreateDocument { collection: "example", id: "settings", fields: "ip=1.2.3.4" }
   predict rejection BAD_FIELD:
     response ERR CommandError { code: "BAD_FIELD", answer: "error: bad field" }
     ini has []
@@ -162,7 +162,7 @@ scenario "rejects BAD_FIELD when a value is a nested object":
     seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
     seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" } ]
     execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
-  when: CreateDocument { collection: "hue", id: "settings", fields: "{\"ip\":{\"v4\":\"1.2.3.4\"}}" }
+  when: CreateDocument { collection: "example", id: "settings", fields: "{\"ip\":{\"v4\":\"1.2.3.4\"}}" }
   predict rejection BAD_FIELD:
     response ERR CommandError { code: "BAD_FIELD", answer: "error: bad field ip" }
     ini has []
@@ -175,7 +175,7 @@ scenario "rejects BAD_FIELD when a value is a boolean":
     seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
     seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" } ]
     execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
-  when: CreateDocument { collection: "hue", id: "settings", fields: "{\"on\":true}" }
+  when: CreateDocument { collection: "example", id: "settings", fields: "{\"on\":true}" }
   predict rejection BAD_FIELD:
     response ERR CommandError { code: "BAD_FIELD", answer: "error: bad field on" }
     ini has []
@@ -188,7 +188,7 @@ scenario "rejects BAD_FIELD when a field name is reserved":
     seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
     seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" } ]
     execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
-  when: CreateDocument { collection: "hue", id: "settings", fields: "{\"_t\":1}" }
+  when: CreateDocument { collection: "example", id: "settings", fields: "{\"_t\":1}" }
   predict rejection BAD_FIELD:
     response ERR CommandError { code: "BAD_FIELD", answer: "error: bad field _t" }
     ini has []
@@ -201,7 +201,7 @@ scenario "rejects BAD_FIELD when the box is a JSON array":
     seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
     seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" } ]
     execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
-  when: CreateDocument { collection: "hue", id: "settings", fields: "[1,2]" }
+  when: CreateDocument { collection: "example", id: "settings", fields: "[1,2]" }
   predict rejection BAD_FIELD:
     response ERR CommandError { code: "BAD_FIELD", answer: "error: bad field" }
     ini has []

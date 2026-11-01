@@ -23,13 +23,13 @@ users/
       version: 1
       devices/{deviceId}: { name, lastSeen }
       schema/
-        hue:     { fields: ["ip","scene_1"], strict: true,  two_way: true, _t: 1761700000000 }
+        example:     { fields: ["ip","scene_1"], strict: true,  two_way: true, _t: 1761700000000 }
         viewers: { fields: ["name","points","tier"], strict: false, two_way: true, _t: 1761700012000 }
     collections/
       viewers/
         alice:   { points: 120, tier: "gold", _t: 1761700000000, _d: "a1b2" }
         bob:     { points: 40,  tier: "none", _t: 1761700012000, _d: "a1b2" }
-      hue/
+      example/
         settings: { ip: "192.168.1.20", scene_1: "3f2c…", _t: 1761700020000, _d: "c3d4" }
       counters/
         deaths:  { value: 7, _t: 1761700030000, _d: "a1b2" }
@@ -58,21 +58,21 @@ session=<opaque SDK session record, see 05-auth-flow.md>
 
 [schema]
 viewers={"fields":["name","points","tier"],"strict":false,"two_way":true,"_t":1761700012000}
-hue={"fields":["ip","scene_1"],"strict":true,"two_way":true,"_t":1761700000000}
+example={"fields":["ip","scene_1"],"strict":true,"two_way":true,"_t":1761700000000}
 
 [collection:viewers]
 alice={"points":120,"tier":"gold","_t":1761700000000,"_d":"a1b2"}
 bob={"points":40,"tier":"none","_t":1761700012000,"_d":"a1b2"}
 
-[collection:hue]
+[collection:example]
 settings={"ip":"192.168.1.20","scene_1":"3f2c…","_t":1761700020000,"_d":"c3d4"}
 
 [index]
-collections=["viewers","hue","counters"]
+collections=["viewers","example","counters"]
 viewers=["alice","bob"]
-hue=["settings"]
+example=["settings"]
 counters=["deaths"]
-hashes={"viewers/alice":"9f1c","viewers/bob":"3a77","hue/settings":"c0de","counters/deaths":"51b2"}
+hashes={"viewers/alice":"9f1c","viewers/bob":"3a77","example/settings":"c0de","counters/deaths":"51b2"}
 last_sync=1761700100000
 
 [pending]
@@ -95,11 +95,11 @@ Test plan item T-D1 checks that GameMaker's ini functions accept `:` in section 
 One global object variable per collection, `fb_<collection>`, written with `SAMMI.setVariable` on connect and on every change:
 
 ```
-fb_hue     = { settings: { ip: "192.168.1.20", scene_1: "3f2c…" } }
+fb_example     = { settings: { ip: "192.168.1.20", scene_1: "3f2c…" } }
 fb_viewers = { "12345678": { name: "alice", points: 120, tier: "gold" }, "87654321": { name: "bob", points: 40, tier: "none" } }
 ```
 
-`_t` and `_d` are stripped from the variable. For a `two_way` collection the variable is also a write surface: the extension keeps a snapshot of what it last wrote, polls the variable every `poll_ms` (default 500, `[connection] poll_ms`), and turns each field that differs from the snapshot into `UpdateDocument` or `DeleteField` on that document; a rejected change is written back from the mirror and `WriteRejected` fires. Own rewrites never loop because the snapshot is updated before the variable is. Buttons read a static document as `/$fb_hue.settings.ip$/` and a person's document as `/$fb_viewers./$userId$/.points$/`, where SAMMI resolves the inner variable first (S17). When the button has just written the document, it already holds the result in the command's Save Variable box and needs neither. The variable is rewritten whole per collection on each change; if a collection grows past SAMMI's message limit (S12), the fallback is one variable per document, `fb_hue_settings`, decided by measurement in test T-V1. Variables are SAMMI globals: they survive a Bridge restart within one SAMMI session and are absent after a SAMMI restart until the Bridge reconnects, which is why the ini fallback exists for the Bridge-closed case.
+`_t` and `_d` are stripped from the variable. For a `two_way` collection the variable is also a write surface: the extension keeps a snapshot of what it last wrote, polls the variable every `poll_ms` (default 500, `[connection] poll_ms`), and turns each field that differs from the snapshot into `UpdateDocument` or `DeleteField` on that document; a rejected change is written back from the mirror and `WriteRejected` fires. Own rewrites never loop because the snapshot is updated before the variable is. Buttons read a static document as `/$fb_example.settings.ip$/` and a person's document as `/$fb_viewers./$userId$/.points$/`, where SAMMI resolves the inner variable first (S17). When the button has just written the document, it already holds the result in the command's Save Variable box and needs neither. The variable is rewritten whole per collection on each change; if a collection grows past SAMMI's message limit (S12), the fallback is one variable per document, `fb_example_settings`, decided by measurement in test T-V1. Variables are SAMMI globals: they survive a Bridge restart within one SAMMI session and are absent after a SAMMI restart until the Bridge reconnects, which is why the ini fallback exists for the Bridge-closed case.
 
 ## In-memory map
 
@@ -123,7 +123,7 @@ Why local wins in rule 7: the user was acting on the only copy they could see, a
 In the deck's startup button:
 
 ```
-Firebase: Define Collection   name: hue      fields: ip, scene_1, scene_1_name   strict: yes
+Firebase: Define Collection   name: example      fields: ip, scene_1, scene_1_name   strict: yes
 Firebase: Define Collection   name: viewers  fields: points, tier                strict: no
 ```
 

@@ -18,7 +18,7 @@ That is a resilience problem for every streamer and a hard wall for one kind of 
 
 ## Who it is for
 
-A streamer who runs SAMMI with the Bridge as an OBS dock, installs things by clicking, and may never have opened a developer console. They already have buttons: a cheer handler, an alert, a death counter, a scene switch. They will not build buttons to manage data. They will add one line to buttons they have, read `/$fb_hue.settings.ip$/` where they used to read a local variable, and expect the rest to be invisible.
+A streamer who runs SAMMI with the Bridge as an OBS dock, installs things by clicking, and may never have opened a developer console. They already have buttons: a cheer handler, an alert, a death counter, a scene switch. They will not build buttons to manage data. They will add one line to buttons they have, read `/$fb_example.settings.ip$/` where they used to read a local variable, and expect the rest to be invisible.
 
 They own their data. The MVP asks them to create a free Firebase project and an Email/Password user, following a guide with one screenshot per step, and never asks them to trust us with a credential or a server. There is no server. The extension talks to their project from their machine.
 

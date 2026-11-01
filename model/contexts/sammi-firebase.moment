@@ -411,7 +411,7 @@ context "SammiFirebase" [Core]
     gateway VariableSurface
       consumes MirrorChange
       produces CollectionVariable
-      description "the interface of the projection: fb_<collection> = { id: { field: value } }, static paths like fb_hue.settings.ip, dynamic ones like fb_viewers./$userId$/.points"
+      description "the interface of the projection: fb_<collection> = { id: { field: value } }, static paths like fb_example.settings.ip, dynamic ones like fb_viewers./$userId$/.points"
     gateway IniMirror
       consumes MirrorChange
       produces IniRecord

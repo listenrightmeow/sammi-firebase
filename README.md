@@ -12,7 +12,7 @@ For IRL streamers this is the first piece of infrastructure that lets a stream's
 
 ## What it will do
 
-- **Reads are variables.** Every collection appears as a global SAMMI object variable, so any button reads `/$fb_hue.settings.ip$/` with no command.
+- **Reads are variables.** Every collection appears as a global SAMMI object variable, so any button reads `/$fb_example.settings.ip$/` with no command.
 - **Writes are one command in a button you already have.** `Firebase: Increment Field` in a cheer button adds points for the viewer's provider user id and answers with the new total: the write is the read.
 - **Changes arrive as triggers.** `Firebase: Document Updated` fires within about a second when a record changes on another PC or in the Firebase console.
 - **Local first.** With the Bridge closed or the internet down, reads come from `firebase.ini`, writes queue, and what you did meanwhile wins when the connection returns.

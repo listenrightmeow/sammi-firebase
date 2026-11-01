@@ -42,19 +42,19 @@ scenario "applies a newer snapshot from another machine (O3)":
   given:
     clock at "2026-10-29T12:00:00Z"
     seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
-    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/meta/schema/hue", value: { fields: ["ip", "scene_1"], strict: true, two_way: true, _t: 1793275100000 } }, node with CloudNode { path: "users/uid-streamer/collections/hue/settings", value: { ip: "192.168.1.20", scene_1: "3f2c", _t: 1793275150000, _d: "dev2" } } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/meta/schema/example", value: { fields: ["ip", "scene_1"], strict: true, two_way: true, _t: 1793275100000 } }, node with CloudNode { path: "users/uid-streamer/collections/example/settings", value: { ip: "192.168.1.20", scene_1: "3f2c", _t: 1793275150000, _d: "dev2" } } ]
     execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
-  when: ApplyRemoteChange { collection: "hue", id: "settings", document: { ip: "192.168.1.99", scene_1: "3f2c", _t: 1793275199000, _d: "dev2" } }
+  when: ApplyRemoteChange { collection: "example", id: "settings", document: { ip: "192.168.1.99", scene_1: "3f2c", _t: 1793275199000, _d: "dev2" } }
   predict success:
     response OK CommandResponse { answer: "ok" }
     ini has ordered [
-      IniWrite with IniWrite { section: "collection:hue", key: "settings", json: { ip: "192.168.1.99", scene_1: "3f2c", _t: 1793275199000, _d: "dev2" } },
-      IniWrite with IniWrite { section: "index", key: "hashes", json: { "hue/settings": any string } }
+      IniWrite with IniWrite { section: "collection:example", key: "settings", json: { ip: "192.168.1.99", scene_1: "3f2c", _t: 1793275199000, _d: "dev2" } },
+      IniWrite with IniWrite { section: "index", key: "hashes", json: { "example/settings": any string } }
     ]
     firebase has []
     sammi has ordered [
-      SetVariable with SetVariable { name: "fb_hue", value: { settings: { ip: "192.168.1.99", scene_1: "3f2c" } } },
-      Trigger with Trigger { name: "Firebase: Document Updated", pullData: { eventId: any uuid, eventType: "DocumentUpdated", timestamp: any timestamp, version: 1, source: "remote", deviceId: "dev2", collection: "hue", id: "settings", changed: "{\"ip\":\"192.168.1.99\"}" } }
+      SetVariable with SetVariable { name: "fb_example", value: { settings: { ip: "192.168.1.99", scene_1: "3f2c" } } },
+      Trigger with Trigger { name: "Firebase: Document Updated", pullData: { eventId: any uuid, eventType: "DocumentUpdated", timestamp: any timestamp, version: 1, source: "remote", deviceId: "dev2", collection: "example", id: "settings", changed: "{\"ip\":\"192.168.1.99\"}" } }
     ]
 
 scenario "a document unknown locally is created from the snapshot":
@@ -102,9 +102,9 @@ scenario "rejects OWN_ECHO for this device's own write coming back (rule 3)":
   given:
     clock at "2026-10-29T12:00:00Z"
     seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
-    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/collections/hue/settings", value: { ip: "192.168.1.20", scene_1: "3f2c", _t: 1793275150000, _d: "dev1" } } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/collections/example/settings", value: { ip: "192.168.1.20", scene_1: "3f2c", _t: 1793275150000, _d: "dev1" } } ]
     execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
-  when: ApplyRemoteChange { collection: "hue", id: "settings", document: { ip: "192.168.1.20", scene_1: "3f2c", _t: 1793275150000, _d: "dev1" } }
+  when: ApplyRemoteChange { collection: "example", id: "settings", document: { ip: "192.168.1.20", scene_1: "3f2c", _t: 1793275150000, _d: "dev1" } }
   predict rejection OWN_ECHO:
     response ERR CommandError { code: "OWN_ECHO", answer: "error: own echo" }
     ini has []
@@ -115,9 +115,9 @@ scenario "rejects REMOTE_OLDER when the local document is newer (rule 2)":
   given:
     clock at "2026-10-29T12:00:00Z"
     seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
-    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/collections/hue/settings", value: { ip: "192.168.1.20", scene_1: "3f2c", _t: 1793275199000, _d: "dev2" } } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/collections/example/settings", value: { ip: "192.168.1.20", scene_1: "3f2c", _t: 1793275199000, _d: "dev2" } } ]
     execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
-  when: ApplyRemoteChange { collection: "hue", id: "settings", document: { ip: "1.1.1.1", scene_1: "3f2c", _t: 1793275110000, _d: "dev3" } }
+  when: ApplyRemoteChange { collection: "example", id: "settings", document: { ip: "1.1.1.1", scene_1: "3f2c", _t: 1793275110000, _d: "dev3" } }
   predict rejection REMOTE_OLDER:
     response ERR CommandError { code: "REMOTE_OLDER", answer: "error: remote older" }
     ini has []
@@ -128,9 +128,9 @@ scenario "rejects REMOTE_OLDER on an equal timestamp from another device (ties k
   given:
     clock at "2026-10-29T12:00:00Z"
     seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
-    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/collections/hue/settings", value: { ip: "192.168.1.20", scene_1: "3f2c", _t: 1793275199000, _d: "dev2" } } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/collections/example/settings", value: { ip: "192.168.1.20", scene_1: "3f2c", _t: 1793275199000, _d: "dev2" } } ]
     execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
-  when: ApplyRemoteChange { collection: "hue", id: "settings", document: { ip: "1.1.1.1", scene_1: "3f2c", _t: 1793275199000, _d: "dev3" } }
+  when: ApplyRemoteChange { collection: "example", id: "settings", document: { ip: "1.1.1.1", scene_1: "3f2c", _t: 1793275199000, _d: "dev3" } }
   predict rejection REMOTE_OLDER:
     response ERR CommandError { code: "REMOTE_OLDER", answer: "error: remote older" }
     ini has []
@@ -140,7 +140,7 @@ scenario "rejects REMOTE_OLDER on an equal timestamp from another device (ties k
 scenario "rejects NOT_CONNECTED when nothing is connected":
   given:
     clock at "2026-10-29T12:00:00Z"
-  when: ApplyRemoteChange { collection: "hue", id: "settings", document: { ip: "192.168.1.20", scene_1: "3f2c", _t: 1793275199000, _d: "dev2" } }
+  when: ApplyRemoteChange { collection: "example", id: "settings", document: { ip: "192.168.1.20", scene_1: "3f2c", _t: 1793275199000, _d: "dev2" } }
   predict rejection NOT_CONNECTED:
     response ERR CommandError { code: "NOT_CONNECTED", answer: "error: not connected" }
     ini has []
@@ -179,7 +179,7 @@ scenario "rejects BAD_ID for an id containing a slash":
     seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
     seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" } ]
     execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
-  when: ApplyRemoteChange { collection: "hue", id: "a/b", document: { ip: "192.168.1.20", scene_1: "3f2c", _t: 1793275199000, _d: "dev2" } }
+  when: ApplyRemoteChange { collection: "example", id: "a/b", document: { ip: "192.168.1.20", scene_1: "3f2c", _t: 1793275199000, _d: "dev2" } }
   predict rejection BAD_ID:
     response ERR CommandError { code: "BAD_ID", answer: "error: bad id a/b" }
     ini has []
@@ -192,7 +192,7 @@ scenario "rejects BAD_ID for an id over 64 characters":
     seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
     seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" } ]
     execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
-  when: ApplyRemoteChange { collection: "hue", id: "iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii", document: { ip: "192.168.1.20", scene_1: "3f2c", _t: 1793275199000, _d: "dev2" } }
+  when: ApplyRemoteChange { collection: "example", id: "iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii", document: { ip: "192.168.1.20", scene_1: "3f2c", _t: 1793275199000, _d: "dev2" } }
   predict rejection BAD_ID:
     response ERR CommandError { code: "BAD_ID", answer: "error: bad id iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii" }
     ini has []
@@ -218,9 +218,9 @@ scenario "rejects BAD_FIELD for a snapshot that is not a document of strings and
   given:
     clock at "2026-10-29T12:00:00Z"
     seed ini [ IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } }, IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" }, IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
-    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/collections/hue/settings", value: { ip: "192.168.1.20", scene_1: "3f2c", _t: 1793275150000, _d: "dev2" } } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" }, node with CloudNode { path: "users/uid-streamer/collections/example/settings", value: { ip: "192.168.1.20", scene_1: "3f2c", _t: 1793275150000, _d: "dev2" } } ]
     execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
-  when: ApplyRemoteChange { collection: "hue", id: "settings", document: { ip: { v4: "1.2.3.4" }, _t: 1793275199000, _d: "dev2" } }
+  when: ApplyRemoteChange { collection: "example", id: "settings", document: { ip: { v4: "1.2.3.4" }, _t: 1793275199000, _d: "dev2" } }
   predict rejection BAD_FIELD:
     response ERR CommandError { code: "BAD_FIELD", answer: "error: bad field" }
     ini has []

@@ -28,28 +28,28 @@ There are no Firebase buttons to build. A deck declares its shape once, in its s
 
 ```
 Startup button (once per deck):
-  Firebase: Define Collection   name: hue   fields: ip, scene_1   strict: yes
+  Firebase: Define Collection   name: example   fields: ip, scene_1   strict: yes
 
 The streamer's existing cheer button, one line added:
   Firebase: Increment Field     collection: viewers   id: /$user$/   field: points   by: /$bits$/
 
 Any button, reading a static document, no command at all:
-  /$fb_hue.settings.ip$/
+  /$fb_example.settings.ip$/
 
 The same cheer button, reading the viewer it just updated:
   the Increment Field command answered with the new total (Save Variable As: points)
   or, elsewhere: /$fb_viewers./$userId$/.points$/
 ```
 
-Reading is a variable. `fb_<collection>` is a global object variable the extension keeps current; a document is `fb_hue.settings`, a field is `fb_hue.settings.ip`. People are keyed by the provider's user id, which arrives in the trigger, so their paths are dynamic: nested resolution `/$fb_viewers./$userId$/.points$/`, or simply the value the write command answered with. Writing is one of the commands embedded where the data changes: `Set Field`, `Increment Field`, `Update Document`, `Create Document`, `Delete Document`. `Query Documents`, `Count Documents` and `Get Document` with unpacking exist for lists, leaderboards and anyone who prefers local variables.
+Reading is a variable. `fb_<collection>` is a global object variable the extension keeps current; a document is `fb_example.settings`, a field is `fb_example.settings.ip`. People are keyed by the provider's user id, which arrives in the trigger, so their paths are dynamic: nested resolution `/$fb_viewers./$userId$/.points$/`, or simply the value the write command answered with. Writing is one of the commands embedded where the data changes: `Set Field`, `Increment Field`, `Update Document`, `Create Document`, `Delete Document`. `Query Documents`, `Count Documents` and `Get Document` with unpacking exist for lists, leaderboards and anyone who prefers local variables.
 
 | Step | What happens | Verified by |
 | --- | --- | --- |
-| Button reads `/$fb_hue.settings.ip$/` | A plain variable read; the extension rewrote it on the last change. | S16 (to verify: object variables via setVariable) |
+| Button reads `/$fb_example.settings.ip$/` | A plain variable read; the extension rewrote it on the last change. | S16 (to verify: object variables via setVariable) |
 | Button runs a query | Button pauses, extension answers from the local mirror in a few milliseconds, button continues. | S6, prototype 2 tests 1 to 3 |
 | Button runs a command | Button pauses, extension validates, writes the mirror and the ini, acknowledges, fires the event, then sends to Firebase in the background. | S6; D5 |
 | Someone edits the document in the Firebase console or on another PC | Extension updates the mirror and fires `Firebase: Document Updated` with `source: remote`. A button with that trigger is the policy. | F7; S11 |
-| Bridge is closed | `fb_<collection>` variables keep their last values for the SAMMI session (they are SAMMI's own globals); after a SAMMI restart they are absent until the Bridge returns. A query command continues at once with the Save Variable absent. The bundled example shows the fallback: If `hueSettings` does not exist → Trigger Button `fbLocalNotice` (one popup: "using the local copy") → `INI: Load Text` from `firebase.ini`, section `collection:hue`, key `settings` → Parse. A deck may also write the document back with `INI: Save Text`; the extension pushes it when the Bridge returns. | S15 test 6b; D6; D10 |
+| Bridge is closed | `fb_<collection>` variables keep their last values for the SAMMI session (they are SAMMI's own globals); after a SAMMI restart they are absent until the Bridge returns. A query command continues at once with the Save Variable absent. The bundled example shows the fallback: If `exampleSettings` does not exist → Trigger Button `fbLocalNotice` (one popup: "using the local copy") → `INI: Load Text` from `firebase.ini`, section `collection:example`, key `settings` → Parse. A deck may also write the document back with `INI: Save Text`; the extension pushes it when the Bridge returns. | S15 test 6b; D6; D10 |
 
 Rules the user must know, stated in the README in this order:
 

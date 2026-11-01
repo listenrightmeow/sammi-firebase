@@ -53,9 +53,9 @@ describe("documents", () => {
 describe("answers and the run edge", () => {
   it("shapes answers", () => {
     expect(ok({ answer: "ok" })).toEqual({ status: "OK", body: { answer: "ok" } });
-    expect(fail("not two-way", "hue")).toEqual({
+    expect(fail("not two-way", "example")).toEqual({
       status: "ERR",
-      body: { code: "NOT_TWO_WAY", answer: "error: not two-way hue" },
+      body: { code: "NOT_TWO_WAY", answer: "error: not two-way example" },
     });
   });
   it("a refusal becomes its answer; any other error propagates", async () => {
@@ -78,16 +78,16 @@ describe("boot", () => {
   it("reads last sync, schema and documents, skipping ids with no stored text", async () => {
     w.iniSet("connection", "device_id", "dev1");
     w.iniSet("index", "last_sync", "123");
-    w.iniSet("index", "collections", '["hue","empty"]');
-    w.iniSet("index", "hue", '["a","gone"]');
-    w.iniSet("schema", "hue", '{"fields":["ip"],"strict":true,"two_way":false,"_t":7}');
-    w.iniSet("collection:hue", "a", '{"ip":"1","_t":1,"_d":"x"}');
+    w.iniSet("index", "collections", '["example","empty"]');
+    w.iniSet("index", "example", '["a","gone"]');
+    w.iniSet("schema", "example", '{"fields":["ip"],"strict":true,"two_way":false,"_t":7}');
+    w.iniSet("collection:example", "a", '{"ip":"1","_t":1,"_d":"x"}');
     await boot();
     await boot();
     const { state } = host();
     expect(state.lastSync).toBe(123);
-    expect(state.schema.get("hue")).toEqual({ fields: ["ip"], strict: true, twoWay: false, t: 7 });
-    expect([...(state.mirror.get("hue")?.keys() ?? [])]).toEqual(["a"]);
+    expect(state.schema.get("example")).toEqual({ fields: ["ip"], strict: true, twoWay: false, t: 7 });
+    expect([...(state.mirror.get("example")?.keys() ?? [])]).toEqual(["a"]);
     expect(state.mirror.get("empty")?.size).toBe(0);
   });
   it("an index entry that is not JSON reads as empty", async () => {
@@ -174,16 +174,16 @@ describe("reconcile edges", () => {
   };
   it("keeps a local schema newer than the cloud's and skips a malformed cloud document", async () => {
     await connect();
-    host().state.schema.set("hue", { fields: [], strict: false, twoWay: true, t: 50 });
-    w.dbSet("users/u/meta/schema/hue", { fields: ["x"], strict: true, two_way: true, _t: 10 });
-    w.dbSet("users/u/collections/hue/bad", { a: { nested: 1 } });
+    host().state.schema.set("example", { fields: [], strict: false, twoWay: true, t: 50 });
+    w.dbSet("users/u/meta/schema/example", { fields: ["x"], strict: true, two_way: true, _t: 10 });
+    w.dbSet("users/u/collections/example/bad", { a: { nested: 1 } });
     const counts = await reconcile("command");
-    expect(host().state.schema.get("hue")?.t).toBe(50);
+    expect(host().state.schema.get("example")?.t).toBe(50);
     expect(counts).toEqual({ pushed: 0, applied: 0, dropped: 0 });
   });
   it("announces a document new from the cloud as created, on command", async () => {
     await connect();
-    w.dbSet("users/u/collections/hue/new", { a: 1, _t: 5, _d: "dev2" });
+    w.dbSet("users/u/collections/example/new", { a: 1, _t: 5, _d: "dev2" });
     await reconcile("command");
     expect(w.log.sammi.at(-1)?.payload).toMatchObject({
       name: "Firebase: Document Created",
