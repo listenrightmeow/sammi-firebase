@@ -21,7 +21,8 @@ const REQUIRED = ["apiKey", "authDomain", "projectId", "appId", "databaseURL"] a
 function validConfig(config: Record<string, unknown> | undefined): FirebaseConfig {
   const missing = REQUIRED.find((k) => typeof config?.[k] !== "string" || config[k] === "");
   if (missing) refuse("config incomplete", missing);
-  const c = config as FirebaseConfig;
+  // The console shows the database URL with a trailing slash; the SDK's config value has none.
+  const c = { ...config, databaseURL: String(config?.databaseURL).replace(/\/+$/, "") } as unknown as FirebaseConfig;
   const valid =
     c.apiKey.length >= 20 &&
     /\.firebaseapp\.com$/.test(c.authDomain) &&

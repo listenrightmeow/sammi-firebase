@@ -97,6 +97,30 @@ scenario "a config pasted in the box replaces the stored one and is written to [
       Trigger with Trigger { name: "Firebase: Mirror Reconciled", pullData: { eventId: any uuid, eventType: "MirrorReconciled", timestamp: any timestamp, version: 1, source: "local", deviceId: "dev1", pushed: 0, applied: 0, dropped: 0, cause: "connect" } }
     ]
 
+scenario "a database URL pasted with a trailing slash is stored without it":
+  given:
+    clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "connection", key: "device_id", value: "dev1" } ]
+    seed firebase [ user with AuthUser { email: "streamer@example.com", password: "correct-horse-battery", uid: "uid-streamer" } ]
+  when: Connect { config: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com/" }, email: "streamer@example.com", password: "correct-horse-battery" }
+  predict success:
+    response OK CommandResponse { answer: "ok", status: { state: "Connected", documents: 0, pending: 0 } }
+    ini has ordered [
+      IniWrite with IniWrite { section: "connection", key: "config", json: { apiKey: "AIzaSyProbeKey00000000000000000000000", authDomain: "sammi-probe.firebaseapp.com", projectId: "sammi-probe", appId: "1:000000000000:web:0000000000000000000000", databaseURL: "https://sammi-probe-default-rtdb.firebaseio.com" } },
+      IniWrite with IniWrite { section: "connection", key: "session", value: any string },
+      IniWrite with IniWrite { section: "connection", key: "email", value: "streamer@example.com" },
+      IniWrite with IniWrite { section: "index", key: "collections", json: [] },
+      IniWrite with IniWrite { section: "index", key: "hashes", json: { } },
+      IniWrite with IniWrite { section: "index", key: "last_sync", value: "1793275200000" }
+    ]
+    firebase has ordered [
+      update with CloudUpdate { path: "users/uid-streamer/meta/devices/dev1", fields: { name: any string, lastSeen: 1793275200000 } }
+    ]
+    sammi has ordered [
+      Trigger with Trigger { name: "Firebase: Connected", pullData: { eventId: any uuid, eventType: "Connected", timestamp: any timestamp, version: 1, source: "local", deviceId: "dev1", email: "streamer@example.com", projectId: "sammi-probe", documents: 0 } },
+      Trigger with Trigger { name: "Firebase: Mirror Reconciled", pullData: { eventId: any uuid, eventType: "MirrorReconciled", timestamp: any timestamp, version: 1, source: "local", deviceId: "dev1", pushed: 0, applied: 0, dropped: 0, cause: "connect" } }
+    ]
+
 scenario "resumes silently from the stored session record when no password is given":
   given:
     clock at "2026-10-29T12:00:00Z"
