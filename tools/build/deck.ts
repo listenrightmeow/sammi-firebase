@@ -9,35 +9,10 @@ export const SAMMI_MIN = "2025.2.0";
 
 type Cmd = Record<string, unknown>;
 
-const cmd = (type: number, fields: Record<string, unknown>): Cmd => ({
-  cmd: type,
-  b0: "",
-  b1: "",
-  b2: "",
-  b3: "",
-  b4: "",
-  b5: "",
-  b6: "",
-  b7: "",
-  b8: "",
-  b9: "",
-  b10: "",
-  b11: "",
-  b12: "",
-  b13: "",
-  b14: "",
-  b15: "",
-  b16: "",
-  b17: "",
-  b18: "",
-  b19: "",
-  b20: "",
-  ms: 0,
-  sel: 1,
-  dis: false,
-  xpan: 0,
-  ...fields,
-});
+// The base every command carries in the deck verified on hardware (discovery/build_echo_sef.py).
+export const COMMAND_BASE = { obsid: "Main", vis: 1, ms: 0, sel: false, dis: 0, xpan: 0 };
+
+const cmd = (type: number, fields: Record<string, unknown>): Cmd => ({ ...COMMAND_BASE, cmd: type, ...fields });
 
 // Comment is command 6; v0 is its color index (discovery/build_echo_sef.py, and the Hue Scenes deck on hardware).
 export const comment = (text: string): Cmd => cmd(6, { b0: text, v0: 1 });

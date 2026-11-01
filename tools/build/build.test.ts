@@ -78,7 +78,9 @@ describe("the bundled deck", () => {
         if (c.cmd !== 0) continue;
         const boxes = registered.get(String(c.extcmd));
         expect(boxes, `${String(b.button_id)}: ${String(c.extcmd)}`).toBeDefined();
-        const used = Object.keys(c).filter((k) => !/^(b\d+|v\d+|cmd|ext|extcmd|async|ms|sel|dis|xpan|pos)$/.test(k));
+        const used = Object.keys(c).filter(
+          (k) => !/^(b\d+|v\d+|obsid|vis|cmd|ext|extcmd|async|ms|sel|dis|xpan|pos)$/.test(k),
+        );
         for (const k of used) expect(boxes, `${String(b.button_id)}: box ${k}`).toContain(k);
       }
   });
@@ -224,5 +226,15 @@ describe("the count assertions", async () => {
   it("an empty spec directory is a failure", () => {
     const empty = mkdtempSync(join(tmpdir(), "empty-"));
     expect(counts(empty, junit(2))).toContain("no .feat specs found");
+  });
+});
+
+describe("deck command format", () => {
+  const commands = (deck("test").button_list as Record<string, unknown>[]).flatMap(
+    (b) => b.command_list as Record<string, unknown>[],
+  );
+  it("gives every command the base fields of the deck verified on hardware", () => {
+    expect(commands.length).toBeGreaterThan(0);
+    for (const c of commands) expect(c).toMatchObject({ obsid: "Main", vis: 1, ms: 0, sel: false, dis: 0, xpan: 0 });
   });
 });
