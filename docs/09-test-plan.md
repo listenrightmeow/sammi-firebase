@@ -94,6 +94,7 @@ Setup: SAMMI 2025.2.0+, OBS with the Bridge dock, a throwaway Firebase project c
 | --- | --- | --- | --- |
 | T-O1 | Disable the PC's network; `Set Field` `test`/`b` `n`=`2`; `Get Field` | command answers `2` at once; query answers `2`; tab shows 1 pending | failure 3 |
 | T-O2 | Re-enable network | Pending goes to 0; console shows `test/b` | replay |
+| T-O4 | Start OBS with no internet, then restore it | Recovers; no false sign-in popup | failure 15, D35 |
 | T-O3 | Offline here, `Replace Document` `test/b`; meanwhile edit `test/b` in the console (newer); reconnect | Local takes the console's version; `Document Updated` fires with `source: remote` | rule 4 |
 | T-B1 | Close OBS; run the bundled fallback example button twice | Both runs: the alert with the mirror document via INI: Load Text, and SAMMI's "Bridge disconnected" message | S15, failure 1, D10, D24 |
 | T-B2 | Reopen OBS | Tab green; no duplicate triggers | reconnect |
@@ -109,4 +110,4 @@ Setup: SAMMI 2025.2.0+, OBS with the Bridge dock, a throwaway Firebase project c
 
 ## Exit criteria for the first release
 
-All layer 1 and 2 checks pass on every commit. Every layer 3 case passed once on the streaming PC recorded in `evidence/pc/<version>.md`. T-I1 passed by someone who did not write the guide.
+All layer 1 and 2 checks pass on every commit. Every layer 3 case passed once on the streaming PC recorded in `evidence/pc/<version>.md`, except T-S1, T-L3 and T-L4, which need a second PC and come after the first release (D35). T-I1 passed by someone who did not write the guide.

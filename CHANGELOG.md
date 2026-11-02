@@ -16,7 +16,7 @@ First release, in preparation. See the [roadmap](ROADMAP.md) for what's left.
 
 ### Known issues
 
-- **Connect** can show nothing if the database rules are wrong or the Firebase library can't load.
+- **Connect** can show nothing if the database rules are wrong.
 - Installing a new version over an old one leaves a second deck.
-- Create Document with a blank id doesn't return the new id.
+- Sharing data between PCs hasn't been tested on two real machines.
 - See the [roadmap](ROADMAP.md) for the full list.

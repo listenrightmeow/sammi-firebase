@@ -54,6 +54,13 @@ describe("a collection larger than one message", () => {
     await publish("bulk");
     expect(sent).toEqual([{ name: "fb_bulk.d7", value: { x: "changed" }, size: 15 }]);
   });
+  it("resends one document on request, so a refused variable write snaps back", async () => {
+    seed(50);
+    await publish("bulk");
+    sent.length = 0;
+    await publish("bulk", { resend: "d7" });
+    expect(sent.map((s) => s.name)).toEqual(["fb_bulk.d7"]);
+  });
   it("clears a removed document from a large collection", async () => {
     seed(50);
     await publish("bulk");

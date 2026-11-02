@@ -197,7 +197,7 @@ export async function putSchema(name: string, entry: SchemaEntry): Promise<void>
 }
 
 /** Rewrite fb_<collection> (SF-ADR-007): document ids to fields, without _t and _d. */
-export async function publish(collection: string): Promise<void> {
+export async function publish(collection: string, opts: { resend?: string } = {}): Promise<void> {
   const { ports, state } = host();
   const value: Record<string, Fields> = {};
   for (const [id, doc] of state.mirror.get(collection) ?? []) value[id] = { ...doc.fields };
@@ -211,7 +211,7 @@ export async function publish(collection: string): Promise<void> {
   }
   state.publishing++;
   try {
-    await publishLarge(collection, name, value, before);
+    await publishLarge(collection, name, value, before, opts.resend);
   } finally {
     state.publishing--;
   }
@@ -223,11 +223,12 @@ async function publishLarge(
   name: string,
   value: Record<string, Fields>,
   before: Record<string, Fields> | undefined,
+  resend: string | undefined,
 ): Promise<void> {
   const { ports, state } = host();
   let rest = Object.keys(value);
   if (before) {
-    rest = rest.filter((id) => JSON.stringify(before[id]) !== JSON.stringify(value[id]));
+    rest = rest.filter((id) => id === resend || JSON.stringify(before[id]) !== JSON.stringify(value[id]));
   } else {
     const first: Record<string, Fields> = {};
     let size = 2;

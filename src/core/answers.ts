@@ -8,6 +8,7 @@ export type Reason =
   | "credentials invalid"
   | "provider disabled"
   | "api key invalid"
+  | "no internet"
   | "bad collection name"
   | "not defined"
   | "bad id"

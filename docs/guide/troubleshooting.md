@@ -24,7 +24,7 @@ Copy the whole block again from [step 5](setup.md#step-5-copy-your-config-block)
 The block is missing a field. If it's `databaseURL`, you created the app before the database. Copy the config again now that the database exists.
 
 **`error: credentials invalid`**
-Check your internet first, because any sign-in failure can show this. Then check the email and password. If they're right, check that the user is listed under **Authentication → Users** and isn't disabled.
+Check the email and password. If they're right, check that the user is listed under **Authentication → Users** and isn't disabled.
 
 **`error: provider disabled`**
 Redo [step 2](setup.md#step-2-turn-on-email-sign-in).
@@ -38,8 +38,8 @@ Check that you did [step 4](setup.md#step-4-set-the-database-rules), and that th
 **The tab says `Starting…` and stays there**
 A database error during sign-in can cause this, usually the rules in [step 4](setup.md#step-4-set-the-database-rules). Check them, check your internet, and reload the dock.
 
-**I got "sign-in needed", but I didn't sign out**
-If there was no internet when the Bridge loaded, this message can be false. When the internet is back, reload the dock before you re-enter your password.
+**`error: no internet`**
+Sign-in couldn't reach Firebase. Check your internet, then reload the Bridge dock. Your session is kept, so you don't need your password again.
 
 ## Installing
 

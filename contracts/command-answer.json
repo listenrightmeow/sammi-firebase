@@ -21,7 +21,7 @@
     {
       "title": "ErrorAnswer",
       "type": "string",
-      "pattern": "^error: (not connected|already connected|config incomplete|invalid config|credentials invalid|provider disabled|api key invalid|bad collection name|not defined|bad id|exists|missing|bad field|unknown field|too large|not a number|not two\\-way|bad operator|remote older|own echo|remote schema older)( .*)?$"
+      "pattern": "^error: (not connected|already connected|config incomplete|invalid config|credentials invalid|no internet|provider disabled|api key invalid|bad collection name|not defined|bad id|exists|missing|bad field|unknown field|too large|not a number|not two\\-way|bad operator|remote older|own echo|remote schema older)( .*)?$"
     }
   ],
   "$defs": {
@@ -32,6 +32,7 @@
         "config incomplete",
         "invalid config",
         "credentials invalid",
+        "no internet",
         "provider disabled",
         "api key invalid",
         "bad collection name",
@@ -57,6 +58,7 @@
         "CONFIG_INCOMPLETE",
         "INVALID_CONFIG",
         "CREDENTIALS_INVALID",
+        "NO_INTERNET",
         "PROVIDER_DISABLED",
         "API_KEY_INVALID",
         "BAD_COLLECTION_NAME",

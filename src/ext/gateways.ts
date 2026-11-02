@@ -1,3 +1,4 @@
+import { signInFailure } from "../core/session.ts";
 import type { AppModule, Auth, AuthModule, DatabaseModule, FirebaseApp } from "./firebase-sdk.ts";
 import type { AuthPort, AuthResult, DatabasePort, FirebaseConfig, IniPort, Ports, SammiPort } from "../core/ports.ts";
 
@@ -69,11 +70,7 @@ async function open(config: FirebaseConfig) {
 
 const recordKey = (config: FirebaseConfig): string => `firebase:authUser:${config.apiKey}:${APP_NAME}`;
 
-function failure(code: string): AuthResult {
-  if (/operation-not-allowed/.test(code)) return { ok: false, reason: "provider disabled" };
-  if (/api-key/.test(code)) return { ok: false, reason: "api key invalid" };
-  return { ok: false, reason: "credentials invalid" };
-}
+const failure = (error: string): AuthResult => ({ ok: false, reason: signInFailure(error) });
 
 const signedIn = (config: FirebaseConfig, uid: string, email: string): AuthResult => ({
   ok: true,

@@ -74,7 +74,7 @@ In a collection with two-way on, setting a field in the variable writes it to Fi
 
 - **Only set fields on documents that already exist.** Setting a field on a missing document can crash SAMMI with a FATAL ERROR. Create documents with a Firebase command.
 - **The value is written as text.** To keep a number as a number, use a Firebase command.
-- **A refused write snaps back.** In a strict collection, an unknown field disappears from the variable and `Firebase: Write Rejected` fires. In a collection over 16,000 bytes, the variable currently stays wrong and the trigger can repeat ([roadmap](../../ROADMAP.md)).
+- **A refused write snaps back.** In a strict collection, an unknown field disappears from the variable and `Firebase: Write Rejected` fires.
 - **You have to be connected.** Variable writes made while signed out or with the Bridge closed aren't picked up, and the next connect overwrites them.
 - **Removing a field from the variable deletes it** from the document.
 - **The write isn't instant.** It's picked up within about a second. In a collection over 16,000 bytes, it can take longer: about 25 seconds at 500 documents.
@@ -109,7 +109,7 @@ See the [reference](reference.md#triggers) for every trigger and what it carries
 | **Signed out** | Commands keep working. Variables keep their values, but aren't rewritten if SAMMI restarts | Answer `error: not connected` |
 | **OBS or the Bridge closed** | Firebase commands get no answer, but variables keep their values until SAMMI restarts | Firebase commands do nothing |
 
-**Starting OBS with no internet hasn't been tested yet.** The Bridge fetches the Firebase library as it loads, so it may show a false "sign-in needed" message. If it does, reload the dock when the internet is back.
+**Starting OBS with no internet** recovers once the internet is back. If the tab still shows `Not connected` by then, reload the Bridge dock.
 
 ### If two places changed the same document
 
@@ -120,7 +120,7 @@ What happens depends on the command you ran while offline:
 | Create Document, Replace Document | The newer write wins, using each PC's clock. Keep your PCs' clocks set automatically |
 | Update Document, Set Field, Increment Field, Delete Field, Delete Document | Your change is always applied, on top of whatever Firebase now holds |
 
-Changes to different fields of a document, made while both PCs are online, are both kept. Tests with a second real PC are [still to come](../../ROADMAP.md).
+Changes to different fields of a document, made while both PCs are online, are both kept. This hasn't been tested with a second real PC yet.
 
 ### Keep a button working with the Bridge closed
 
@@ -134,7 +134,7 @@ The text you get is the document as JSON, including its `_t` and `_d` stamps.
 
 ### Write with the Bridge closed
 
-Use **INI: Save Text** with the same file, section and key, and valid JSON of the document's fields. This works only for documents that already exist; a new one is ignored. When OBS next opens, the extension uploads the change, and this PC's version wins. A popup says how many changes it pushed. Deleting a document this way isn't supported.
+Use **INI: Save Text** with the same file, section and key, and valid JSON of the document's fields. This works only for documents that already exist. A new one is ignored, because the extension can only read keys it already knows about. When OBS next opens, the extension uploads the change, and this PC's version wins. A popup says how many changes it pushed. Deleting a document this way isn't supported.
 
 If the JSON isn't valid, the extension ignores it and the tab names the document.
 

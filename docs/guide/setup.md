@@ -111,7 +111,7 @@ You're set up. Next, read [Using SAMMI Firebase](using.md).
 
 ## Set up a second PC
 
-Use the same Firebase project and user. You don't repeat steps 1 to 5. Tests with a second real PC are [still to come](../../ROADMAP.md), so treat this as untested for now.
+Use the same Firebase project and user. You don't repeat steps 1 to 5. This hasn't been tested with a second real PC yet.
 
 1. Install the extension (step 6).
 2. Paste the same config block (step 7).

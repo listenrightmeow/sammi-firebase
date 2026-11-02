@@ -26,7 +26,7 @@ export async function handle(input: {
       return await apply(t, input);
     } catch (e) {
       if (!(e instanceof Refusal)) throw e;
-      await publish(t.collection);
+      await publish(t.collection, { resend: t.id });
       await emit("WriteRejected", {
         collection: t.collection,
         id: t.id,

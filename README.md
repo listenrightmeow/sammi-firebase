@@ -1,8 +1,8 @@
 # SAMMI Firebase
 
-A [SAMMI](https://sammi.solutions) Bridge extension that keeps a streamer's records in their own Firebase project: collections of documents with fields, read locally in milliseconds, written through to the cloud, and announced as SAMMI triggers when they change anywhere. Settings and state survive reinstalls, drive failures and new machines, and one stream's data can be shared by several rigs, though that's still [to be tested on a second PC](ROADMAP.md).
+A [SAMMI](https://sammi.solutions) Bridge extension that keeps a streamer's records in their own Firebase project: collections of documents with fields, read locally in milliseconds, written through to the cloud, and announced as SAMMI triggers when they change anywhere. Settings and state survive reinstalls, drive failures and new machines, and one stream's data can be shared by several rigs, though that hasn't been tested with a second real PC yet.
 
-**Status: no release yet.** All 23 specs pass, 204 of 204 scenarios, and the on-PC tests pass on one streaming PC. Still to come: tests with a second PC, a run of the setup guide by someone new, and the first signed release (`evidence/pc/0.1.0.md`).
+**Status: no release yet.** All 23 specs pass, 204 of 204 scenarios, and the on-PC tests pass on one streaming PC (`evidence/pc/0.1.0.md`). See the [roadmap](ROADMAP.md) for what's left.
 
 ## Why
 
@@ -25,7 +25,7 @@ The command surface follows a DDD/CQRS grammar: commands write, queries read a l
 - Windows, with SAMMI Core 2025.2.0 or newer.
 - OBS 30 or newer, with the SAMMI Bridge open as a dock.
 - A free Firebase project with Email/Password sign-in and a Realtime Database. The [setup guide](docs/guide/setup.md) walks you through it.
-- Internet when the Bridge loads, to fetch the Firebase library. Starting OBS with no internet hasn't been tested yet.
+- Internet when the Bridge loads, to fetch the Firebase library. If OBS starts with no internet, it recovers once the internet is back.
 
 ## Installing
 

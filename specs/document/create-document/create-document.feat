@@ -75,7 +75,7 @@ scenario "a blank id generates a push id and the answer carries it":
     execute Connect { email: "streamer@example.com", password: "correct-horse-battery" }
   when: CreateDocument { collection: "log", id: "", fields: "{\"line\":\"hello\"}" }
   predict success:
-    response OK CommandResponse { answer: matching "\"line\":\"hello\"", document: { line: "hello" }, value: matching "^[A-Za-z0-9_-]{1,64}$" }
+    response OK CommandResponse { answer: matching "\"line\":\"hello\",\"id\":\"[A-Za-z0-9_-]{1,64}\"", document: { line: "hello" }, value: matching "^[A-Za-z0-9_-]{1,64}$" }
     ini has ordered [
       IniWrite with IniWrite { section: "collection:log", key: matching "^[A-Za-z0-9_-]{1,64}$", json: { line: "hello", _t: 1793275200000, _d: "dev1" } },
       IniWrite with IniWrite { section: "index", key: "collections", json: ["log"] },

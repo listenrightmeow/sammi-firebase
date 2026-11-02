@@ -50,7 +50,7 @@ Out, by decision:
 
 - Account creation, password reset or any account management in the extension.
 - A hosted Firebase project or any service we operate.
-- Deleting documents while the Bridge is closed.
+- Deleting or creating documents while the Bridge is closed.
 - Nested objects as field values (store JSON text in a string field).
 - Import and export, and any orchestration.
 - The tab controls **Copy config**, **Forget this project** and the poll interval (D34).
@@ -72,7 +72,7 @@ Backlog, recorded so they are not re-argued (see also [ROADMAP.md](../ROADMAP.md
 ## 7. Success criteria for release 1
 
 - A streamer who did not write the setup guide completes O1 in under fifteen minutes (T-I1).
-- Every scenario in the on-PC matrix passes on the streaming PC (`docs/09-test-plan.md`).
+- Every scenario in the on-PC matrix passes on the streaming PC (`docs/09-test-plan.md`), except the second-PC cases, which come after the first release (D35).
 - Every `.feat` spec is `verified`: the generated suite green in CI with zero unpredicted effects.
 - The board, the Moment model and the specs agree: every command, event and aggregate appears in all three.
 - The repository is public under MIT with the setup guide, the ADRs and the evidence of the hardware probes.

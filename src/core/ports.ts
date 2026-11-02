@@ -18,7 +18,8 @@ export interface IniPort {
   remove(section: string, key: string): Promise<void>;
 }
 
-export type AuthFailure = "credentials invalid" | "provider disabled" | "api key invalid" | "session lost";
+export type AuthFailure =
+  "credentials invalid" | "provider disabled" | "api key invalid" | "no internet" | "session lost";
 
 export type AuthResult = { ok: true; uid: string; email: string; record: string } | { ok: false; reason: AuthFailure };
 

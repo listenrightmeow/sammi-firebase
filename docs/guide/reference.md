@@ -19,7 +19,7 @@ These need you to be signed in. Otherwise they answer `error: not connected`.
 
 | Command | Boxes | What it does | Answer |
 | --- | --- | --- | --- |
-| `Firebase: Create Document` | Collection, Id, Fields (JSON) | Creates a document, and refuses if the id exists. A blank id generates one, but [the answer doesn't include it](#known-issues) | The fields as JSON |
+| `Firebase: Create Document` | Collection, Id, Fields (JSON) | Creates a document, and refuses if the id exists. A blank id generates one | The fields as JSON. With a blank id, the JSON also has the new `id` |
 | `Firebase: Replace Document` | Collection, Id, Fields (JSON) | Writes the whole document, creating it if needed | The fields as JSON |
 | `Firebase: Update Document` | Collection, Id, Fields (JSON) | Changes only the fields you list | The whole document as JSON |
 | `Firebase: Set Field` | Collection, Id, Field, Value | Sets one field, creating the document if needed. Text that looks like a number is stored as a number; start the value with `str:` to keep it as text | The value |
@@ -98,7 +98,8 @@ In `Firebase: Mirror Reconciled`, `pushed` counts this PC's changes uploaded, `a
 | `error: already connected` | Connect ran while connected | Nothing, or Disconnect first |
 | `error: config incomplete` | The config is missing the named field | Paste the whole block from [step 5](setup.md#step-5-copy-your-config-block) |
 | `error: invalid config` | The config isn't a Firebase web-app config | The same |
-| `error: credentials invalid` | Wrong email or password, no password entered, or an expired session. Any other sign-in failure lands here too, including no internet | Check your internet, then enter them again. Check the user exists under [step 2b](setup.md#step-2b-create-your-user) |
+| `error: credentials invalid` | Wrong email or password, no password entered, or an expired session | Enter them again. Check the user exists under [step 2b](setup.md#step-2b-create-your-user) |
+| `error: no internet` | Sign-in couldn't reach Firebase, or the Firebase library couldn't load | Check your internet, then reload the Bridge dock |
 | `error: provider disabled` | Email sign-in is off | Redo [step 2](setup.md#step-2-turn-on-email-sign-in) |
 | `error: api key invalid` | The project doesn't recognise the key | Copy the config again from [step 5](setup.md#step-5-copy-your-config-block) |
 | `error: bad collection name` | The name breaks the [rules](#names-and-limits). A bad field name in Define Collection's Fields box also gives this | Fix the name |
@@ -111,12 +112,6 @@ In `Firebase: Mirror Reconciled`, `pushed` counts this PC's changes uploaded, `a
 | `error: too large` | Over a [limit](#names-and-limits) | Split the data, or use a query with a Limit |
 | `error: not a number` | Increment Field hit a field that isn't a number, or its By box isn't a number | Fix the field or the By box |
 | `error: bad operator` | Query or Count used an unknown operator | Use one [listed above](#queries) |
-
-## Known issues
-
-- **A generated id doesn't reach the button.** With a blank id, Create Document answers with the fields only. Choose your own ids, or find the new one with List Documents, where it comes last.
-
-See the [roadmap](../../ROADMAP.md) for more.
 
 ## Variables
 

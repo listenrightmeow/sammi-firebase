@@ -19,7 +19,7 @@ What goes wrong, what the user sees, what the extension does, and what the deck 
 | 12 | SAMMI older than 2025.2.0 | Install refused with SAMMI's version message | `sammi_version` in `[insert_over]` | update SAMMI | S5, S13 |
 | 13 | Bridge not connected at install | Install refused | `"bridge": true` in `[insert_over]` | open the Bridge first | S13 |
 | 14 | User ticks Async on a Firebase command | Save Variable absent, button continues at once | nothing it can do | untick Async; README rule 1 | prototype 2 runs 1 and 2 |
-| 15 | Firebase SDK fails to load (gstatic blocked, no internet at Bridge start) | From reading the code: `error: credentials invalid`, and at start a false "sign-in needed" popup if a session is stored. A message and a retry are on the roadmap (D34). The mirror serves reads | every sign-in failure is reported as `credentials invalid` | reload the dock when the internet is back | not run on a PC |
+| 15 | Firebase SDK fails to load (gstatic blocked, no internet at Bridge start) | Tab: `error: no internet` on Connect, or `Not connected` at start, with no sign-in popup. The mirror serves reads | reports `no internet`, keeps the session | reload the dock when the internet is back | D35; T-O4 |
 | 16 | Free-tier quota exceeded (100 simultaneous connections, 10 GB/month) | Firebase refuses the connection | treat as offline | practically unreachable for one streamer's settings | F6 |
 | 17 | OBS dock hidden | nothing, it keeps working | nothing | nothing | O8 |
 | 18 | Extension update installed | Bridge reloads; mirror and auth resume from ini | reads every earlier schema | nothing | D8 |
@@ -37,6 +37,7 @@ What goes wrong, what the user sees, what the extension does, and what the deck 
 
 ## Not handled in the MVP, by decision
 
+- New documents written with `INI: Save Text` while the Bridge is closed. The Bridge helper reads one key at a time (S10), so the extension can only find ids already in `[index]`.
 - Deletes while the Bridge is closed. Updates and replaces through `INI: Save Text` are caught up on start (D10); a document removed from the ini by hand is not.
 - Merge of concurrent `Replace`/`Create` of the same document beyond last write wins. Field-level updates and increments merge on the server already.
 - Encryption of values at rest beyond what Firebase provides. Secrets such as API keys for other services should not be stored as values; the usage guide says so.

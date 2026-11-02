@@ -15,6 +15,8 @@ export async function handle(input: { collection?: string; id?: string; fields?:
     await commit(t, after, { op: "create", fields, at: after.t }, () =>
       emit("DocumentCreated", { collection: t.collection, id: t.id, fields: fieldsText(fields) }),
     );
-    return ok({ answer: fieldsText(fields), document: fields, ...(input.id === "" ? { value: t.id } : {}) });
+    // The answer is all a button receives, so a generated id has to be in it.
+    if (input.id === "") return ok({ answer: JSON.stringify({ ...fields, id: t.id }), document: fields, value: t.id });
+    return ok({ answer: fieldsText(fields), document: fields });
   });
 }
