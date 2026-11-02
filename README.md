@@ -12,7 +12,7 @@ For IRL streamers this is the first piece of infrastructure that lets a stream's
 
 ## What it will do
 
-- **Reads are variables.** Every collection appears as a global SAMMI object variable, so any button reads `/$fb_example.settings.ip$/` with no command.
+- **Reads are variables.** Every collection appears as a global SAMMI object variable, so any button reads `/$global.fb_example.settings.ip$/` with no command.
 - **Writes are one command in a button you already have.** `Firebase: Increment Field` in a cheer button adds points for the viewer's provider user id and answers with the new total: the write is the read.
 - **Changes arrive as triggers.** `Firebase: Document Updated` fires within about a second when a record changes on another PC or in the Firebase console.
 - **Local first.** With the Bridge closed or the internet down, reads come from `firebase.ini`, writes queue, and what you did meanwhile wins when the connection returns.
@@ -119,6 +119,7 @@ Read `CONTRIBUTING.md` before changing behavior: the spec changes first, and thr
 | `contracts/` | JSON Schema contracts: config, ini layout, cloud tree, security rules, answers, events, variables, command boxes, registry entry, quality gates. |
 | `model/` | The Moment model: one context, eight flows. Validated with the Moment build that adds ADR-037 (grammar completeness) and ADR-038 (palette conformance, project mode) (`moment parse model/`). `tools/export_facet.py` exports it for Facet. |
 | `specs/` | 23 Feature specs with their contract registries; coverage matrix in `specs/README.md`. `feat.config.json` is the harness. |
+| `tools/test-deck/` | The on-PC test deck, one button per case a button can drive; not shipped. |
 | `tools/feat-adapters/` | The harness's `ini`, `firebase` and `sammi` service adapters (milestone 1). |
 | `evidence/` | Shipped release evidence: the on-PC matrix per release and the gateway-probe fixture. |
 | `discovery/` | The hardware probes used during discovery: an OBS dock probe page and the Cloud Probe extension. |

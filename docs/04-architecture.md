@@ -30,7 +30,7 @@ SAMMI Core (GameMaker, port 9425)  <-- websocket -->  SAMMI Bridge (bridge.html,
 | `connection.js` | The Connection aggregate: state machine, `Connect`/`Disconnect`, silent resume from the stored session, events. | gateway, `store.js` |
 | `mirror.js` | The projection: in-memory collections and documents; persists every change to the ini through the Bridge; loads it on start; keeps the pending queue and the local schema. | `store.js` |
 | `store.js` | Thin wrapper over `SAMMI.saveIni` / `SAMMI.loadIni` with the ini layout from [06-data-model.md](06-data-model.md). | Bridge helpers (S10) |
-| `sync.js` | Reconcile on connect, turn remote changes into domain events, replay pending commands. Document-level last write wins by server timestamp (D5). | gateway, mirror |
+| `sync.js` | Reconcile on connect, turn remote changes into domain events, replay pending commands. Document-level last write wins by `_t`, the writing PC's clock (D5, D30). | gateway, mirror |
 | `commands.js` | Register the commands, queries and triggers (S3), enforce the Document and Collection invariants, answer through the Save Variable box (S6), emit events. | mirror, sync |
 | `tab.js` + `tab.html` | The SAMMI Firebase tab. | everything above |
 
@@ -52,7 +52,7 @@ The full surface, with invariants and payloads, is [10-domain-model.md](10-domai
 | --- | --- | --- |
 | Commands (write side) | `Firebase: Create Document`, `Replace Document`, `Update Document`, `Set Field`, `Increment Field`, `Delete Field`, `Delete Document`, `Define Collection`, `Undefine Collection`, `Connect`, `Disconnect`, `Reconcile` | the resulting document as JSON, the new value for Increment, counts for Reconcile, or `error: <reason>` |
 | Write side, by variable | setting a field inside a two-way collection's `fb_<collection>` variable; the extension polls, diffs and issues the command itself (H5 ruling) | none; `WriteRejected` fires on an invariant violation |
-| Read side, primary | the global variables `fb_<collection>` written by the extension; any button reads `/$fb_example.settings.ip$/` with no command (maintainer ruling, Oct 29, 2026) | not a command |
+| Read side, primary | the global variables `fb_<collection>` written by the extension; any button reads `/$global.fb_example.settings.ip$/` with no command (maintainer ruling, Oct 29, 2026) | not a command |
 | Queries (read side, secondary) | `Firebase: Get Document`, `Get Field`, `Document Exists`, `List Documents`, `Query Documents`, `Count Documents`, `Get Status` | the value, JSON, or the default |
 | Events (triggers) | `Firebase: Connected`, `Connection Failed`, `Disconnected`, `Mirror Reconciled`, `Collection Defined`, `Collection Undefined`, `Document Created`, `Document Updated`, `Document Replaced`, `Document Deleted`, `Write Rejected` | pull data per the envelope in the domain model |
 

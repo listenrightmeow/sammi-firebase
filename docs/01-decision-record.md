@@ -339,6 +339,66 @@ Dates are when the decision was made. Facts cited here are tracked, with sources
 
 ---
 
+## D25. Two write-path fixes found before the matrix
+
+**Decided:** Nov 1, 2026 (agent, reading the on-PC code paths before the next install; maintainer: "build the next set of work before I re-test").
+
+**Decision.** (1) An increment writes its field and its stamps in one `update()`, as `docs/06` says it should. It wrote them in two steps, so after D23 another PC would have seen the first step as an edit made outside the extension and fired two events for one increment. The fake still records the two parts, so the specs are unchanged. (2) The variable poller compares a variable with what the extension last published, as rule 8 says, and no longer with the mirror. A command updates the mirror before it rewrites the variable, so a poll in that gap wrote the old value back and undid the command; T-C8 showed this on the PC, answering 0 for two increments. It also drops a reply read while the variable was being rewritten, and polls no longer overlap. Both fixes are covered by tests; neither has yet passed on the PC.
+
+(3) `tools/test-deck` builds a separate `dist/sammi-firebase-tests.sef`, one button per Layer 3 case a button can drive, so reinstalling SAMMI Firebase does not remove it. It is never shipped.
+
+**Found.** `_t` is set from the writing PC's clock (`ports.now()`), while D5, `docs/04`, `docs/06` and `contracts/cloud-tree.json` say server timestamp. D30 decides this.
+
+---
+
+## D26. Reading the variables takes the global prefix
+
+**Decided:** Nov 1, 2026 (found by T-V1, which showed `undefined`; SAMMI's docs: "Use `global.` prefix, since they're all stored in an object called `global`").
+
+**Decision.** The extension writes `fb_<collection>` as global variables, so a button reads `/$global.fb_example.settings.ip$/` in a white box and `global.fb_example.settings.ip` in a yellow one. A write by variable sets `global.fb_...`. Every earlier mention of `/$fb_...$/` was wrong; the code was not. The README, current docs, Help and both decks now use the prefix, and a build test rejects `/$fb_` in a deck. Earlier entries of this record keep the form they used.
+
+**Consequences.** T-R1's answer is `ok`, as its spec says; the counts are in the `Mirror Reconciled` trigger's pull data. T-V1, T-V2 and T-V4 must run again, and whether the nested path in T-V4 resolves (S17) is still unproven.
+
+---
+
+## D27. A read keyed by a variable goes through Get Field
+
+**Decided:** Nov 1, 2026 (T-V4: `/$global.fb_viewers./$userId$/.points$/` showed `undefined.points$/`).
+
+**Decision.** SAMMI does not resolve a variable nested inside a path, so S17 is contradicted on hardware. A fixed path reads as a variable. A path whose key is held in a variable reads with `Firebase: Get Field`, with the variable in the Id box. A write of that kind uses `Firebase: Set Field`, which needs no variable path at all. The write commands' own answers stay the first choice for a button that has just written.
+
+---
+
+## D28. A write answers first, and offline writes wait for reconcile
+
+**Decided:** Nov 1, 2026 (T-O1, T-O3 and T-B5 answered `undefined` with the network down).
+
+**Decision.** A write no longer waits for Firebase. The SDK holds a write's promise open while the network is down, where the fake failed at once, so the button waited until its Save Variable timed out. This is rule 1's order: the button is answered, then the cloud write runs. While the database reports the connection down, a write is not sent at all and stays in `[pending]`, because the SDK would queue it and replay it on reconnect without rule 4. When the connection returns, the extension waits for any write the SDK was already holding, then reconciles, so rule 4 decides each pending entry and nothing is sent twice. Define and Undefine Collection do not wait either. The tab's status now refreshes with each poll, because nothing refreshed it when a pending entry cleared.
+
+**Consequences.** On the real host a command answers before its write is acknowledged. The harness still awaits the write, so scenarios capture their cloud records. A schema written during a drop relies on the SDK's own queue, so it is lost if the Bridge closes before the connection returns; the local schema still applies.
+
+---
+
+## D29. Reconnect reads the server before it decides
+
+**Decided:** Nov 1, 2026 (T-O3: an offline replace overwrote a console edit with a newer `_t`).
+
+**Decision.** On reconnect the extension removes its listener, waits for writes the SDK was holding, reconciles, and then subscribes again. The SDK's `get()` answers from its cache while a listener is active, so rule 4 was comparing against the tree from before the drop. The tab's status line now starts with `OFFLINE` instead of `Connected` while the connection is down.
+
+**Known limits.** (1) A console edit does not change `_t`, so an edit that leaves `_t` alone loses to an offline write when the PC reconnects, even if it was made later. (2) The extension learned of a drop after about 30 seconds on the PC. A write in that window goes to the SDK's queue and is sent on reconnect without rule 4, so it can overwrite a newer edit. Neither loses a write made on the PC.
+
+---
+
+## D30. Conflicts are decided by each PC's clock in the first release
+
+**Decided:** Nov 1, 2026 (maintainer, on keeping each PC's clock and correcting the docs: "agreed").
+
+**Decision.** `_t` is the writing PC's clock. D5 and the docs promised a server timestamp, which the code never used. The docs now say what the code does. A server timestamp would mean learning each write's stamp from the acknowledgement, which is a larger change.
+
+**Consequences.** On one PC nothing changes. Between PCs, last write wins trusts their clocks, so a PC whose clock is wrong can win or lose a conflict it should not. Field merges and increments happen on the server and are not affected. D5 is unchanged as a record of what was first decided.
+
+---
+
 ## Open decisions
 
 None. The spec amendments listed in D20 were ratified on Oct 29, 2026 ("all ratified"). On Oct 29, 2026 the maintainer ratified D17 (SF-ADR-017, the revision of SF-ADR-012, attestations) and earlier in one word ("all agreed on") D12 item 4, SF-ADR-009 to 016, and the six agent decisions under D15; see D16 for what the pre-build audit changed as a result. The items below were closed on Oct 29, 2026:

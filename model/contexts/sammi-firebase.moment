@@ -32,7 +32,7 @@ external FirebaseDatabase "Firebase Realtime Database. users/{uid}/collections/{
   gateway WriteDocument
     consumes DocumentChange
     produces WriteAck
-    description "update() for field-level commands, set() for create and replace, increment for IncrementField; _t server timestamp, _d device"
+    description "update() for field-level commands, set() for create and replace, increment for IncrementField; _t the writing PC clock, _d device"
   gateway ReadAll
     consumes Session
     produces CloudSnapshot
@@ -411,7 +411,7 @@ context "SammiFirebase" [Core]
     gateway VariableSurface
       consumes MirrorChange
       produces CollectionVariable
-      description "the interface of the projection: fb_<collection> = { id: { field: value } }, static paths like fb_example.settings.ip, dynamic ones like fb_viewers./$userId$/.points"
+      description "the interface of the projection: fb_<collection> = { id: { field: value } }, static paths like global.fb_example.settings.ip; a key held in a variable reads through Get Field"
     gateway IniMirror
       consumes MirrorChange
       produces IniRecord
@@ -468,7 +468,7 @@ context "SammiFirebase" [Core]
   // RULES outside the aggregates — the projection's consistency rules (docs/06)
   // --------------------------------------------------------------------------
   rule MIR-01 "Order of a local command: validate against the mirror, apply to the mirror, write the ini, rewrite the variable, answer the button, send to Firebase, drop from pending on ack" enforced-by "the command path in commands.js"
-  rule MIR-02 "Document-level last write wins by server _t on a remote change" enforced-by "the ApplyRemoteChange preconditions RemoteNewer and NotOwnEcho"
+  rule MIR-02 "Document-level last write wins by _t on a remote change" enforced-by "the ApplyRemoteChange preconditions RemoteNewer and NotOwnEcho"
   rule MIR-03 "Own echoes are ignored and emit nothing" enforced-by "the ApplyRemoteChange preconditions RemoteNewer and NotOwnEcho"
   rule MIR-04 "Pending replay: update, set, delete-field and increment are re-sent and merge on the server; a create or replace older than the remote is dropped and announced as DocumentUpdated source remote" enforced-by "the Reconcile command of Connection"
   rule MIR-05 "A delete is a tombstone in pending until acknowledged; the mirror entry goes at once" enforced-by "the command path in commands.js"
@@ -497,7 +497,7 @@ context "SammiFirebase" [Core]
 
   relationship SammiFirebase -> FirebaseDatabase
     type Conformist
-    contract "Firebase's tree, server timestamps, listener semantics as they are"
+    contract "Firebase's tree and listener semantics as they are"
 
   relationship SammiCore -> SammiFirebase
     type CustomerSupplier

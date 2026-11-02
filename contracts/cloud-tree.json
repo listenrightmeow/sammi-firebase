@@ -81,7 +81,7 @@
       "properties": {
         "_t": {
           "type": "integer",
-          "description": "server timestamp of the last write"
+          "description": "the writing PC's clock at the last write, in milliseconds (D30)"
         },
         "_d": {
           "type": "string",

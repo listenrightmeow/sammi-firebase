@@ -25,7 +25,7 @@ A SAMMI Bridge extension, one `.sef` file, that keeps a streamer's records in th
 | Outcome | A streamer can say |
 | --- | --- |
 | O1 | "My SAMMI talks to my Firebase." Setup once: a Firebase project, the extension installed, config pasted, Connect, status green. Under fifteen minutes with screenshots. |
-| O2 | "My deck keeps its records." A startup button declares a collection; a settings button writes one document; any button reads `/$fb_example.settings.ip$/`. |
+| O2 | "My deck keeps its records." A startup button declares a collection; a settings button writes one document; any button reads `/$global.fb_example.settings.ip$/`. |
 | O3 | "A change made elsewhere reaches my stream." Edit a record in the console; the mirror and the variable update; a policy button fires. |
 | O4 | "The Bridge is closed and the show goes on." Reads fall back to the ini; the deck tells me once; what I changed meanwhile is pushed when the Bridge returns and wins. |
 | O5 | "The internet drops mid-stream." Writes queue, reads keep working, the queue replays. |

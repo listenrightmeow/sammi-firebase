@@ -14,7 +14,7 @@ Firebase is schema-less. Users define the data they store; the extension needs e
 
 ## Decision
 
-1. `Firebase: Define Collection` (name, fields, strict, two-way) writes the declaration to `firebase.ini [schema]` and to `users/{uid}/meta/schema/<name>` with a server timestamp. `Undefine Collection` removes both and never deletes documents.
+1. `Firebase: Define Collection` (name, fields, strict, two-way) writes the declaration to `firebase.ini [schema]` and to `users/{uid}/meta/schema/<name>` with a timestamp from the writing PC's clock (D30). `Undefine Collection` removes both and never deletes documents.
 2. On connect the cloud schema is merged into the local one, newest wins, before any deck runs (`ApplyRemoteSchema`).
 3. An undeclared collection is open: any field names are accepted. `strict` rejects unknown fields. `two-way` (default on) binds the collection's variable for writes (SF-ADR-007).
 4. Names: collections and fields `[a-z][a-z0-9_]{0,31}`, `_` prefix reserved; ids `[A-Za-z0-9_-]{1,64}`; blank id on create means a generated push id.

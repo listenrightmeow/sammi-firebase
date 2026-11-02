@@ -14,8 +14,8 @@ Maintainer ruling, Oct 29, 2026: the schema SAMMI reads and writes must be acces
 
 ## Decision
 
-1. The extension keeps one global object variable per collection, `fb_<collection>`, keyed by document id, each document an object of its fields without `_t` and `_d`, rewritten with `SAMMI.setVariable` on connect and on every local or remote change. A static document is read as `/$fb_example.settings.ip$/`.
-2. Dynamic paths: for a person keyed by the provider's user id, the recipe is the write command's own answer first, then nested resolution `/$fb_viewers./$userId$/.points$/` (S17, not load-bearing), then `Get Object Variable` with the id as the key, a documented SAMMI command. Figured out once, shown once in the bundled deck, copied by the streamer per provider.
+1. The extension keeps one global object variable per collection, `fb_<collection>`, keyed by document id, each document an object of its fields without `_t` and `_d`, rewritten with `SAMMI.setVariable` on connect and on every local or remote change. A static document is read as `/$global.fb_example.settings.ip$/`.
+2. Dynamic paths: for a person keyed by the provider's user id, the recipe is the write command's own answer first, then `Firebase: Get Field` with the id in its Id box. SAMMI does not resolve a variable nested inside a path (S17, contradicted on hardware, D27). Figured out once, shown once in the bundled deck, copied by the streamer per provider.
 3. Writes by variable (H5): a collection declared `two-way` (default on) binds its variable. The extension polls each bound variable through `SAMMI.getVariable` at `poll_ms` (default 500, a tab setting), diffs against the snapshot it last wrote, and issues `ApplyVariableChange` per differing field through the Document aggregate's invariants. A rejected change is reverted in the variable and announced by `WriteRejected`. The costs are stated: one poll interval of latency, websocket traffic proportional to bound collections, and no result answer for a variable write.
 4. If a collection grows past SAMMI's message limit (S12), the fallback is one variable per document, decided by measurement (T-V3).
 

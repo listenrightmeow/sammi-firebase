@@ -9,7 +9,7 @@ Every behavior in `specs/` is an executable assertion. `feat lint && feat audit 
 | Id | Suite | What it proves |
 | --- | --- | --- |
 | H1 | Adapter conformance: `@mmmnt/feat-adapter-kit` `serviceAdapterContract` for each of the three adapters | capture-window discipline, record shape, reset and seed semantics the runtime relies on |
-| H2 | Fake fidelity: unit tests on the fake world, one per documented behavior of the real surface, each citing its verified fact (S10 ini strings one key at a time; RTDB `update` with null removes, `increment` from a missing field starts at 0, server timestamp is the clock; S16 `setVariable` with an object) and asserting the fixture recorded by T-D2 | the fakes behave like the Bridge and the SDK |
+| H2 | Fake fidelity: unit tests on the fake world, one per documented behavior of the real surface, each citing its verified fact (S10 ini strings one key at a time; RTDB `update` with null removes, `increment` from a missing field starts at 0, `_t` comes from the frozen clock; S16 `setVariable` with an object) and asserting the fixture recorded by T-D2 | the fakes behave like the Bridge and the SDK |
 | H3 | The generated suites: 204 scenarios across 23 specs | every command, query, precondition, event and mirror rule |
 | H4 | Coverage: vitest with all-files instrumentation on `src/features/**`, `tools/feat-adapters/**`, `tools/build/**`; `src/ext/**` excluded by name (host wiring, Layer 3) | at least 95% lines and branches (SF-ADR-017) |
 
@@ -58,13 +58,13 @@ Setup: SAMMI 2025.2.0+, OBS with the Bridge dock, a throwaway Firebase project c
 
 | Id | Steps | Pass when | Covers |
 | --- | --- | --- | --- |
-| T-V1 | `Replace Document` `test`/`a` `{"n":1}`; a plain button alerts `/$fb_test.a.n$/` | Alert shows `1` with no Firebase command in that button | S16, the read side |
+| T-V1 | `Replace Document` `test`/`a` `{"n":1}`; a plain button alerts `/$global.fb_test.a.n$/` | Alert shows `1` with no Firebase command in that button | S16, the read side |
 | T-V2 | Edit `test/a` in the console | Within 2 s the same button shows the new value | variable kept current on remote change |
-| T-V4 | `Increment Field` `viewers`/`/$userId$/` `points` by 10 with Save Variable As `points`; alert `/$points$/` and `/$fb_viewers./$userId$/.points$/` | Both show the new total | the write is the read; S17 |
-| T-V5 | Plain button: `Set Variable fb_test.a.n = 2` (two-way on) | Within one poll the console shows `n: 2`; `Document Updated` source local fires | H5, rule 8 |
+| T-V4 | `Increment Field` `viewers`/`/$userId$/` `points` by 10 with Save Variable As `points`; alert `/$points$/`; `Get Field` `viewers`/`/$userId$/` `points` and alert the answer | Both show the new total | the write is the read; D27 |
+| T-V5 | Plain button: `Set Variable global.fb_test.a.n = 2` (two-way on) | Within one poll the console shows `n: 2`; `Document Updated` source local fires | H5, rule 8 |
 | T-V6 | Plain button sets an unknown field on a strict two-way collection | Variable reverts within one poll; `Write Rejected` fires with `unknown field` | failure 20 |
 | T-V7 | Two-way off for `test`; set the variable | Nothing written; variable overwritten by the next rewrite | binding flag |
-| T-R1 | Button runs `Firebase: Reconcile` after an offline edit elsewhere | `Mirror Reconciled` fires with `applied: 1`; variable updated | H2 |
+| T-R1 | Button runs `Firebase: Reconcile` after an offline edit elsewhere | The answer is `ok`; `Mirror Reconciled` fires with the counts in its pull data (`applied` is 1 only if the live listener has not already applied the edit); variable updated | H2 |
 | T-S1 | Define Collection on PC A; connect on PC B without running the startup button | PC B's `[schema]` holds the collection with the same `strict` and `two_way` | H1 |
 | T-V3 | 500 documents of 100 bytes in one collection | `fb_test` still round-trips; else per-document fallback engaged and documented | S12 |
 
@@ -93,14 +93,14 @@ Setup: SAMMI 2025.2.0+, OBS with the Bridge dock, a throwaway Firebase project c
 
 | Id | Steps | Pass when | Covers |
 | --- | --- | --- | --- |
-| T-O1 | Disable the PC's network; `Set Field` `test`/`b` `n`=`2`; `Get Field` | command answers `ok`; query answers `2`; tab shows 1 pending | failure 3 |
+| T-O1 | Disable the PC's network; `Set Field` `test`/`b` `n`=`2`; `Get Field` | command answers `2` at once; query answers `2`; tab shows 1 pending | failure 3 |
 | T-O2 | Re-enable network | Pending goes to 0; console shows `test/b` | replay |
 | T-O3 | Offline here, `Replace Document` `test/b`; meanwhile edit `test/b` in the console (newer); reconnect | Local takes the console's version; `Document Updated` fires with `source: remote` | rule 4 |
 | T-B1 | Close OBS; run the bundled fallback example button twice | Both runs: the alert with the mirror document via INI: Load Text, and SAMMI's "Bridge disconnected" message | S15, failure 1, D10, D24 |
 | T-B2 | Reopen OBS | Tab green; no duplicate triggers | reconnect |
 | T-B3 | Close OBS; `INI: Save Text` a changed document to `collection:test`, key `a`; meanwhile edit the same document in the console; reopen OBS | Alert "1 local change pushed"; console shows the local version; `Document Updated` with `source: local` | D10, rule 7 |
 | T-B4 | Close OBS; write invalid JSON to a document key; reopen OBS | Tab reports the key; cloud untouched; the document keeps its last good value in memory | rule 7 |
-| T-B5 | Bridge open, pull the network cable, `Update Document` on `test/a`, plug it back | Pending 1 then 0; console shows the update; no notice popup (the Bridge was never closed) | case (a) of D10 |
+| T-B5 | Bridge open, pull the network cable, `Update Document` on `test/a`, plug it back | Pending 1 then 0; console shows the update; no disconnect message (the Bridge was never closed) | case (a) of D10 |
 
 ### Update
 
