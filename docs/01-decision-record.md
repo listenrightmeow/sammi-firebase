@@ -457,7 +457,7 @@ Dates are when the decision was made. Facts cited here are tracked, with sources
 
 1. **Three bugs are fixed:** Create Document with a blank id now answers with the id; a refused variable write in a collection over the cap now snaps back; and a sign-in that can't reach Firebase answers `error: no internet`, with no false sign-in popup.
 2. **The fourth is a limit, not a bug.** `INI: Save Text` to a new document can't be caught up, because the Bridge helper reads one key at a time (S10) and the extension can only find ids already in `[index]`.
-3. **T-S1, T-L3 and T-L4 move to the [roadmap](../ROADMAP.md).** They no longer hold up the first release.
+3. **T-I1, T-S1, T-L3 and T-L4 move to the [roadmap](../ROADMAP.md).** They no longer hold up the first release.
 
 **Consequences.** The fixes are checked by specs and unit tests, and the blank id and the offline start are checked again on the PC (T-C9, T-O4). The snap-back has no PC check. Sharing between PCs ships without a test on two real machines, and the guides say so.
 

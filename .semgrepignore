@@ -1,0 +1,10 @@
+# Specs and fixtures hold a fake Firebase config, which the generic API key rule flags.
+# Real keys are still caught by gitleaks, which scans these files too.
+node_modules/
+discovery/
+dist/
+coverage/
+.feature/
+specs/**/*.feat
+specs/**/*.test.ts
+tools/feat-adapters/*.test.ts

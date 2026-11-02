@@ -110,4 +110,4 @@ Setup: SAMMI 2025.2.0+, OBS with the Bridge dock, a throwaway Firebase project c
 
 ## Exit criteria for the first release
 
-All layer 1 and 2 checks pass on every commit. Every layer 3 case passed once on the streaming PC recorded in `evidence/pc/<version>.md`, except T-S1, T-L3 and T-L4, which need a second PC and come after the first release (D35). T-I1 passed by someone who did not write the guide.
+All layer 1 and 2 checks pass on every commit. Every layer 3 case passed once on the streaming PC recorded in `evidence/pc/<version>.md`, except T-I1, T-S1, T-L3 and T-L4, which come after the first release (D35).

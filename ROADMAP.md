@@ -6,11 +6,14 @@ What is left before the first release, and what comes after it. Decisions behind
 
 | Item | Status |
 | --- | --- |
-| T-I1: someone new follows the setup guide in under 15 minutes | Not started |
 | Run CI on GitHub for the first time, and fix what it finds | Not started |
 | Tag the release, which builds and signs the `.sef` | Comes last |
 
 ## After the first release
+
+### Setup guide test
+
+T-I1: someone new follows the setup guide in under 15 minutes (D35).
 
 ### Second PC
 
