@@ -2,7 +2,7 @@
 
 A [SAMMI](https://sammi.solutions) Bridge extension that keeps a streamer's records in their own Firebase project: collections of documents with fields, read locally in milliseconds, written through to the cloud, and announced as SAMMI triggers when they change anywhere. Settings and state survive reinstalls, drive failures and new machines, and one stream's data can be shared by several rigs.
 
-**Status: milestone 2 in progress; no release yet.** All 23 specs pass, 204 of 204 scenarios, with every local quality gate green. On a streaming PC the gateway probe has passed and the bundled deck has been run; the rest of the on-PC matrix is still open (`docs/09-test-plan.md`, decisions D22 and D23 in `docs/01-decision-record.md`).
+**Status: no release yet.** All 23 specs pass, 204 of 204 scenarios, and the on-PC tests pass on one streaming PC. Still to come: tests with a second PC, a run of the setup guide by someone new, and the first signed release (`evidence/pc/0.1.0.md`).
 
 ## Why
 
@@ -10,7 +10,7 @@ SAMMI keeps everything in local files. Variables do not survive a restart, and t
 
 For IRL streamers this is the first piece of infrastructure that lets a stream's logic live in more than one place: the home rig and the on-location rig share points, tracking and alert state through the same database, built for connections that drop. The full argument is in `docs/12-design-brief.md`.
 
-## What it will do
+## What it does
 
 - **Reads are variables.** Every collection appears as a global SAMMI object variable, so any button reads `/$global.fb_example.settings.ip$/` with no command.
 - **Writes are one command in a button you already have.** `Firebase: Increment Field` in a cheer button adds points for the viewer's provider user id and answers with the new total: the write is the read.
@@ -33,37 +33,14 @@ Not yet available. When release 1 ships, the `.sef` will be attached to a GitHub
 gh attestation verify sammi-firebase.sef --repo listenrightmeow/sammi-firebase
 ```
 
-## Setup
+## Documentation
 
-Once per Firebase project. The numbers match the steps the SAMMI Firebase tab refers to.
-
-1. In the [Firebase console](https://console.firebase.google.com), create a project. Any name works, and Analytics can be off.
-2. Go to **Authentication → Get started → Email/Password**, enable it and click **Save**.
-   - **2b.** Go to **Authentication → Users → Add user** and enter an email and a password. You sign in with these in step 8.
-3. Go to **Realtime Database → Create Database**, choose the nearest location and start in **locked mode**. Do this before step 5, so your config includes `databaseURL`.
-4. Open the database's **Rules** tab, replace everything with the rules below, and click **Publish**. Each user can then read and write only their own data.
-
-   ```json
-   {
-     "rules": {
-       "users": {
-         "$uid": {
-           ".read": "auth != null && auth.uid == $uid",
-           ".write": "auth != null && auth.uid == $uid"
-         }
-       }
-     }
-   }
-   ```
-
-5. Go to **Project settings → Your apps**, click the web icon `</>`, enter any nickname and click **Register app**. Copy the `firebaseConfig` block. To find it later, select the app under **Your apps** and choose **Config**. Keep a copy, because a second PC needs it.
-6. With the Bridge open in OBS, go to **Bridge → Install an Extension** in SAMMI and pick `sammi-firebase.sef`. A **SAMMI Firebase** tab appears in the Bridge and a deck is added to SAMMI.
-7. In the tab, expand **Connection** and paste the config block into the large box.
-8. Enter the email and password from step 2b and click **Connect**. The status line changes to `Connected as ...`.
-
-The password is not stored; a session stays signed in on later starts.
-
-To make a button run when a document changes, right-click it and go to **Edit Triggers → Add → Extension Trigger**, then enter `Firebase: Document Updated`. The deck's two **Policy** buttons show how. After a connection that was offline, changes made meanwhile arrive together, so a policy button can run several times in a row.
+| Guide | What it covers |
+| --- | --- |
+| [Setup guide](docs/guide/setup.md) | Create your Firebase project, install and connect in about 15 minutes. Also a second PC, updating and uninstalling |
+| [Using SAMMI Firebase](docs/guide/using.md) | Reading, writing, triggers, working offline and large collections |
+| [Reference](docs/guide/reference.md) | Every command, trigger, answer and limit |
+| [Troubleshooting](docs/guide/troubleshooting.md) | What the status line means, and how to fix common problems |
 
 ## How it is built
 
@@ -102,7 +79,8 @@ Read `CONTRIBUTING.md` before changing behavior: the spec changes first, and thr
 
 | Path | What it is |
 | --- | --- |
-| `docs/12-design-brief.md` | Start here: the project, the user, why it matters, the IRL path. |
+| `docs/guide/` | For users: setup, usage, reference and troubleshooting. |
+| `docs/12-design-brief.md` | Start here for the design: the project, the user, why it matters, the IRL path. |
 | `docs/00-prd.md` | Requirements: the eight outcomes, release-1 scope, backlog, success criteria. |
 | `docs/01-decision-record.md` | Every decision in order, with reasons and consequences. |
 | `docs/adr/` | Seventeen architecture decision records with contract outputs; index in `docs/adr/README.md`. |

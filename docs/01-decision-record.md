@@ -425,6 +425,16 @@ Dates are when the decision was made. Facts cited here are tracked, with sources
 
 ---
 
+## D33. A second deck after an update is accepted for launch (Nov 2, 2026)
+
+**Context.** T-U1 passed, but installing 0.1.1 over 0.1.0 left two SAMMI Firebase decks. The deck's `unique_id` includes the version. Whether a stable id would stop this was not tested.
+
+**Decision.** The maintainer accepted this for launch. The setup guide tells people to delete the deck they don't use.
+
+**Consequences.** Until it is fixed, it can happen on every update that installs over an older version. Both decks' Startup buttons run until one is deleted, which repeats the same declarations and does no harm.
+
+---
+
 ## Open decisions
 
 None. The spec amendments listed in D20 were ratified on Oct 29, 2026 ("all ratified"). On Oct 29, 2026 the maintainer ratified D17 (SF-ADR-017, the revision of SF-ADR-012, attestations) and earlier in one word ("all agreed on") D12 item 4, SF-ADR-009 to 016, and the six agent decisions under D15; see D16 for what the pre-build audit changed as a result. The items below were closed on Oct 29, 2026:

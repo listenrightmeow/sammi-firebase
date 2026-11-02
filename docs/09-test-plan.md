@@ -31,7 +31,7 @@ Setup: SAMMI 2025.2.0+, OBS with the Bridge dock, a throwaway Firebase project c
 
 | Id | Steps | Pass when | Covers |
 | --- | --- | --- | --- |
-| T-I1 | Follow the README setup guide literally, timing each step | Under 15 minutes, no step needs outside help | journey 1 |
+| T-I1 | Follow `docs/guide/setup.md` literally, timing each step | Under 15 minutes, no step needs outside help | journey 1 |
 | T-I2 | Install with the Bridge closed | SAMMI refuses with a clear message | S13 |
 | T-I4 | Connect from the tab with the user created in the console | Tab shows connected; `Firebase: Connected` trigger fires | journey 1 step 8 |
 | T-K1 | Run each bundled-deck button with Run Button; restart SAMMI; attach the two policy triggers and fire them (edit `example/settings` in the console; reconnect) | Help shows its popup; Startup runs on start and defines `example` and `viewers`; Replace and Get answer; with the Bridge closed Get shows the ini copy; the policies alert and unpack `example_*` | bundled deck (D21, D24): If, Popup, INI Load, Trigger Pull Data |

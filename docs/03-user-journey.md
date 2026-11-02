@@ -14,7 +14,7 @@ Target: under fifteen minutes, with screenshots for every console step. Steps 1 
 | 2 | Firebase console | Authentication → Get started → Email/Password → Enable → Save. | The only sign-in that works from the Bridge (D4, verified F1). |
 | 2b | Firebase console | Authentication → Users → Add user: an email and a password. | No account management in the extension (D9); the user is created here. |
 | 3 | Firebase console | Realtime Database → Create → nearest location → start in **locked** mode. | The store (D3). Locked mode because step 4 replaces the rules. |
-| 4 | Firebase console | Rules tab → select all → paste the rule set from our README → Publish. | Each user may only read and write their own subtree (F9). |
+| 4 | Firebase console | Rules tab → select all → paste the rule set from the setup guide → Publish. | Each user may only read and write their own subtree (F9). |
 | 5 | Firebase console | Project settings → Your apps → Web → Register → copy the config block. | The extension needs the API key, auth domain, project id, app id and database URL. |
 | 6 | SAMMI Core | Bridge → Install an Extension → pick the `.sef`. | Standard SAMMI install (S2). The SAMMI Firebase tab appears in the Bridge and a small deck is added. |
 | 7 | Bridge, SAMMI Firebase tab | Paste the config block into the one big box. The tab says what is missing if anything is. | Validation is the extension's job, not the user's. |
@@ -51,7 +51,7 @@ Reading is a variable. `fb_<collection>` is a global object variable the extensi
 | Someone edits the document in the Firebase console or on another PC | Extension updates the mirror and fires `Firebase: Document Updated` with `source: remote`. A button with that trigger is the policy. | F7; S11 |
 | Bridge is closed | `fb_<collection>` variables keep their last values for the SAMMI session (they are SAMMI's own globals); after a SAMMI restart they are absent until the Bridge returns. A query command continues at once with the Save Variable absent, and SAMMI says "Bridge disconnected". The bundled example shows the fallback: If `exampleSettings` is empty → `INI: Load Text` from `firebase.ini`, section `collection:example`, key `settings` → Parse. A deck may also write the document back with `INI: Save Text`; the extension pushes it when the Bridge returns. | S15 test 6b; D6; D10; D24 |
 
-Rules the user must know, stated in the README in this order:
+Rules the user must know, stated in `docs/guide/using.md`:
 
 1. Leave the **Async** box on Firebase commands unticked. The bundled deck has it unticked; a command added by hand defaults to unticked too (SAMMI 2025.2.0 setting "Async is sync", default on).
 2. Collections and fields are lower-case names: `viewers`, `points`. Document ids may also have capitals and dashes.
@@ -64,7 +64,7 @@ The reason the project exists.
 | # | Where | What the user does |
 | --- | --- | --- |
 | 1 | SAMMI Core | Install the `.sef`. |
-| 2 | Bridge, SAMMI Firebase tab | Paste the same config block (the README tells them to keep a copy; the tab also offers **Copy config** on the first machine). |
+| 2 | Bridge, SAMMI Firebase tab | Paste the same config block (the setup guide tells them to keep a copy). |
 | 3 | Bridge, SAMMI Firebase tab | Email and password, **Connect**. |
 | 4 | | The extension pulls every collection, writes the mirror, and the status line says how many documents it restored. Decks that use the queries work immediately. |
 
