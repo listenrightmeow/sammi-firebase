@@ -2,7 +2,7 @@
 
 A [SAMMI](https://sammi.solutions) Bridge extension that keeps a streamer's records in their own Firebase project: collections of documents with fields, read locally in milliseconds, written through to the cloud, and announced as SAMMI triggers when they change anywhere. Settings and state survive reinstalls, drive failures and new machines, and one stream's data can be shared by several rigs, though that hasn't been tested with a second real PC yet.
 
-**Status: no release yet.** All 23 specs pass, 204 of 204 scenarios, and the on-PC tests pass on one streaming PC (`evidence/pc/0.1.0.md`). See the [roadmap](ROADMAP.md) for what's left.
+**Status: first release, 0.1.0.** All 23 specs pass, 204 of 204 scenarios, and the on-PC tests pass on one streaming PC (`evidence/pc/0.1.0.md`). Sharing data between PCs hasn't been tested on two real machines yet. See the [roadmap](ROADMAP.md) for what's next.
 
 ## Why
 
@@ -29,7 +29,9 @@ The command surface follows a DDD/CQRS grammar: commands write, queries read a l
 
 ## Installing
 
-Not yet available; see the [roadmap](ROADMAP.md). To try it now, [build it from source](#development). When release 1 ships, the `.sef` will be attached to a GitHub Release, built by CI and signed with a GitHub artifact attestation. You will be able to verify the file you downloaded came from this repository's CI:
+Download `sammi-firebase.sef` from the [latest release](https://github.com/listenrightmeow/sammi-firebase/releases/latest), then follow the [setup guide](docs/guide/setup.md).
+
+The file is built by CI and signed with a GitHub artifact attestation. To verify that your download came from this repository's CI:
 
 ```
 gh attestation verify sammi-firebase.sef --repo listenrightmeow/sammi-firebase

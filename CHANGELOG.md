@@ -2,9 +2,9 @@
 
 This project follows [Semantic Versioning](https://semver.org/). Dates are added when a version is released.
 
-## Unreleased
+## 0.1.0 (2026-11-02)
 
-First release, in preparation. See the [roadmap](ROADMAP.md) for what's left.
+First release. See the [roadmap](ROADMAP.md) for what's next.
 
 ### Added
 

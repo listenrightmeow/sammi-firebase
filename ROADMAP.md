@@ -1,15 +1,8 @@
 # Roadmap
 
-What is left before the first release, and what comes after it. Decisions behind these items are in [docs/01-decision-record.md](docs/01-decision-record.md).
+What comes after the first release. Decisions behind these items are in [docs/01-decision-record.md](docs/01-decision-record.md).
 
-## Before the first release
-
-| Item | Status |
-| --- | --- |
-| Run CI on GitHub for the first time, and fix what it finds | Not started |
-| Tag the release, which builds and signs the `.sef` | Comes last |
-
-## After the first release
+## Next
 
 ### Setup guide test
 

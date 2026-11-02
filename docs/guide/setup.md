@@ -8,7 +8,7 @@ You need:
 
 - SAMMI Core 2025.2.0 or newer, running on Windows
 - OBS, with the SAMMI Bridge open as a dock
-- `sammi-firebase.sef`. There's no release yet, so [build it from source](../../README.md#development) for now. After the first release, it'll be on the [Releases page](https://github.com/listenrightmeow/sammi-firebase/releases)
+- `sammi-firebase.sef`, from the [latest release](https://github.com/listenrightmeow/sammi-firebase/releases/latest)
 - A Google account for Firebase
 
 ### Open the Bridge in OBS
