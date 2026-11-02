@@ -6,7 +6,7 @@ The user is a streamer who installs things by clicking. They may never have open
 
 ## Journey 1. First-time setup, one machine
 
-Target: under fifteen minutes, with screenshots for every console step. Steps 1 to 6 happen once per user, ever.
+Target: under fifteen minutes. Steps 1 to 6 happen once per user, ever.
 
 | # | Where | What the user does | Why it exists |
 | --- | --- | --- | --- |
@@ -20,7 +20,7 @@ Target: under fifteen minutes, with screenshots for every console step. Steps 1 
 | 7 | Bridge, SAMMI Firebase tab | Paste the config block into the one big box. The tab says what is missing if anything is. | Validation is the extension's job, not the user's. |
 | 8 | Bridge, SAMMI Firebase tab | Type the email and password from step 2b, click **Connect**. The tab shows "Connected as …". | `Connect` command; stored session resumes on later starts. |
 
-Done. The status line in the tab is green. Steps 1 to 5 are the floor set by D2 and D9 and must be documented with one screenshot each.
+Done. The status line in the tab says `Connected as ...`. Steps 1 to 5 are the floor set by D2 and D9 and are documented in `docs/guide/setup.md`. Screenshots wait for the launch site (D34).
 
 ## Journey 2. Using it inside the buttons the streamer already has
 

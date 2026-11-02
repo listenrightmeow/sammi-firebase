@@ -24,7 +24,7 @@ A SAMMI Bridge extension, one `.sef` file, that keeps a streamer's records in th
 
 | Outcome | A streamer can say |
 | --- | --- |
-| O1 | "My SAMMI talks to my Firebase." Setup once: a Firebase project, the extension installed, config pasted, Connect, status green. Under fifteen minutes with screenshots. |
+| O1 | "My SAMMI talks to my Firebase." Setup once: a Firebase project, the extension installed, config pasted, Connect, status green. Under fifteen minutes. |
 | O2 | "My deck keeps its records." A startup button declares a collection; a settings button writes one document; any button reads `/$global.fb_example.settings.ip$/`. |
 | O3 | "A change made elsewhere reaches my stream." Edit a record in the console; the mirror and the variable update; a policy button fires. |
 | O4 | "The Bridge is closed and the show goes on." Reads fall back to the ini; the deck tells me once; what I changed meanwhile is pushed when the Bridge returns and wins. |
@@ -37,14 +37,14 @@ A SAMMI Bridge extension, one `.sef` file, that keeps a streamer's records in th
 
 In:
 
-- The Bridge tab: config paste with validation, email and password, Connect, Disconnect, status line, poll interval, Forget this project.
+- The Bridge tab: config paste with validation, email and password, Connect, Disconnect, status line.
 - Commands: Connect, Disconnect, Reconcile, Define Collection, Undefine Collection, Create Document, Replace Document, Update Document, Set Field, Increment Field, Delete Field, Delete Document.
 - Queries: Get Document (with unpack), Get Field, Document Exists, List Documents, Query Documents, Count Documents, Get Status.
 - Triggers: Connected, Connection Failed, Disconnected, Mirror Reconciled, Collection Defined, Collection Undefined, Document Created, Document Replaced, Document Updated, Document Deleted, Write Rejected.
 - The variable surface `fb_<collection>`, two-way for bound collections.
 - The local mirror in `firebase.ini`, the pending queue, reconcile on connect and on demand, Bridge-closed fallback and catch-up on reopen.
 - A bundled deck of seven buttons: help, status, a startup button with two Define Collection examples, example replace, example get with the fallback, two example policies.
-- A setup guide with one screenshot per console step.
+- A written setup guide. Screenshots wait for the launch site (D34).
 
 Out, by decision:
 
@@ -53,8 +53,9 @@ Out, by decision:
 - Deleting documents while the Bridge is closed.
 - Nested objects as field values (store JSON text in a string field).
 - Import and export, and any orchestration.
+- The tab controls **Copy config**, **Forget this project** and the poll interval (D34).
 
-Backlog, recorded so they are not re-argued: a hosted Firebase preset so a streamer needs no project of their own (SF-ADR-002); a `Firebase: Any Event` trigger for logging decks (SF-ADR-006); import and export as orchestrations (`docs/10` §policies); a nightly run against a sandbox project if the PC matrix becomes a bottleneck (SF-ADR-015); a phone-sized web page or moderator panel on the same tree (`docs/12`).
+Backlog, recorded so they are not re-argued (see also [ROADMAP.md](../ROADMAP.md)): a hosted Firebase preset so a streamer needs no project of their own (SF-ADR-002); a `Firebase: Any Event` trigger for logging decks (SF-ADR-006); import and export as orchestrations (`docs/10` §policies); a nightly run against a sandbox project if the PC matrix becomes a bottleneck (SF-ADR-015); a phone-sized web page or moderator panel on the same tree (`docs/12`).
 
 ## 6. Requirements that discovery fixed
 

@@ -54,4 +54,4 @@ SAMMI's docs suggest editing bridge.html for development; the prototype showed t
 
 ## Licensing and attribution
 
-MIT, same as Hue Scenes. The `.sef` carries the license line in `[extension_info]`. The Firebase SDK is Apache 2.0 and is loaded, not redistributed.
+MIT. The `.sef` carries the license line in `[extension_info]`. The Firebase SDK is Apache 2.0 and is loaded, not redistributed.

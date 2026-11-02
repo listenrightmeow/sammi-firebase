@@ -435,6 +435,20 @@ Dates are when the decision was made. Facts cited here are tracked, with sources
 
 ---
 
+## D34. What the first release leaves out (Nov 2, 2026)
+
+**Context.** Writing the user guides showed that some planning documents promised things the code doesn't do: step-naming and specific error messages, three tab controls, and screenshots in the setup guide.
+
+**Decision.** The maintainer chose:
+
+1. **Clearer errors go on the [roadmap](../ROADMAP.md).** That includes **Connect** showing nothing when the database rules are wrong.
+2. **Three tab controls are dropped from the first release:** **Copy config**, **Forget this project** and the poll interval. The interval can still be set with `poll_ms` under `[connection]` in `firebase.ini`.
+3. **Screenshots wait for a launch site.** This replaces "one screenshot per console step" in the PRD, the user journey, the design brief and SF-ADR-002.
+
+**Consequences.** The setup guide has written steps only, so T-I1 tests the guide without screenshots. The troubleshooting guide tells people to check the rules if **Connect** does nothing. A failed Connect may need the Bridge dock reloaded before a retry works.
+
+---
+
 ## Open decisions
 
 None. The spec amendments listed in D20 were ratified on Oct 29, 2026 ("all ratified"). On Oct 29, 2026 the maintainer ratified D17 (SF-ADR-017, the revision of SF-ADR-012, attestations) and earlier in one word ("all agreed on") D12 item 4, SF-ADR-009 to 016, and the six agent decisions under D15; see D16 for what the pre-build audit changed as a result. The items below were closed on Oct 29, 2026:

@@ -66,4 +66,4 @@ Anything outside `users/{own uid}` is unreadable and unwritable, including by ot
 
 ## Disconnect
 
-`Firebase: Disconnect`, also a button in the tab. Signs out of the SDK, deletes the ini session record, keeps the mirror and config so connecting again is one step. A second tab button, **Forget this project**, also clears the config, schema and mirror, for lending the machine or switching projects.
+`Firebase: Disconnect`, also a button in the tab. Signs out of the SDK, deletes the ini session record, keeps the mirror and config so connecting again is one step. Clearing a project from the tab is not in the first release (D34).

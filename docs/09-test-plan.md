@@ -1,6 +1,6 @@
 # Test plan
 
-Three layers. Layers 1 and 2 run on this Mac; layer 3 needs the Windows streaming PC with SAMMI, OBS and a throwaway Firebase project, like the discovery probes did. Every layer 3 case states what to screenshot.
+Three layers. Layers 1 and 2 run on any machine. Layer 3 needs a Windows streaming PC with SAMMI, OBS and a throwaway Firebase project.
 
 ## Layer 1. The Feature harness, Node, no SAMMI (SF-ADR-012, SF-ADR-016)
 

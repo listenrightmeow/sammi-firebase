@@ -30,7 +30,7 @@ MVP mindset: users control their data, and we carry no cost, quota, abuse or sup
 
 ## Consequences
 
-The console walkthrough is the floor of setup complexity and is documented with one screenshot per step. Security rules ship with the product and never need editing. The config is validated against `firebase-config.json` before the SDK is touched.
+The console walkthrough is the floor of setup complexity and is documented step by step (screenshots wait for the launch site, D34). Security rules ship with the product and never need editing. The config is validated against `firebase-config.json` before the SDK is touched.
 
 ## Compliance impact
 

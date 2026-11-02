@@ -22,7 +22,7 @@ Add `Firebase: Define Collection` to a button that runs at startup. The deck's *
 | **Collection** | The collection's name |
 | **Fields** | Its field names, separated by commas |
 | **Strict** | `true` refuses any field not listed. `false` allows any field |
-| **Two-way** | `true` lets a button write by setting the variable. `false` makes the variable read-only |
+| **Two-way** | `true` lets a button write by setting the variable. `false` means those writes aren't saved: the value sits in the variable, with no error, until the extension next rewrites it |
 
 Declarations are saved to Firebase, so another PC picks them up when it connects.
 
@@ -74,8 +74,14 @@ In a collection with two-way on, setting a field in the variable writes it to Fi
 
 - **Only set fields on documents that already exist.** Setting a field on a missing document can crash SAMMI with a FATAL ERROR. Create documents with a Firebase command.
 - **The value is written as text.** To keep a number as a number, use a Firebase command.
-- **A refused write snaps back.** In a strict collection, an unknown field disappears from the variable and `Firebase: Write Rejected` fires.
+- **A refused write snaps back.** In a strict collection, an unknown field disappears from the variable and `Firebase: Write Rejected` fires. In a collection over 16,000 bytes, the variable currently stays wrong and the trigger can repeat ([roadmap](../../ROADMAP.md)).
+- **You have to be connected.** Variable writes made while signed out or with the Bridge closed aren't picked up, and the next connect overwrites them.
+- **Removing a field from the variable deletes it** from the document.
 - **The write isn't instant.** It's picked up within about a second. In a collection over 16,000 bytes, it can take longer: about 25 seconds at 500 documents.
+
+### Edits in the Firebase console
+
+Field values must be text or numbers. If a console edit adds a true/false value or a nested object, the extension silently ignores the whole document.
 
 ## React to changes
 
@@ -90,7 +96,8 @@ The deck's two **Policy** buttons are examples, with their triggers left for you
 
 - **Run Button doesn't send trigger data.** Run directly, a trigger button's pulled values come back `undefined`. Test it by causing the real event.
 - **`source` tells you where a change came from.** `local` means this PC, and `remote` means another PC or the Firebase console.
-- **Changes can arrive in a burst.** After time offline, a trigger button can run several times in a row.
+- **Changes can arrive in a burst.** After an automatic reconnect, a trigger button can run several times in a row.
+- **Signing in doesn't replay changes.** Changes downloaded when you sign in or start the Bridge fire only `Firebase: Mirror Reconciled`.
 
 See the [reference](reference.md#triggers) for every trigger and what it carries.
 
@@ -99,10 +106,21 @@ See the [reference](reference.md#triggers) for every trigger and what it carries
 | What happened | Reads | Writes |
 | --- | --- | --- |
 | **Internet down** | Keep working | Answer straight away, and upload when the internet returns. The tab shows `OFFLINE` and a pending count, usually about 30 seconds after the drop |
-| **Signed out** | Keep working | Answer `error: not connected` |
+| **Signed out** | Commands keep working. Variables keep their values, but aren't rewritten if SAMMI restarts | Answer `error: not connected` |
 | **OBS or the Bridge closed** | Firebase commands get no answer, but variables keep their values until SAMMI restarts | Firebase commands do nothing |
 
-**If two places changed the same document,** the most recent write wins, using each PC's clock. Keep your PCs' clocks set automatically. Changes to different fields of a document, made while both PCs are online, are both kept.
+**Starting OBS with no internet hasn't been tested yet.** The Bridge fetches the Firebase library as it loads, so it may show a false "sign-in needed" message. If it does, reload the dock when the internet is back.
+
+### If two places changed the same document
+
+What happens depends on the command you ran while offline:
+
+| Offline command | When the internet returns |
+| --- | --- |
+| Create Document, Replace Document | The newer write wins, using each PC's clock. Keep your PCs' clocks set automatically |
+| Update Document, Set Field, Increment Field, Delete Field, Delete Document | Your change is always applied, on top of whatever Firebase now holds |
+
+Changes to different fields of a document, made while both PCs are online, are both kept. Tests with a second real PC are [still to come](../../ROADMAP.md).
 
 ### Keep a button working with the Bridge closed
 
@@ -116,7 +134,7 @@ The text you get is the document as JSON, including its `_t` and `_d` stamps.
 
 ### Write with the Bridge closed
 
-Use **INI: Save Text** with the same file, section and key, and valid JSON of the document's fields. When OBS next opens, the extension uploads the change, and this PC's version wins. A popup says how many changes it pushed. Deleting a document this way isn't supported.
+Use **INI: Save Text** with the same file, section and key, and valid JSON of the document's fields. This works only for documents that already exist; a new one is ignored. When OBS next opens, the extension uploads the change, and this PC's version wins. A popup says how many changes it pushed. Deleting a document this way isn't supported.
 
 If the JSON isn't valid, the extension ignores it and the tab names the document.
 
@@ -125,7 +143,7 @@ If the JSON isn't valid, the extension ignores it and the tab names the document
 No single message to SAMMI goes over 16,000 bytes. A larger collection still works, with these differences:
 
 - **Variable writes are slower** to arrive, as described above.
-- **Ids with a dash or space may be left out of the variable,** because dotted paths can't reach them. Read those documents with commands. The tab tells you how many there are. Ids from `Firebase: Create Document` can contain dashes, so choose your own ids for collections you expect to grow.
+- **Ids with a dash are left out of the variable,** and the tab tells you how many there are. Variables can't reach these ids in a smaller collection either, so read them with commands. Ids from `Firebase: Create Document` can contain dashes, so choose your own ids for documents you'll read as variables.
 - **An answer over the limit is `error: too large`.** Use `Firebase: Query Documents` with a **Limit**.
 
 ## Keep your data safe

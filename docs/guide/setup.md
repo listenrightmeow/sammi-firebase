@@ -8,7 +8,7 @@ You need:
 
 - SAMMI Core 2025.2.0 or newer, running on Windows
 - OBS, with the SAMMI Bridge open as a dock
-- `sammi-firebase.sef`, from the [Releases page](https://github.com/listenrightmeow/sammi-firebase/releases)
+- `sammi-firebase.sef`. There's no release yet, so [build it from source](../../README.md#development) for now. After the first release, it'll be on the [Releases page](https://github.com/listenrightmeow/sammi-firebase/releases)
 - A Google account for Firebase
 
 ### Open the Bridge in OBS
@@ -111,7 +111,7 @@ You're set up. Next, read [Using SAMMI Firebase](using.md).
 
 ## Set up a second PC
 
-Use the same Firebase project and user. You don't repeat steps 1 to 5.
+Use the same Firebase project and user. You don't repeat steps 1 to 5. Tests with a second real PC are [still to come](../../ROADMAP.md), so treat this as untested for now.
 
 1. Install the extension (step 6).
 2. Paste the same config block (step 7).

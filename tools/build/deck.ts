@@ -1,7 +1,7 @@
 // The bundled deck (SF-ADR-005): the seven buttons of the PRD. Command ids and box layouts follow SAMMI's
 // docs; 0 extension command, 6 comment, 20 set string, 78 delete variable and 142 alert were confirmed
 // by discovery/build_echo_sef.py, and 7 If, 83 String Get Length, 127 INI Load, 141 Popup, 190 Wait and
-// the SAMMI Startup trigger by the Hue Scenes deck on the same SAMMI. 66 Trigger Pull Data was
+// the SAMMI Startup trigger by a deck run on the same SAMMI. 66 Trigger Pull Data was
 // confirmed by the deck check (D23). Every extension command
 // carries "async": 0.0, without which SAMMI does not wait for the Save Variable box (S6).
 
@@ -14,7 +14,7 @@ export const COMMAND_BASE = { obsid: "Main", vis: 1, ms: 0, sel: false, dis: 0, 
 
 const cmd = (type: number, fields: Record<string, unknown>): Cmd => ({ ...COMMAND_BASE, cmd: type, ...fields });
 
-// Comment is command 6; v0 is its color index (discovery/build_echo_sef.py, and the Hue Scenes deck on hardware).
+// Comment is command 6; v0 is its color index (discovery/build_echo_sef.py, and on hardware).
 export const comment = (text: string): Cmd => cmd(6, { b0: text, v0: 1 });
 export const alert = (text: string): Cmd => cmd(142, { b0: text });
 export const deleteVariable = (name: string): Cmd => cmd(78, { b0: name });

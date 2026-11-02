@@ -10,7 +10,7 @@ Start with the status line at the top of the Bridge's **SAMMI Firebase** tab. If
 | `OFFLINE, no internet: signed in as ...` | The internet is down. Reads work, and writes wait | Nothing. Pending goes to 0 when the internet returns |
 | `Connect needed — buttons read the copy on this PC` | Your sign-in was lost | Enter your password and click **Connect** |
 | `Not connected — buttons read the copy on this PC` | You haven't connected, or you disconnected | Enter your email and password and click **Connect** |
-| `... invalid JSON ignored in firebase.ini: <document>` | A document in the file isn't valid JSON | Fix what wrote it. Writing that document again replaces the bad copy, and the message clears the next time OBS starts |
+| `... invalid JSON ignored in firebase.ini: <document>` | A document in the file isn't valid JSON | Fix what wrote it. Writing that document again replaces the bad copy, and the message clears the next time OBS starts. It shows only while connected |
 | `... with a dash or space in the id: read with commands, not variables` | A large collection's variable leaves those documents out | Read them with commands. See [Large collections](using.md#large-collections) |
 
 **Offline takes time to show.** The status line can say `Connected` for about 30 seconds after the internet drops. Read the whole line, because the pending count is at the end.
@@ -24,7 +24,7 @@ Copy the whole block again from [step 5](setup.md#step-5-copy-your-config-block)
 The block is missing a field. If it's `databaseURL`, you created the app before the database. Copy the config again now that the database exists.
 
 **`error: credentials invalid`**
-Check the email and password. If they're right, check that the user is listed under **Authentication → Users** and isn't disabled.
+Check your internet first, because any sign-in failure can show this. Then check the email and password. If they're right, check that the user is listed under **Authentication → Users** and isn't disabled.
 
 **`error: provider disabled`**
 Redo [step 2](setup.md#step-2-turn-on-email-sign-in).
@@ -36,7 +36,10 @@ Copy the config again from [step 5](setup.md#step-5-copy-your-config-block). It 
 Check that you did [step 4](setup.md#step-4-set-the-database-rules), and that the rules were published. Blocked database access doesn't show a clear message yet. Then reload the Bridge dock and try again.
 
 **The tab says `Starting…` and stays there**
-The extension loads its Firebase library from the internet, so the Bridge needs a connection the first time it loads. Check your internet and reload the dock.
+A database error during sign-in can cause this, usually the rules in [step 4](setup.md#step-4-set-the-database-rules). Check them, check your internet, and reload the dock.
+
+**I got "sign-in needed", but I didn't sign out**
+If there was no internet when the Bridge loaded, this message can be false. When the internet is back, reload the dock before you re-enter your password.
 
 ## Installing
 
@@ -79,10 +82,13 @@ Changes made while you were offline arrive together. Make the button safe to rep
 ## Data
 
 **My edit in the Firebase console disappeared**
-Offline writes on a PC usually win over a console edit, because a console edit doesn't change the document's `_t` stamp. To make your edit win, also change `_t` to a larger number.
+A write made on the PC while offline can overwrite a console edit. A console edit doesn't update the document's `_t` stamp, and offline commands other than Create and Replace always apply when the internet returns. See [If two places changed the same document](using.md#if-two-places-changed-the-same-document).
+
+**The extension ignores a document I edited in the console**
+A value is probably true/false or a nested object. Field values must be text or numbers. Fix the value in the console.
 
 **Another PC's newer change lost**
-The most recent write wins, using each PC's clock. Check that both PCs set their clocks automatically.
+Create and Replace compare each PC's clock. Check that both PCs set their clocks automatically.
 
 **I can't find my data in the Firebase console**
 Open **Realtime Database → Data**, then `users` → your user ID → `collections`. Your user ID is listed under **Authentication → Users**.

@@ -1,6 +1,6 @@
 # SAMMI Firebase
 
-A [SAMMI](https://sammi.solutions) Bridge extension that keeps a streamer's records in their own Firebase project: collections of documents with fields, read locally in milliseconds, written through to the cloud, and announced as SAMMI triggers when they change anywhere. Settings and state survive reinstalls, drive failures and new machines, and one stream's data can be shared by several rigs.
+A [SAMMI](https://sammi.solutions) Bridge extension that keeps a streamer's records in their own Firebase project: collections of documents with fields, read locally in milliseconds, written through to the cloud, and announced as SAMMI triggers when they change anywhere. Settings and state survive reinstalls, drive failures and new machines, and one stream's data can be shared by several rigs, though that's still [to be tested on a second PC](ROADMAP.md).
 
 **Status: no release yet.** All 23 specs pass, 204 of 204 scenarios, and the on-PC tests pass on one streaming PC. Still to come: tests with a second PC, a run of the setup guide by someone new, and the first signed release (`evidence/pc/0.1.0.md`).
 
@@ -14,20 +14,22 @@ For IRL streamers this is the first piece of infrastructure that lets a stream's
 
 - **Reads are variables.** Every collection appears as a global SAMMI object variable, so any button reads `/$global.fb_example.settings.ip$/` with no command.
 - **Writes are one command in a button you already have.** `Firebase: Increment Field` in a cheer button adds points for the viewer's provider user id and answers with the new total: the write is the read.
-- **Changes arrive as triggers.** `Firebase: Document Updated` fires within about a second when a record changes on another PC or in the Firebase console.
-- **Local first.** With the Bridge closed or the internet down, reads come from `firebase.ini`, writes queue, and what you did meanwhile wins when the connection returns.
+- **Changes arrive as triggers.** `Firebase: Document Updated` fires when a record changes on another PC or in the Firebase console.
+- **Local first.** With the internet down, reads come from the copy on your PC and writes wait to upload. With the Bridge closed, a button can still read and write `firebase.ini` directly. [Using SAMMI Firebase](docs/guide/using.md#when-things-go-offline) explains what wins when the connection returns.
 - **Your data, your project.** You create a free Firebase project and an Email/Password user. There is no server of ours, and the extension never stores a password.
 
 The command surface follows a DDD/CQRS grammar: commands write, queries read a local projection, events are past tense. Release 1 scope is in `docs/00-prd.md`.
 
 ## Requirements
 
-- SAMMI Core 2025.2.0 or newer, with the SAMMI Bridge open as an OBS browser dock.
-- A Firebase project with Email/Password sign-in and a Realtime Database.
+- Windows, with SAMMI Core 2025.2.0 or newer.
+- OBS 30 or newer, with the SAMMI Bridge open as a dock.
+- A free Firebase project with Email/Password sign-in and a Realtime Database. The [setup guide](docs/guide/setup.md) walks you through it.
+- Internet when the Bridge loads, to fetch the Firebase library. Starting OBS with no internet hasn't been tested yet.
 
 ## Installing
 
-Not yet available. When release 1 ships, the `.sef` will be attached to a GitHub Release, built by CI and signed with a GitHub artifact attestation. You will be able to verify the file you downloaded came from this repository's CI:
+Not yet available; see the [roadmap](ROADMAP.md). To try it now, [build it from source](#development). When release 1 ships, the `.sef` will be attached to a GitHub Release, built by CI and signed with a GitHub artifact attestation. You will be able to verify the file you downloaded came from this repository's CI:
 
 ```
 gh attestation verify sammi-firebase.sef --repo listenrightmeow/sammi-firebase
@@ -61,17 +63,19 @@ The board has two halves:
 - **The architecture palette.** A context map of the extension, Firebase, SAMMI Core and the OBS dock, then one frame per aggregate (Connection, Collection, Document) with its commands, events and invariants, the local mirror and its queries, the policies streamers wire up, and a table of which component enforces each rule.
 - **Eight narrative threads, T1 to T8.** One per outcome in the PRD, from "your SAMMI talks to your Firebase" to "a viewer counter". Each thread reads left to right as a film strip of moments, with lanes for what the streamer does, what the extension decides, what the systems do, and the branches where something is refused.
 
-Sticky colours follow a legend on the board. Green notes mark what was discovered or challenged during review, so the board also records how the design changed. The board is the narrative; the Feature specs in `specs/` are the source of truth wherever the two differ.
+Sticky colours follow a legend on the board. Green notes mark what was discovered or challenged during review, so the board also records how the design changed. The board is the narrative; the Feature specs in `specs/` are the source of truth wherever the two differ. The board has not been updated since decision D24, so it still shows a few things that have changed, such as a Local Notice button.
 
 ## Development
 
-Node 24 and pnpm 11 (`.tool-versions`).
+Node 24 and pnpm 11 (`.tool-versions`). You don't need a Firebase project or Windows to run the tests.
 
 ```
 pnpm install
-pnpm ci:local      # the same pipeline CI runs (SF-ADR-012)
-feat lint && feat audit && feat generate    # check and compile the specs
+pnpm ci:local         # the same checks CI runs (SF-ADR-012)
+pnpm build:pc         # dist/sammi-firebase.sef and the on-PC test deck
 ```
+
+To install your build, follow the [setup guide](docs/guide/setup.md) from step 6, then see `tools/test-deck/README.md` for the on-PC tests.
 
 Read `CONTRIBUTING.md` before changing behavior: the spec changes first, and thresholds live in `contracts/quality-gates.json`. Report security issues privately as described in `SECURITY.md`.
 
@@ -99,6 +103,7 @@ Read `CONTRIBUTING.md` before changing behavior: the spec changes first, and thr
 | `specs/` | 23 Feature specs with their contract registries; coverage matrix in `specs/README.md`. `feat.config.json` is the harness. |
 | `tools/test-deck/` | The on-PC test deck, one button per case a button can drive; not shipped. |
 | `tools/feat-adapters/` | The harness's `ini`, `firebase` and `sammi` service adapters (milestone 1). |
+| `ROADMAP.md` | What is left before the first release, and what comes after. |
 | `evidence/` | Shipped release evidence: the on-PC matrix per release and the gateway-probe fixture. |
 | `discovery/` | The hardware probes used during discovery: an OBS dock probe page and the Cloud Probe extension. |
 
