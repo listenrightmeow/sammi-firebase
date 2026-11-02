@@ -19,6 +19,7 @@ import {
 } from "./deck.ts";
 import { COMMANDS } from "../../src/ext/commands.ts";
 import { assemble, bundle, check, run, SEF_MAX } from "./sef.ts";
+import { buildStamp } from "./stamp.ts";
 import { gate } from "./coverage-gate.ts";
 
 const SCRIPT = 'var sammiFirebase=(()=>{const SDK="https://www.gstatic.com/firebasejs/10.12.0";return{main(){}}})();';
@@ -226,6 +227,18 @@ describe("the count assertions", async () => {
   });
 });
 
+describe("the build stamp", () => {
+  it("is month, day, hour and minute, unless the build sets one", () => {
+    const saved = process.env.BUILD_STAMP;
+    delete process.env.BUILD_STAMP;
+    expect(buildStamp(new Date(2026, 10, 1, 17, 5))).toBe("1101-1705");
+    process.env.BUILD_STAMP = "x";
+    expect(buildStamp()).toBe("x");
+    if (saved === undefined) delete process.env.BUILD_STAMP;
+    else process.env.BUILD_STAMP = saved;
+  });
+});
+
 describe("deck command format", () => {
   const commands = (deck("test").button_list as Record<string, unknown>[]).flatMap(
     (b) => b.command_list as Record<string, unknown>[],
@@ -234,6 +247,11 @@ describe("deck command format", () => {
     const popups = commands.filter((c) => c.cmd === 141);
     expect(popups.length).toBeGreaterThan(0);
     for (const c of popups) expect(String(c.b0)).not.toContain("/$");
+  });
+  it("reads the extension's variables through global", () => {
+    for (const c of commands) expect(JSON.stringify(c)).not.toContain("/$fb_");
+    const help = commands.find((c) => c.cmd === 141);
+    expect(String(help?.b0)).toContain("global.fb_example.settings.ip");
   });
   it("never sets two variable references side by side, because SAMMI drops a slash between them", () => {
     for (const c of commands) expect(JSON.stringify(c)).not.toContain("$//$");

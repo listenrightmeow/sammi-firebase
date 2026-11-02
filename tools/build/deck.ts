@@ -26,6 +26,7 @@ export const waitMs = (ms: number): Cmd => cmd(190, { b0: String(ms) });
 export const strLen = (save: string, text: string): Cmd => cmd(83, { b0: save, b1: text });
 export const iniLoad = (file: string, section: string, key: string, save: string): Cmd =>
   cmd(127, { b0: file, b1: section, b2: key, b3: save });
+export const triggerButton = (id: string): Cmd => cmd(132, { b0: id, b1: "0", v0: false });
 export const triggerPull = (save: string, key: string): Cmd => cmd(66, { b0: save, b1: key });
 
 /** If (7): SAMMI stores 20 condition slots; v0 is the then-block size, v1 the else-block size. */
@@ -39,9 +40,9 @@ export function ifThen(left: string, op: string, right: string, then: Cmd[], oth
 
 export const STARTUP_TRIGGER = { trg: 10.0, type: "SAMMI Startup", group_id: "" };
 
-const bgr = (r: number, g: number, b: number): number => b * 65536 + g * 256 + r;
+export const bgr = (r: number, g: number, b: number): number => b * 65536 + g * 256 + r;
 
-function button(
+export function button(
   id: string,
   text: string,
   x: number,
@@ -99,7 +100,7 @@ export function deck(uniqueId: string): Record<string, unknown> {
         popup(
           "SAMMI Firebase\n\n" +
             "Connect once in the Bridge's SAMMI Firebase tab (config, email, password). After that:\n" +
-            "- Read any document as a variable: in a yellow box, type fb_example.settings.ip\n" +
+            "- Read any document as a variable: in a yellow box, type global.fb_example.settings.ip\n" +
             "- Write with one Firebase command inside your own buttons (Set Field, Increment Field, Replace Document...).\n" +
             "- Leave the Async box on Firebase commands unticked.\n" +
             "- Firebase: Startup declares this deck's collections; the Example buttons show a write, a read with the " +
@@ -144,7 +145,9 @@ export function deck(uniqueId: string): Record<string, unknown> {
         [STARTUP_TRIGGER],
       ),
       button("fbExampleReplace", "Example:\nReplace Document", 0.0, 0.125, bgr(45, 127, 249), [
-        comment("A settings button (T2): writes one whole document. Read it anywhere as /$fb_example.settings.ip$/."),
+        comment(
+          "A settings button (T2): writes one whole document. Read it anywhere as /$global.fb_example.settings.ip$/.",
+        ),
         deleteVariable("fbReplaceResult"),
         extension("Firebase: Replace Document", {
           collection: "example",

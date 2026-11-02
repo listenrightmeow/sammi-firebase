@@ -1,6 +1,7 @@
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { build as esbuild } from "esbuild";
 import { deck, extensionCommands, SAMMI_MIN } from "./deck.ts";
+import { buildStamp } from "./stamp.ts";
 
 // Assembles dist/sammi-firebase.sef (SF-ADR-010, SF-ADR-011) and, with --check, enforces the
 // build gates of SF-ADR-017: the bundle parses, the deck parses, every deck command is synchronous,
@@ -115,7 +116,7 @@ export async function run(argv: string[]): Promise<number> {
   const sef = assemble({
     version: pkg.version,
     script: await bundle(),
-    tab: readFileSync("src/ext/tab.html", "utf8"),
+    tab: readFileSync("src/ext/tab.html", "utf8").replace("{{BUILD}}", buildStamp()),
     uniqueId: `sammifirebase${pkg.version.replace(/\D/g, "")}`,
   });
   mkdirSync("dist", { recursive: true });
