@@ -78,8 +78,7 @@ export async function pushOp(path: string, op: PendingOp, doc: StoredDoc): Promi
     case "set_field":
       return db.update(path, { [op.field]: op.value, ...stamp });
     case "increment":
-      await db.increment(path, op.field, op.by);
-      return db.update(path, stamp);
+      return db.increment(path, op.field, op.by, stamp);
     case "delete_field":
       return db.update(path, { [op.field]: null, ...stamp });
     case "delete":
@@ -164,7 +163,10 @@ export async function reconcile(cause: Cause, iniEdits: Set<string> = new Set())
       counts.applied++;
       counts.dropped++;
       touched.add(collection);
-      events.push(() => announceRemote(collection, id, theirs, ours, "DocumentUpdated"));
+      // The live listener may already have applied and announced this version.
+      if (ours?.t !== theirs.t || ours.d !== theirs.d) {
+        events.push(() => announceRemote(collection, id, theirs, ours, "DocumentUpdated"));
+      }
       continue;
     }
     if (op.op !== "create" && op.op !== "replace" && theirs && (!ours || theirs.t > ours.t)) {

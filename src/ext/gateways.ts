@@ -107,14 +107,35 @@ async function ref(path: string) {
   return s.db.ref(s.db.getDatabase(session.app), path);
 }
 
+let online = true;
+
+/** Reports each change of .info/connected. It starts false before the first connection, which is not a drop. */
+export async function watchConnection(onChange: (online: boolean) => void): Promise<() => void> {
+  const s = await load();
+  let everOnline = false;
+  const off = s.db.onValue(await ref(".info/connected"), (snap) => {
+    const now = snap.val() === true;
+    if (!now && !everOnline) return;
+    const first = now && !everOnline;
+    everOnline = everOnline || now;
+    online = now;
+    if (!first) onChange(now);
+  });
+  return () => {
+    off();
+    online = true;
+  };
+}
+
 export const db: DatabasePort = {
+  online: () => online,
   read: async (path) => (await (await load()).db.get(await ref(path))).val(),
   set: async (path, value) => (await load()).db.set(await ref(path), value),
   update: async (path, fields) => (await load()).db.update(await ref(path), fields),
   remove: async (path) => (await load()).db.remove(await ref(path)),
-  increment: async (path, field, by) => {
+  increment: async (path, field, by, stamp) => {
     const s = await load();
-    await s.db.update(await ref(path), { [field]: s.db.increment(by) });
+    await s.db.update(await ref(path), { [field]: s.db.increment(by), ...stamp });
   },
 };
 
@@ -149,6 +170,8 @@ export function realPorts(): Ports {
     auth,
     db,
     sammi,
+    // Rule 1: the button is answered first, and the SDK holds a write's promise open while the network is down.
+    background: async () => undefined,
     now: () => Date.now(),
     uuid: () => crypto.randomUUID(),
     pushId: () => {

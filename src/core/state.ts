@@ -1,3 +1,4 @@
+import type { Fields } from "./docs.ts";
 import type { FirebaseConfig } from "./ports.ts";
 
 /** A document as stored: fields plus the last writer's timestamp and device (docs/06). */
@@ -37,6 +38,12 @@ export interface State {
   mirror: Map<string, Map<string, StoredDoc>>;
   /** '<collection>/<id>' → the raw ini text last read or written. */
   raw: Map<string, string>;
+  /** What each fb_<collection> variable was last rewritten to: the poller's baseline (rule 8). */
+  published: Map<string, Record<string, Fields>>;
+  /** Counts those rewrites, so a reply read before one is known to be stale. */
+  publishes: number;
+  /** Cloud writes sent and not yet acknowledged. */
+  inflight: Set<Promise<void>>;
   hashes: Map<string, string>;
   pending: Map<string, PendingOp>;
   /** ini documents that are not valid JSON, by '<collection>/<id>' (rule 7). */
@@ -57,6 +64,9 @@ export function newState(): State {
     schema: new Map(),
     mirror: new Map(),
     raw: new Map(),
+    published: new Map(),
+    publishes: 0,
+    inflight: new Set(),
     hashes: new Map(),
     pending: new Map(),
     invalidIni: [],

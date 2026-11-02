@@ -159,6 +159,8 @@ export async function publish(collection: string): Promise<void> {
   const { ports, state } = host();
   const value: Record<string, Fields> = {};
   for (const [id, doc] of state.mirror.get(collection) ?? []) value[id] = { ...doc.fields };
+  state.published.set(collection, value);
+  state.publishes++;
   await ports.sammi.setVariable(`fb_${collection}`, value);
 }
 

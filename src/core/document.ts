@@ -8,7 +8,7 @@ import { clearPending, dropDoc, getDoc, publish, putDoc, putPending, userPath, w
 import { pushOp } from "./sync.ts";
 
 // The write side of the Document aggregate: invariants DOC-01 to DOC-06 and mirror rule 1
-// (validate → mirror → ini → pending → variable → event → cloud → drop pending on ack).
+// (validate → mirror → ini → pending → variable → event → answer → cloud → drop pending on ack).
 
 export const FIELD_MAX = 4096;
 export const DOC_MAX = 8192;
@@ -97,14 +97,27 @@ export async function commit(
   await putPending(t.collection, t.id, op);
   await publish(t.collection);
   await announce();
+  // Down: the operation stays in [pending] and the reconcile on reconnect replays it (rule 4).
+  if (!ports.db.online()) return;
   const path = userPath(t.uid, `collections/${t.collection}/${t.id}`);
-  try {
-    if (opts.wholeDocument && after) await ports.db.set(path, toWire(after));
-    else await pushOp(path, op, after ?? stamped({}));
-    await clearPending(t.collection, t.id);
-  } catch {
-    // Offline: the operation stays in [pending] and is replayed by the next reconcile (rule 4).
-  }
+  const send = (async () => {
+    try {
+      if (opts.wholeDocument && after) await ports.db.set(path, toWire(after));
+      else await pushOp(path, op, after ?? stamped({}));
+      await clearPending(t.collection, t.id);
+    } catch {
+      // The write failed: it stays in [pending] for the next reconcile.
+    }
+  })();
+  const { inflight } = host().state;
+  inflight.add(send);
+  void send.finally(() => inflight.delete(send));
+  await ports.background(send);
+}
+
+/** A write the SDK held through a drop is sent when the connection returns; wait so it is not replayed as well. */
+export async function settleInFlight(): Promise<void> {
+  await Promise.allSettled([...host().state.inflight]);
 }
 
 export const current = (t: Target): StoredDoc | undefined => getDoc(t.collection, t.id);

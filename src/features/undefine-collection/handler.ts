@@ -14,7 +14,7 @@ export async function handle(input: { name?: string }): Promise<Answer> {
     if (!state.schema.has(name)) refuse("not defined", name);
     state.schema.delete(name);
     await ports.ini.remove("schema", name);
-    await ports.db.remove(userPath(uid, `meta/schema/${name}`));
+    await ports.background(ports.db.remove(userPath(uid, `meta/schema/${name}`)).catch(() => undefined));
     await emit("CollectionUndefined", { collection: name });
     return ok({ answer: "ok" });
   });

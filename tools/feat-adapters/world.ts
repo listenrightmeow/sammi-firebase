@@ -55,6 +55,8 @@ export class World {
   later: { path: string; value: unknown }[] = [];
   /** The next N writes to document paths fail, as when the network drops. */
   outage = 0;
+  /** What the real database reports through .info/connected. */
+  online = true;
   log: Record<Service, CapturedRecord[]> = { ini: [], firebase: [], sammi: [] };
 
   constructor(clock: string | undefined) {
@@ -64,6 +66,7 @@ export class World {
   }
 
   reset(): void {
+    this.online = true;
     this.ini = new Map();
     this.tree = {};
     this.users = [];
@@ -182,6 +185,7 @@ export class World {
       }
     };
     const db: DatabasePort = {
+      online: () => this.online,
       read: async (path) => {
         const value = sortedClone(this.dbGet(path));
         if (path.endsWith("/collections")) {
@@ -207,11 +211,14 @@ export class World {
         this.dbPrune(path);
         this.record("firebase", "remove", { path }, path);
       },
-      increment: async (path, field, by) => {
+      // One atomic write on the real database; the specs observe its increment and its stamps as two records.
+      increment: async (path, field, by, stamp) => {
         offline(path);
         const current = this.dbGet(`${path}/${field}`);
         this.dbSet(`${path}/${field}`, (typeof current === "number" ? current : 0) + by);
         this.record("firebase", "increment", { path, field, by }, path);
+        for (const [k, v] of Object.entries(stamp)) this.dbSet(`${path}/${k}`, v);
+        this.record("firebase", "update", { path, fields: stamp }, path);
       },
     };
 
@@ -230,6 +237,10 @@ export class World {
       auth,
       db,
       sammi,
+      // The real host does not wait; the harness does, so a write is captured inside its scenario.
+      background: async (task) => {
+        await task;
+      },
       now: () => this.now,
       uuid: () => randomUUID(),
       pushId: () => Array.from({ length: 20 }, () => PUSH_CHARS[Math.floor(Math.random() * 64)]).join(""),

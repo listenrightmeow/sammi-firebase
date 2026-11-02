@@ -22,12 +22,16 @@ export async function handle(input: {
     for (const f of fields) if (!NAME.test(f)) refuse("bad collection name", f);
     const entry = { fields, strict: input.strict ?? false, twoWay: input.twoWay ?? true, t: host().ports.now() };
     await putSchema(name, entry);
-    await host().ports.db.set(userPath(uid, `meta/schema/${name}`), {
-      fields,
-      strict: entry.strict,
-      two_way: entry.twoWay,
-      _t: entry.t,
-    });
+    await host().ports.background(
+      host()
+        .ports.db.set(userPath(uid, `meta/schema/${name}`), {
+          fields,
+          strict: entry.strict,
+          two_way: entry.twoWay,
+          _t: entry.t,
+        })
+        .catch(() => undefined),
+    );
     await emit("CollectionDefined", {
       collection: name,
       fields: JSON.stringify(fields),

@@ -55,8 +55,8 @@ describe("Realtime Database (F7, verified Oct 29, 2026, and the SDK's documented
     expect(await p().db.read("d")).toEqual({ b: 2, c: 3 });
   });
   it("increment of an absent field starts from 0", async () => {
-    await p().db.increment("d", "n", 5);
-    expect(await p().db.read("d")).toEqual({ n: 5 });
+    await p().db.increment("d", "n", 5, { _t: 1, _d: "x" });
+    expect(await p().db.read("d")).toEqual({ n: 5, _t: 1, _d: "x" });
   });
   it("set replaces, remove deletes, and reading an absent path is undefined", async () => {
     await p().db.set("d", { a: 1 });

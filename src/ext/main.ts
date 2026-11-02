@@ -1,15 +1,18 @@
 import { host, installHost } from "../core/host.ts";
 import { parseConfigBlock } from "../core/config-block.ts";
 import { fromWire, remoteWins } from "../core/docs.ts";
+import { pollVariables } from "../core/poll.ts";
+import { reconcileAfterReconnect } from "../core/reconnect.ts";
 import { boot } from "../core/store.ts";
 import * as applyRemoteChange from "../features/apply-remote-change/handler.ts";
 import * as applyRemoteSchema from "../features/apply-remote-schema/handler.ts";
 import * as applyVariableChange from "../features/apply-variable-change/handler.ts";
 import * as connect from "../features/connect/handler.ts";
 import * as disconnect from "../features/disconnect/handler.ts";
+import * as reconcile from "../features/reconcile/handler.ts";
 import * as recordSessionLoss from "../features/record-session-loss/handler.ts";
 import { COMMANDS } from "./commands.ts";
-import { INI_FILE, listen, readVariable, realPorts } from "./gateways.ts";
+import { INI_FILE, listen, readVariable, realPorts, watchConnection } from "./gateways.ts";
 
 // The Bridge entry point, bundled into [insert_script] by tools/build/sef.ts. It installs the real
 // gateways, registers the commands, answers every Save Variable box, and runs the two loops that
@@ -32,6 +35,7 @@ declare const sammiclient: { on(event: string, fn: (payload: { Data?: Record<str
 
 const COLOR = 0x2d7ff9;
 let stopListening: (() => void) | undefined;
+let stopWatching: (() => void) | undefined;
 let poller: ReturnType<typeof setInterval> | undefined;
 
 const $ = <T extends HTMLElement>(id: string): T | null => document.getElementById(id) as T | null;
@@ -42,10 +46,10 @@ function show(line: string): void {
 }
 
 async function refreshStatus(): Promise<void> {
-  const { state } = host();
+  const { state, ports } = host();
   show(
     state.connected
-      ? `Connected as ${state.email} · ${[...state.mirror.values()].reduce((n, m) => n + m.size, 0)} documents · ${state.pending.size} pending`
+      ? `${ports.db.online() ? "Connected" : "OFFLINE, no internet: signed in"} as ${state.email} · ${[...state.mirror.values()].reduce((n, m) => n + m.size, 0)} documents · ${state.pending.size} pending`
       : "Not connected — buttons use the copy on this PC",
   );
 }
@@ -86,37 +90,50 @@ function onSchema(tree: Record<string, Record<string, unknown>>): void {
   })();
 }
 
-/** H5: diff each bound fb_<collection> against the mirror and write what changed. */
-async function poll(): Promise<void> {
-  const { state } = host();
-  if (!state.connected) return;
-  for (const [collection, docs] of state.mirror) {
-    if (state.schema.get(collection)?.twoWay === false) continue;
-    const variable = await readVariable(`fb_${collection}`);
-    if (!variable || typeof variable !== "object") continue;
-    for (const [id, fields] of Object.entries(variable as Record<string, Record<string, unknown>>)) {
-      const mirrored = docs.get(id)?.fields ?? {};
-      for (const [field, value] of Object.entries(fields ?? {}))
-        if (mirrored[field] !== value) await applyVariableChange.handle({ collection, id, field, value });
-      for (const field of Object.keys(mirrored))
-        if (fields && !(field in fields)) await applyVariableChange.handle({ collection, id, field, value: null });
-    }
-  }
-}
-
 async function afterConnect(): Promise<void> {
   const { state, ports } = host();
   stopListening?.();
   stopListening = await listen(state.uid as string, onDocuments, onSchema);
+  stopWatching?.();
+  stopWatching = await watchConnection((isOnline) => {
+    void (async () => {
+      if (isOnline && host().state.connected) {
+        try {
+          await reconcileAfterReconnect({
+            stopListening: () => {
+              stopListening?.();
+              stopListening = undefined;
+            },
+            reconcile: () => reconcile.handle(),
+            startListening: async () => {
+              stopListening?.();
+              if (host().state.connected) stopListening = await listen(state.uid as string, onDocuments, onSchema);
+            },
+          });
+        } catch {
+          // What could not be decided stays in [pending] for the next reconcile.
+        }
+      }
+      await refreshStatus();
+    })();
+  });
   clearInterval(poller);
   const ms = Number((await ports.ini.read("connection", "poll_ms")) ?? 500);
-  poller = setInterval(() => void poll(), Math.min(10000, Math.max(100, ms)));
+  poller = setInterval(
+    () => {
+      void pollVariables(readVariable, (change) => applyVariableChange.handle(change));
+      void refreshStatus();
+    },
+    Math.min(10000, Math.max(100, ms)),
+  );
   await refreshStatus();
 }
 
 function afterDisconnect(): void {
   stopListening?.();
   stopListening = undefined;
+  stopWatching?.();
+  stopWatching = undefined;
   clearInterval(poller);
   void refreshStatus();
 }
