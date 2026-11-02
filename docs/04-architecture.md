@@ -95,4 +95,9 @@ Buttons that run a Cloud command get no answer: the button continues at once and
 
 ## Size limits
 
-`SAMMI.setVariable` and the ini helpers go over SAMMI's websocket, which drops messages that are too large (S12). The MVP caps a single value at 8 KB and answers `error: too large` above it. Chunked transfer, if ever needed, is the documented `chunkSender` pattern from SAMMI's docs.
+`SAMMI.setVariable` and the ini helpers go over SAMMI's websocket, which drops messages that are too large (S12). A document is capped at 8 KB and answers `error: too large` above it. No single message carries more than 16,000 bytes, and larger data goes as a chain of messages sent one after another (D32):
+
+- **A variable over the cap:** the first publish sends what fits, then each remaining document under `fb_<collection>.<id>`. After that only the changed document is sent.
+- **Reading a variable over the cap:** the poller reads 10 documents per tick and comes round to them all in turn, so at the default 500 ms a variable write waits up to half a second per 10 documents, about 25 seconds at 500.
+- **An ini value over the cap:** `[index] hashes` and the id lists continue in `<key>__part1`, `<key>__part2`, and only the changed part is rewritten.
+- **A command's answer over the cap:** answers `error: too large`, because one Save Variable box cannot be chained. Use `Query Documents` with a `limit`.

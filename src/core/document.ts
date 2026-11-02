@@ -27,6 +27,11 @@ export function target(input: { collection?: unknown; id?: unknown }, opts: { bl
   return { uid, collection, id };
 }
 
+/** BAD_COLLECTION_NAME, then BAD_ID, for a query: reads answer from the local copy, connected or not (D31). */
+export function localTarget(input: { collection?: unknown; id?: unknown }): Pick<Target, "collection" | "id"> {
+  return { collection: checkCollection(input.collection), id: checkId(input.id) };
+}
+
 export function fieldName(field: unknown): string {
   if (typeof field !== "string" || !NAME.test(field)) refuse("bad field", String(field));
   return field;
@@ -120,4 +125,4 @@ export async function settleInFlight(): Promise<void> {
   await Promise.allSettled([...host().state.inflight]);
 }
 
-export const current = (t: Target): StoredDoc | undefined => getDoc(t.collection, t.id);
+export const current = (t: Pick<Target, "collection" | "id">): StoredDoc | undefined => getDoc(t.collection, t.id);

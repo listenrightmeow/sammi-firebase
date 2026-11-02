@@ -19,7 +19,7 @@ enforce:
   read from the mirror only
   answer the default when given and the document or field is missing
   rejects MISSING when the document or field is missing and no default is given
-  rejects NOT_CONNECTED when no connection is established
+  answer from the local copy whether or not a connection is established
   rejects BAD_COLLECTION_NAME when the collection name is not [a-z][a-z0-9_]{0,31}
   rejects BAD_ID when the id is not [A-Za-z0-9_-]{1,64}
 
@@ -91,12 +91,16 @@ scenario "rejects MISSING for a missing document without a default":
   predict rejection MISSING:
     response ERR CommandError { code: "MISSING", answer: "error: missing viewers/nobody" }
 
-scenario "rejects NOT_CONNECTED when nothing is connected":
+scenario "answers from the local copy when nothing is connected (D31)":
   given:
     clock at "2026-10-29T12:00:00Z"
-  when: GetField { collection: "viewers", id: "12345678", field: "name" }
-  predict rejection NOT_CONNECTED:
-    response ERR CommandError { code: "NOT_CONNECTED", answer: "error: not connected" }
+    seed ini [ IniWrite with IniWrite { section: "index", key: "collections", json: ["viewers"] }, IniWrite with IniWrite { section: "index", key: "viewers", json: ["222"] }, IniWrite with IniWrite { section: "collection:viewers", key: "222", json: { name: "bob", points: 10, _t: 1793275110000, _d: "dev1" } } ]
+  when: GetField { collection: "viewers", id: "222", field: "name" }
+  predict success:
+    response OK CommandResponse { answer: "bob" }
+    ini has []
+    firebase has []
+    sammi has []
 
 scenario "rejects BAD_COLLECTION_NAME for an invalid name":
   given:

@@ -1,8 +1,12 @@
+import { invalidIniNotice, takeCatchUpNotice, unreachableNotice } from "../core/notices.ts";
+import { withinMessage } from "../core/store.ts";
 import { host, installHost } from "../core/host.ts";
 import { parseConfigBlock } from "../core/config-block.ts";
 import { fromWire, remoteWins } from "../core/docs.ts";
+import { emit } from "../core/events.ts";
 import { pollVariables } from "../core/poll.ts";
 import { reconcileAfterReconnect } from "../core/reconnect.ts";
+import { lostSessionAtStart } from "../core/session.ts";
 import { boot } from "../core/store.ts";
 import * as applyRemoteChange from "../features/apply-remote-change/handler.ts";
 import * as applyRemoteSchema from "../features/apply-remote-schema/handler.ts";
@@ -36,6 +40,8 @@ declare const sammiclient: { on(event: string, fn: (payload: { Data?: Record<str
 const COLOR = 0x2d7ff9;
 let stopListening: (() => void) | undefined;
 let stopWatching: (() => void) | undefined;
+let sessionLost = false;
+const SESSION_LOST = "SAMMI Firebase: sign-in needed. Buttons keep reading the copy on this PC.";
 let poller: ReturnType<typeof setInterval> | undefined;
 
 const $ = <T extends HTMLElement>(id: string): T | null => document.getElementById(id) as T | null;
@@ -49,8 +55,8 @@ async function refreshStatus(): Promise<void> {
   const { state, ports } = host();
   show(
     state.connected
-      ? `${ports.db.online() ? "Connected" : "OFFLINE, no internet: signed in"} as ${state.email} · ${[...state.mirror.values()].reduce((n, m) => n + m.size, 0)} documents · ${state.pending.size} pending`
-      : "Not connected — buttons use the copy on this PC",
+      ? `${ports.db.online() ? "Connected" : "OFFLINE, no internet: signed in"} as ${state.email} · ${[...state.mirror.values()].reduce((n, m) => n + m.size, 0)} documents · ${state.pending.size} pending${invalidIniNotice()}${unreachableNotice()}`
+      : `${sessionLost ? "Connect needed" : "Not connected"} — buttons read the copy on this PC`,
   );
 }
 
@@ -91,6 +97,9 @@ function onSchema(tree: Record<string, Record<string, unknown>>): void {
 }
 
 async function afterConnect(): Promise<void> {
+  sessionLost = false;
+  const catchUp = takeCatchUpNotice();
+  if (catchUp) void SAMMI.popUp(catchUp);
   const { state, ports } = host();
   stopListening?.();
   stopListening = await listen(state.uid as string, onDocuments, onSchema);
@@ -164,7 +173,7 @@ async function register(): Promise<void> {
           h.cause = "command";
         }
         // MIR-09: always answer, so an absent variable can only mean the Bridge was not running.
-        if (d.result) await SAMMI.setVariable(d.result, answer, d.FromButton, d.instanceId);
+        if (d.result) await SAMMI.setVariable(d.result, withinMessage(answer), d.FromButton, d.instanceId);
         if (def.name === "Firebase: Connect" && host().state.connected) await afterConnect();
         if (def.name === "Firebase: Disconnect") afterDisconnect();
       })();
@@ -205,15 +214,24 @@ export async function main(): Promise<void> {
   await boot();
   wireTab();
   await register();
-  const res = await connect.handle({});
-  if (res.status === "OK") await afterConnect();
-  else await refreshStatus();
   window.addEventListener("fb-session-lost", (e) => {
     void recordSessionLoss.handle({ code: String((e as CustomEvent).detail ?? "") }).then(() => {
+      sessionLost = true;
       afterDisconnect();
-      void SAMMI.popUp("SAMMI Firebase: sign-in needed. Buttons keep using the copy on this PC.");
+      void SAMMI.popUp(SESSION_LOST);
     });
   });
+  const hadSession = Boolean(host().state.session);
+  const res = await connect.handle({});
+  if (res.status === "OK") await afterConnect();
+  else {
+    if (lostSessionAtStart(hadSession, res)) {
+      sessionLost = true;
+      await emit("Disconnected", { reason: "session" });
+      void SAMMI.popUp(SESSION_LOST);
+    }
+    await refreshStatus();
+  }
 }
 
 void INI_FILE;

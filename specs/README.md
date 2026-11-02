@@ -58,6 +58,10 @@ Every command and query of the model has a spec or is the refusal branch of the 
 - **Apply Remote Change and Reconcile:** rule 2 also applies an edit made outside the extension, whose `_t` and `_d` match the local document and whose fields differ. Rule 3's own echo now also requires the same fields. Three scenarios added.
 - **Connect:** a database URL pasted with a trailing slash is stored without it. One scenario added.
 
+- **Six queries (D31):** Get Document, Get Field, Document Exists, List Documents, Query Documents and Count Documents answer from the local copy while disconnected. Each spec's `NOT_CONNECTED` scenario became one that reads the copy. Writes still refuse.
+
+- **Message cap (D32):** no message to SAMMI carries more than 16,000 bytes. This lives in the store and the poller, so `src/core/size.unit.test.ts` holds its checks, like the poller's. Every spec's scenarios are unchanged, because each one stays under the cap and still sends one whole message.
+
 ## Assumptions the PC tier must confirm
 
 - The specs predict `IniDelete` records (Disconnect, Delete Document, pending acknowledgements). The Bridge's `saveIni`/`loadIni` helpers are verified (S10); a delete helper is not. The `ini` gateway keeps `deleteKey` in its interface and the gateway probe (test plan T-D2) decides the real implementation. If the Bridge cannot delete a key, the gateway writes an empty value and the index is authoritative; the specs' `IniDelete` record then maps to that write in the real adapter only, never in the fake.

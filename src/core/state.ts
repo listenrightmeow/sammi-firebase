@@ -48,6 +48,15 @@ export interface State {
   pending: Map<string, PendingOp>;
   /** ini documents that are not valid JSON, by '<collection>/<id>' (rule 7). */
   invalidIni: string[];
+  iniCatchUp?: { pushed: number; applied: number };
+  /** Chained publishes on their way (D32): the variable is part old, part new, so the poller waits. */
+  publishing: number;
+  /** Per collection, ids a dotted path cannot reach, so a large collection's variable leaves them out (D32). */
+  unreachable: Map<string, string[]>;
+  /** Per collection, where the next poll of a large collection starts (D32). */
+  pollCursor: Map<string, number>;
+  /** The parts of each chained ini value as last written or read (D32). */
+  iniChains: Map<string, string[]>;
 }
 
 export function newState(): State {
@@ -70,5 +79,9 @@ export function newState(): State {
     hashes: new Map(),
     pending: new Map(),
     invalidIni: [],
+    publishing: 0,
+    unreachable: new Map(),
+    pollCursor: new Map(),
+    iniChains: new Map(),
   };
 }

@@ -399,6 +399,32 @@ Dates are when the decision was made. Facts cited here are tracked, with sources
 
 ---
 
+## D31. Reads answer while signed out, and a lost session is reported
+
+**Decided:** Nov 1, 2026 (T-P3 answered `error: not connected`; maintainer chose option A, reads answer from the local copy).
+
+**Decision.** The six read queries answer from the local copy whether or not a connection is established, which is what the tab, T-P3 and failure 5 already promised and what the specs refused. Writes still answer `error: not connected`, because a write needs the user's id to land. A lost session is now reported: nothing raised the event the extension listened for. At start, a stored session that no longer signs in shows one popup, fires `Disconnected` with reason `session`, and sets the tab to "Connect needed". Mid-session, the same follows when the SDK reports the user gone.
+
+**Consequences.** A revoked session mid-stream may take up to an hour to be noticed, because the SDK only finds out when it refreshes its token. Until then the extension behaves as connected and the database decides what it accepts.
+
+---
+
+## D32. No message over the cap; larger data goes as a chain (Nov 1, 2026)
+
+**Context.** T-V3 failed. Writes slowed from 0.36 s to 7.2 s each as `bulk` grew, the run stopped at 353 of 500 documents with nothing reported, and the button then crashed SAMMI setting a field on the absent `d499`. Every write resent the whole variable (about 41 KB by then) and the whole hash list, and the poller read the whole variable back every 500 ms. Which of these stopped the run was not established.
+
+**Decision.** The maintainer chose to enforce a payload maximum and chain requests rather than set a document-count limit ("support payload maxes, then daisychain requests"). A single message carries at most 16,000 bytes. Variables, polling and ini values over that go as chains (see [04-architecture.md](04-architecture.md), Size limits). An answer over the cap is `error: too large`.
+
+**Why.** SAMMI publishes no size limit, so a count of documents cannot be derived from it. A cap on messages holds whatever the documents' size, and sending only what changed keeps a write's cost flat as the collection grows. 16,000 bytes holds any one 8 KB document, and is well below the 41 KB reached when the run stopped.
+
+**Consequences.**
+- A variable write on a large collection takes longer to arrive: up to about 25 seconds at 500 documents.
+- A document whose id has a dash or a space, which generated ids can have, is left out of a large collection's variable because dotted paths cannot reach it. It stays readable by commands, and the tab counts these.
+- T-V3 now crosses the cap with 8 documents of 7 KB instead of 500 small ones. The behavior depends on bytes, not on the number of documents, and the maintainer found the 500-document run a waste of time. It does not measure write speed at a high document count; unit tests check that a write sends one message however large the collection is.
+- Confirmed on the PC by T-V3 (Nov 2, 2026): `SAMMI.setVariable` accepts a dotted name, and writing to `fb_<collection>.<id>` did not crash SAMMI after it restarted with the Bridge still open, or when the Bridge reloaded and resent the chain.
+
+---
+
 ## Open decisions
 
 None. The spec amendments listed in D20 were ratified on Oct 29, 2026 ("all ratified"). On Oct 29, 2026 the maintainer ratified D17 (SF-ADR-017, the revision of SF-ADR-012, attestations) and earlier in one word ("all agreed on") D12 item 4, SF-ADR-009 to 016, and the six agent decisions under D15; see D16 for what the pre-build audit changed as a result. The items below were closed on Oct 29, 2026:

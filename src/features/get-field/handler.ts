@@ -1,5 +1,5 @@
 import { ok, refuse, type Answer } from "../../core/answers.ts";
-import { current, fieldName, target } from "../../core/document.ts";
+import { current, fieldName, localTarget } from "../../core/document.ts";
 import { run } from "../../core/run.ts";
 
 // SPEC-QRY-002. The default answers for a missing document or field, so a deck never sees undefined.
@@ -10,7 +10,7 @@ export async function handle(input: {
   default?: string;
 }): Promise<Answer> {
   return run(async () => {
-    const t = target(input);
+    const t = localTarget(input);
     const field = fieldName(input.field);
     const doc = current(t);
     const value = doc?.fields[field];

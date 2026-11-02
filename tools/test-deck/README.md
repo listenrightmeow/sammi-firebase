@@ -51,6 +51,32 @@ Run T-C1 first. These read `test/a`, and a missing path stops the button.
 
 The two grey helper buttons are run by T-C8. Don't run them directly.
 
+## Variables, own writes and scale (purple)
+
+Attach the triggers once, in SAMMI: right-click **Watch Updated** > **Edit Triggers** > **Add** > **Extension Trigger**, and type `Firebase: Document Updated`. Do the same on **Watch Rejected** with `Firebase: Write Rejected`. Never run the two Watch buttons directly.
+
+| Button | Pass when |
+| --- | --- |
+| T-L2 | One **Watch: Updated** alert with `source=local`, then the T-L2 alert |
+| T-V5 | One **Watch: Updated** alert with `source=local`, then `fromvariable`. Console: `test/two/note` is `fromvariable` |
+| T-V6 | One **Watch: Rejected** alert naming `unknown field`, then the document with no `b` |
+| T-V7 | `stored=start variable=start`. Console: `oneway/a/n` is `start` |
+| T-V3 Clear | `0`. Run it before T-V3 |
+| T-V3 | `8` and `start`, then one **Watch: Updated** alert, then `fromvariable`. Console: `collections/large` has 8 documents |
+
+These set text, because Set String is the variable command this deck has confirmed on hardware. T-V5 and T-V7 use their own documents so the other cases keep `test/a`.
+
+## Bridge closed (red)
+
+Close OBS first, and leave SAMMI open.
+
+| Button | Then | Pass when |
+| --- | --- | --- |
+| T-B3 | Edit `test/a` in the console, then open OBS | One popup: `Back online: 1 local change pushed, ...`. Console: `test/a` has `n` = `33`. One **Watch: Updated** alert with `source=local` |
+| T-B4 | Open OBS | The tab's status line ends `invalid JSON ignored in firebase.ini: test/a`. Console: `test/a` is unchanged |
+
+After T-B4, run **T-C1** to overwrite `test/a`, then close and reopen OBS. The status line clears.
+
 ## Not on this deck
 
-Some cases need the console, a second PC, an OBS restart or a plain Set Variable: the install cases, T-V3, T-V5 to T-V7, T-S1, T-L1 to T-L4, T-P1 to T-P4, T-A3, T-B1 to T-B4 and T-U1.
+These have no button, because they are about installing, the tab or a second PC: T-I1, T-I2, T-I4, T-K1, T-P1 to T-P4, T-A3, T-L1, T-L3, T-L4, T-S1, T-B1, T-B2 and T-U1.

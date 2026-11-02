@@ -224,7 +224,18 @@ export class World {
 
     const sammi: SammiPort = {
       setVariable: async (name, value) => {
-        this.variables.set(name, clone(value));
+        const [root, ...path] = name.split(".");
+        if (!path.length) {
+          this.variables.set(name, clone(value));
+        } else {
+          // SAMMI's dot notation. T-V3: a parent that does not exist is a fatal error in SAMMI.
+          let parent = this.variables.get(root as string) as Record<string, unknown> | undefined;
+          for (const key of path.slice(0, -1)) parent = parent?.[key] as Record<string, unknown> | undefined;
+          if (!parent) throw new Error(`SAMMI fatal error: no parent for ${name}`);
+          const last = path.at(-1) as string;
+          if (value === null) Reflect.deleteProperty(parent, last);
+          else parent[last] = clone(value);
+        }
         this.record("sammi", "SetVariable", { name, value }, name);
       },
       trigger: async (name, pullData) => {

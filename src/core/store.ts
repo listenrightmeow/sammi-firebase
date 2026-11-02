@@ -1,6 +1,6 @@
 import { host } from "./host.ts";
 import { crc32 } from "./crc32.ts";
-import { docText, parseDocText, type Fields } from "./docs.ts";
+import { byteSize, docText, parseDocText, type Fields } from "./docs.ts";
 import { docKey } from "./names.ts";
 import type { FirebaseConfig } from "./ports.ts";
 import type { PendingOp, SchemaEntry, StoredDoc } from "./state.ts";
@@ -16,6 +16,50 @@ const parse = <T>(text: string | undefined): T | undefined => {
     return undefined;
   }
 };
+
+/**
+ * The most a single message to SAMMI may carry (D32). SAMMI publishes no number and drops what is too
+ * large (S12). T-V3 stopped at about 41 KB, and a document is at most 8 KB, so this leaves room for both.
+ */
+export const MESSAGE_MAX = 16000;
+/** What a dotted variable path can reach: SAMMI's dot notation does not take dashes or spaces. */
+export const DOTTED_ID = /^[A-Za-z0-9_]+$/;
+
+export const overMessage = (value: unknown): boolean => byteSize(value) > MESSAGE_MAX;
+
+/** An answer too large for one message is refused, so it cannot vanish in the websocket. */
+export const withinMessage = (answer: string): string => (overMessage(answer) ? "error: too large" : answer);
+
+const partKey = (key: string, part: number): string => (part === 0 ? key : `${key}__part${part}`);
+
+/** One ini value across as many keys as it needs. Only a part filled to the cap has a next part. */
+export async function readChain(section: string, key: string): Promise<string | undefined> {
+  const { ports, state } = host();
+  const parts: string[] = [];
+  for (;;) {
+    const part = await ports.ini.read(section, partKey(key, parts.length));
+    if (!part) break;
+    parts.push(part);
+    if (part.length < MESSAGE_MAX) break;
+  }
+  state.iniChains.set(`${section}/${key}`, parts);
+  return parts.length ? parts.join("") : undefined;
+}
+
+/** Write a value across its parts, sending only the parts that changed. */
+export async function writeChain(section: string, key: string, text: string): Promise<void> {
+  const { ports, state } = host();
+  const id = `${section}/${key}`;
+  const before = state.iniChains.get(id) ?? [];
+  const parts: string[] = [];
+  for (let at = 0; at === 0 || at < text.length; at += MESSAGE_MAX) parts.push(text.slice(at, at + MESSAGE_MAX));
+  state.iniChains.set(id, parts);
+  if (parts.length === 1 && before.length <= 1) return ports.ini.write(section, key, text);
+  for (let i = 0; i < parts.length; i++) {
+    if (parts[i] !== before[i]) await ports.ini.write(section, partKey(key, i), parts[i] as string);
+  }
+  for (let i = parts.length; i < before.length; i++) await ports.ini.write(section, partKey(key, i), "");
+}
 
 const DEVICE_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789";
 
@@ -37,7 +81,7 @@ export async function boot(): Promise<void> {
   }
   const lastSync = await ini.read("index", "last_sync");
   state.lastSync = lastSync && /^\d+$/.test(lastSync) ? Number(lastSync) : undefined;
-  state.hashes = new Map(Object.entries(parse<Record<string, string>>(await ini.read("index", "hashes")) ?? {}));
+  state.hashes = new Map(Object.entries(parse<Record<string, string>>(await readChain("index", "hashes")) ?? {}));
   for (const collection of parse<string[]>(await ini.read("index", "collections")) ?? []) {
     const docs = new Map<string, StoredDoc>();
     state.mirror.set(collection, docs);
@@ -52,7 +96,7 @@ export async function boot(): Promise<void> {
         t: schema._t,
       });
     }
-    for (const id of parse<string[]>(await ini.read("index", collection)) ?? []) {
+    for (const id of parse<string[]>(await readChain("index", collection)) ?? []) {
       const key = docKey(collection, id);
       const text = await ini.read(`collection:${collection}`, id);
       if (text === undefined) continue;
@@ -114,14 +158,12 @@ export async function writeCollections(): Promise<void> {
 }
 
 export async function writeIds(collection: string): Promise<void> {
-  const { ports, state } = host();
-  const ids = [...(state.mirror.get(collection)?.keys() ?? [])].sort();
-  await ports.ini.write("index", collection, JSON.stringify(ids));
+  const ids = [...(host().state.mirror.get(collection)?.keys() ?? [])].sort();
+  await writeChain("index", collection, JSON.stringify(ids));
 }
 
 export async function writeHashes(): Promise<void> {
-  const { ports, state } = host();
-  await ports.ini.write("index", "hashes", JSON.stringify(Object.fromEntries(state.hashes)));
+  await writeChain("index", "hashes", JSON.stringify(Object.fromEntries(host().state.hashes)));
 }
 
 export async function writeLastSync(): Promise<void> {
@@ -159,9 +201,56 @@ export async function publish(collection: string): Promise<void> {
   const { ports, state } = host();
   const value: Record<string, Fields> = {};
   for (const [id, doc] of state.mirror.get(collection) ?? []) value[id] = { ...doc.fields };
+  const before = state.published.get(collection);
   state.published.set(collection, value);
   state.publishes++;
-  await ports.sammi.setVariable(`fb_${collection}`, value);
+  const name = `fb_${collection}`;
+  if (!overMessage(value)) {
+    state.unreachable.delete(collection);
+    return ports.sammi.setVariable(name, value);
+  }
+  state.publishing++;
+  try {
+    await publishLarge(collection, name, value, before);
+  } finally {
+    state.publishing--;
+  }
+}
+
+/** D32: a collection over one message goes as a chain the first time, then only what changed. */
+async function publishLarge(
+  collection: string,
+  name: string,
+  value: Record<string, Fields>,
+  before: Record<string, Fields> | undefined,
+): Promise<void> {
+  const { ports, state } = host();
+  let rest = Object.keys(value);
+  if (before) {
+    rest = rest.filter((id) => JSON.stringify(before[id]) !== JSON.stringify(value[id]));
+  } else {
+    const first: Record<string, Fields> = {};
+    let size = 2;
+    while (rest.length) {
+      const id = rest[0] as string;
+      size += byteSize({ [id]: value[id] });
+      if (size > MESSAGE_MAX) break;
+      first[id] = value[id] as Fields;
+      rest.shift();
+    }
+    await ports.sammi.setVariable(name, first);
+  }
+  const unreachable = new Set(state.unreachable.get(collection));
+  for (const id of rest) {
+    if (!DOTTED_ID.test(id)) unreachable.add(id);
+    else await ports.sammi.setVariable(`${name}.${id}`, value[id]);
+  }
+  for (const id of Object.keys(before ?? {})) {
+    if (id in value) continue;
+    unreachable.delete(id);
+    if (DOTTED_ID.test(id)) await ports.sammi.setVariable(`${name}.${id}`, null);
+  }
+  state.unreachable.set(collection, [...unreachable]);
 }
 
 export function documentCount(): number {

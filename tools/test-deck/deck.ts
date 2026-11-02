@@ -5,7 +5,9 @@ import {
   comment,
   deleteVariable,
   extension,
+  ifThen,
   iniLoad,
+  iniSave,
   setString,
   triggerButton,
   triggerPull,
@@ -20,6 +22,8 @@ const GREEN = bgr(45, 160, 90);
 const BLUE = bgr(45, 127, 249);
 const ORANGE = bgr(200, 120, 40);
 const GREY = bgr(110, 110, 110);
+const PURPLE = bgr(150, 90, 200);
+const RED = bgr(190, 60, 60);
 
 /** One Firebase command that waits for its answer in a fresh variable. */
 const run = (name: string, boxes: Record<string, string>, save: string): Cmd[] => [
@@ -29,6 +33,11 @@ const run = (name: string, boxes: Record<string, string>, save: string): Cmd[] =
 const doc = (collection: string, id: string) => ({ collection, id });
 const replace = (collection: string, id: string, fields: string, save = "tSeed"): Cmd[] =>
   run("Replace Document", { ...doc(collection, id), fields }, save);
+
+const POLL_MS = 3000;
+/** 56 KB in all: over the message cap (D32), and over the 41 KB where the first T-V3 run stopped. */
+const LARGE = Array.from({ length: 8 }, (_, i) => `d${i}`);
+const LARGE_FIELDS = JSON.stringify({ n: "start", x: "x".repeat(3500), y: "y".repeat(3500) });
 
 const CASES: { id: string; label: string; color: number; commands: Cmd[] }[] = [
   {
@@ -243,11 +252,148 @@ const CASES: { id: string; label: string; color: number; commands: Cmd[] }[] = [
   },
   {
     id: "tB5",
-    label: "T-B5 T-L2\nUpdate a",
+    label: "T-B5\nUpdate a",
     color: ORANGE,
     commands: [
       ...run("Update Document", { ...doc("test", "a"), fields: '{"m":1}' }, "tUpdate"),
       alert("T-B5 expect the document with m=1, straight away. got /$tUpdate$/"),
+    ],
+  },
+  {
+    id: "tL2",
+    label: "T-L2\nOwn write",
+    color: PURPLE,
+    commands: [
+      comment("Attach 'Firebase: Document Updated' to Watch: Updated first."),
+      ...run("Update Document", { ...doc("test", "a"), fields: '{"own":"write"}' }, "tOwn"),
+      waitMs(POLL_MS),
+      alert("T-L2 expect exactly one Watch: Updated alert before this, with source=local. answer=/$tOwn$/"),
+    ],
+  },
+  {
+    id: "tV5",
+    label: "T-V5\nSet variable",
+    color: PURPLE,
+    commands: [
+      ...replace("test", "two", '{"n":1,"note":"start"}'),
+      waitMs(POLL_MS),
+      setString("global.fb_test.two.note", "fromvariable"),
+      waitMs(POLL_MS),
+      ...run("Get Field", { ...doc("test", "two"), field: "note", default: "" }, "tTwo"),
+      alert(
+        "T-V5 expect fromvariable, in the console too, after one Watch: Updated alert with source=local. got /$tTwo$/",
+      ),
+    ],
+  },
+  {
+    id: "tV6",
+    label: "T-V6\nStrict variable",
+    color: PURPLE,
+    commands: [
+      comment("Attach 'Firebase: Write Rejected' to Watch: Rejected first."),
+      ...run("Define Collection", { name: "strictdemo", fields: "a", strict: "true", twoWay: "true" }, "tDefine"),
+      ...replace("strictdemo", "one", '{"a":"keep"}'),
+      waitMs(POLL_MS),
+      setString("global.fb_strictdemo.one.b", "refused"),
+      waitMs(POLL_MS),
+      ...run("Get Document", { ...doc("strictdemo", "one"), unpack: "" }, "tStrictDoc"),
+      alert(
+        'T-V6 expect {"a":"keep"} with no b, after one Watch: Rejected alert naming unknown field. got /$tStrictDoc$/',
+      ),
+    ],
+  },
+  {
+    id: "tV7",
+    label: "T-V7\nTwo-way off",
+    color: PURPLE,
+    commands: [
+      ...run("Define Collection", { name: "oneway", fields: "n, m", strict: "false", twoWay: "false" }, "tDefine"),
+      ...replace("oneway", "a", '{"n":"start","m":"one"}'),
+      waitMs(POLL_MS),
+      setString("global.fb_oneway.a.n", "ignored"),
+      waitMs(POLL_MS),
+      ...run("Get Field", { ...doc("oneway", "a"), field: "n", default: "" }, "tOneway"),
+      ...run("Update Document", { ...doc("oneway", "a"), fields: '{"m":"two"}' }, "tOneway2"),
+      alert("T-V7 expect stored=start and variable=start. stored=/$tOneway$/ variable=/$global.fb_oneway.a.n$/"),
+    ],
+  },
+  {
+    id: "tV3x",
+    label: "T-V3\nClear",
+    color: PURPLE,
+    commands: [
+      comment("Removes the large collection through the extension."),
+      ...LARGE.flatMap((id) => run("Delete Document", doc("large", id), "tLarge")),
+      ...run("Count Documents", { collection: "large" }, "tLargeCount"),
+      alert("T-V3 clear expect 0. got /$tLargeCount$/"),
+    ],
+  },
+  {
+    id: "tV3",
+    label: "T-V3\nOver the cap",
+    color: PURPLE,
+    commands: [
+      comment("Crosses the 16,000 byte message cap with a few large documents (D32). Run T-V3 Clear first."),
+      ...LARGE.flatMap((id) => replace("large", id, LARGE_FIELDS, "tLarge")),
+      ...run("Count Documents", { collection: "large" }, "tLargeCount"),
+      ...ifThen(
+        "tLargeCount",
+        "==",
+        `"${LARGE.length}"`,
+        [
+          alert(`T-V3 expect ${LARGE.length} and start. count=/$tLargeCount$/ variable=/$global.fb_large.d7.n$/`),
+          setString("global.fb_large.d7.n", "fromvariable"),
+          waitMs(POLL_MS),
+          ...run("Get Field", { ...doc("large", "d7"), field: "n", default: "" }, "tLargeRead"),
+          alert("T-V3 expect fromvariable. got /$tLargeRead$/"),
+        ],
+        [alert(`T-V3 expect ${LARGE.length}, this run lost writes. count=/$tLargeCount$/`)],
+      ),
+    ],
+  },
+  {
+    id: "tB3",
+    label: "T-B3\nINI edit",
+    color: RED,
+    commands: [
+      comment("Run with OBS closed."),
+      iniSave("firebase.ini", "collection:test", "a", '{"n":33}'),
+      alert("T-B3 expect this with OBS closed. Now edit test/a in the console, then open OBS."),
+    ],
+  },
+  {
+    id: "tB4",
+    label: "T-B4\nBad INI",
+    color: RED,
+    commands: [
+      comment("Run with OBS closed."),
+      iniSave("firebase.ini", "collection:test", "a", "{not json"),
+      alert("T-B4 expect this with OBS closed. Now open OBS."),
+    ],
+  },
+  {
+    id: "tWatchU",
+    label: "Watch\nUpdated",
+    color: GREY,
+    commands: [
+      comment("Attach the Extension Trigger 'Firebase: Document Updated' yourself. Never run it directly."),
+      triggerPull("tWSource", "source"),
+      triggerPull("tWCollection", "collection"),
+      triggerPull("tWId", "id"),
+      alert(
+        "Watch: Updated expect the source each case names. source=/$tWSource$/ collection=/$tWCollection$/ id=/$tWId$/",
+      ),
+    ],
+  },
+  {
+    id: "tWatchR",
+    label: "Watch\nRejected",
+    color: GREY,
+    commands: [
+      comment("Attach the Extension Trigger 'Firebase: Write Rejected' yourself. Never run it directly."),
+      triggerPull("tWField", "field"),
+      triggerPull("tWReason", "reason"),
+      alert("Watch: Rejected expect unknown field. field=/$tWField$/ reason=/$tWReason$/"),
     ],
   },
   {

@@ -70,6 +70,7 @@ export async function handle(input: ConnectInput = {}): Promise<Answer> {
 
     const iniEdits = await catchUpIniEdits();
     const counts = await reconcile("connect", iniEdits);
+    if (iniEdits.size) state.iniCatchUp = { pushed: counts.pushed, applied: counts.applied };
     await ports.db.update(userPath(result.uid, `meta/devices/${state.deviceId}`), {
       name: ports.deviceName,
       lastSeen: ports.now(),

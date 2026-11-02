@@ -33,6 +33,7 @@ export interface AuthModule {
   browserLocalPersistence: unknown;
   signInWithEmailAndPassword(auth: Auth, email: string, password: string): Promise<{ user: User }>;
   signOut(auth: Auth): Promise<void>;
+  onAuthStateChanged(auth: Auth, next: (user: User | null) => void): () => void;
 }
 export interface DatabaseModule {
   getDatabase(app: FirebaseApp): Database;

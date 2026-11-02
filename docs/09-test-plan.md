@@ -33,7 +33,6 @@ Setup: SAMMI 2025.2.0+, OBS with the Bridge dock, a throwaway Firebase project c
 | --- | --- | --- | --- |
 | T-I1 | Follow the README setup guide literally, timing each step | Under 15 minutes, no step needs outside help | journey 1 |
 | T-I2 | Install with the Bridge closed | SAMMI refuses with a clear message | S13 |
-| T-I3 | Paste a config missing `databaseURL` | Tab names the missing field | failure 6 |
 | T-I4 | Connect from the tab with the user created in the console | Tab shows connected; `Firebase: Connected` trigger fires | journey 1 step 8 |
 | T-K1 | Run each bundled-deck button with Run Button; restart SAMMI; attach the two policy triggers and fire them (edit `example/settings` in the console; reconnect) | Help shows its popup; Startup runs on start and defines `example` and `viewers`; Replace and Get answer; with the Bridge closed Get shows the ini copy; the policies alert and unpack `example_*` | bundled deck (D21, D24): If, Popup, INI Load, Trigger Pull Data |
 
@@ -63,10 +62,10 @@ Setup: SAMMI 2025.2.0+, OBS with the Bridge dock, a throwaway Firebase project c
 | T-V4 | `Increment Field` `viewers`/`/$userId$/` `points` by 10 with Save Variable As `points`; alert `/$points$/`; `Get Field` `viewers`/`/$userId$/` `points` and alert the answer | Both show the new total | the write is the read; D27 |
 | T-V5 | Plain button: `Set Variable global.fb_test.a.n = 2` (two-way on) | Within one poll the console shows `n: 2`; `Document Updated` source local fires | H5, rule 8 |
 | T-V6 | Plain button sets an unknown field on a strict two-way collection | Variable reverts within one poll; `Write Rejected` fires with `unknown field` | failure 20 |
-| T-V7 | Two-way off for `test`; set the variable | Nothing written; variable overwritten by the next rewrite | binding flag |
+| T-V7 | Two-way off for a collection of its own (`oneway`); set the variable | Nothing written; variable overwritten by the next rewrite | binding flag |
 | T-R1 | Button runs `Firebase: Reconcile` after an offline edit elsewhere | The answer is `ok`; `Mirror Reconciled` fires with the counts in its pull data (`applied` is 1 only if the live listener has not already applied the edit); variable updated | H2 |
 | T-S1 | Define Collection on PC A; connect on PC B without running the startup button | PC B's `[schema]` holds the collection with the same `strict` and `two_way` | H1 |
-| T-V3 | 500 documents of 100 bytes in one collection | `fb_test` still round-trips; else per-document fallback engaged and documented | S12 |
+| T-V3 | 8 documents of 7 KB in one collection (56 KB, over the 16,000 byte message cap and over the 41 KB where the first run stopped); then restart SAMMI with OBS open and write once more | All 8 written, none lost; the variable reads and writes one document; the restart does not crash SAMMI | S12, D32 |
 
 ### Live changes
 
@@ -84,7 +83,7 @@ Setup: SAMMI 2025.2.0+, OBS with the Bridge dock, a throwaway Firebase project c
 | T-P1 | Close OBS, open it | Tab green without typing anything; document count unchanged; `Firebase: Connected` fires | session resume |
 | T-P2 | Close OBS, delete OBS's browser profile data (plugin cache folder), open it | Tab green without typing (restored from ini record) | 05-auth-flow risk 1, T-A3 |
 | T-A3 | Inspect localStorage key name on the pinned SDK version | Matches the pattern the restore code expects | 05-auth-flow |
-| T-P3 | Change the password in the console; restart OBS | Tab: "Connect needed"; one alert; `Disconnected` reason `session`; queries still answer | failure 5 |
+| T-P3 | Disable the account in the console (the console cannot set a password directly); restart OBS | Tab: "Connect needed"; one alert; `Disconnected` reason `session`; queries still answer from the local copy; writes answer `error: not connected` | failure 5, D31 |
 | T-P4 | Uninstall extension, delete deck, reinstall, connect | All documents back; count matches | journey 3 |
 | T-D2 | Gateway probe `.sef` (`pnpm build:probe`; steps and run guide in `tools/probe/README.md`): ini write, load and **delete** of a key in section `collection:test`; `setVariable` with an object then `getVariable`; `triggerExt` | Every step prints pass; the delete leaves no key (or the fallback the probe reports is adopted by the `ini` gateway); output saved as the fidelity fixture `evidence/pc/gateway-probe.json` | the fakes' assumptions |
 | T-D1 | `INI: Load Text` file `firebase.ini`, section `collection:test`, key `a` from a plain button | Returns the document JSON (confirms `:` in section names; otherwise the section becomes `collection_<name>`, SF-ADR-004) | SF-ADR-004 |

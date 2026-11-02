@@ -21,7 +21,7 @@ enforce:
   0 for an unknown collection
   rejects BAD_OPERATOR when the operator is not one of == != > >= < <= contains exists
   rejects BAD_FIELD when the filter field name is invalid
-  rejects NOT_CONNECTED when no connection is established
+  answer from the local copy whether or not a connection is established
   rejects BAD_COLLECTION_NAME when the collection name is not [a-z][a-z0-9_]{0,31}
 
 contract:
@@ -82,12 +82,16 @@ scenario "rejects BAD_FIELD for an invalid filter field":
   predict rejection BAD_FIELD:
     response ERR CommandError { code: "BAD_FIELD", answer: "error: bad field _d" }
 
-scenario "rejects NOT_CONNECTED when nothing is connected":
+scenario "answers from the local copy when nothing is connected (D31)":
   given:
     clock at "2026-10-29T12:00:00Z"
+    seed ini [ IniWrite with IniWrite { section: "index", key: "collections", json: ["viewers"] }, IniWrite with IniWrite { section: "index", key: "viewers", json: ["222"] }, IniWrite with IniWrite { section: "collection:viewers", key: "222", json: { name: "bob", points: 10, _t: 1793275110000, _d: "dev1" } } ]
   when: CountDocuments { collection: "viewers" }
-  predict rejection NOT_CONNECTED:
-    response ERR CommandError { code: "NOT_CONNECTED", answer: "error: not connected" }
+  predict success:
+    response OK CommandResponse { answer: "1" }
+    ini has []
+    firebase has []
+    sammi has []
 
 scenario "rejects BAD_COLLECTION_NAME for an invalid name":
   given:

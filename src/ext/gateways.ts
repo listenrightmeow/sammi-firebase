@@ -50,12 +50,20 @@ async function load(): Promise<Sdk> {
 }
 
 let session: { app: FirebaseApp; auth: Auth } | undefined;
+let signedInOnce = false;
+let signingOut = false;
 async function open(config: FirebaseConfig) {
   const s = await load();
   if (session) return session;
   const app = s.app.getApps().find((a) => a.name === APP_NAME) ?? s.app.initializeApp(config, APP_NAME);
   const auth = s.auth.initializeAuth(app, { persistence: s.auth.browserLocalPersistence });
   session = { app, auth };
+  // The SDK clears the user when it finds the session revoked, which can take up to an hour mid-session.
+  s.auth.onAuthStateChanged(auth, (user) => {
+    if (user) signedInOnce = true;
+    else if (signedInOnce && !signingOut)
+      window.dispatchEvent(new CustomEvent("fb-session-lost", { detail: "revoked" }));
+  });
   return session;
 }
 
@@ -97,7 +105,13 @@ export const auth: AuthPort = {
     }
   },
   signOut: async () => {
-    if (session) await (await load()).auth.signOut(session.auth);
+    signingOut = true;
+    try {
+      if (session) await (await load()).auth.signOut(session.auth);
+    } finally {
+      signingOut = false;
+      signedInOnce = false;
+    }
   },
 };
 

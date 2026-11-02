@@ -24,6 +24,8 @@ export const extension = (name: string, boxes: Record<string, string>): Cmd =>
 export const popup = (text: string): Cmd => cmd(141, { b0: text, v0: 0 });
 export const waitMs = (ms: number): Cmd => cmd(190, { b0: String(ms) });
 export const strLen = (save: string, text: string): Cmd => cmd(83, { b0: save, b1: text });
+export const iniSave = (file: string, section: string, key: string, text: string): Cmd =>
+  cmd(126, { b0: file, b1: section, b2: key, b3: text });
 export const iniLoad = (file: string, section: string, key: string, save: string): Cmd =>
   cmd(127, { b0: file, b1: section, b2: key, b3: save });
 export const triggerButton = (id: string): Cmd => cmd(132, { b0: id, b1: "0", v0: false });

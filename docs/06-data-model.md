@@ -86,6 +86,7 @@ Why this shape:
 - `[index]` exists because `loadIni` reads one key at a time (S10) and cannot enumerate a section.
 - `[schema]` mirrors `meta/schema` in the cloud (H1 ruling); `DefineCollection` writes both, connect merges cloud into local by `_t`. The startup button still declares the shape so a deck is self-describing, but a second machine already has it after its first connect.
 - `[pending]` is the durable write queue, because the SDK's offline queue is memory only (F8). Pending operations are stored as the command that produced them, so replay re-runs the same code path.
+- `[index]` values over one message (16,000 bytes) continue in `<key>__part1`, `<key>__part2` (D32).
 - `[index] hashes` is a short hash (CRC32 of the JSON) of every document as the extension last wrote it. It is how the extension notices, on start, that a deck edited a document with `INI: Save Text` while the Bridge was closed (D10, rule 7).
 
 Test plan item T-D1 checks that GameMaker's ini functions accept `:` in section names and `/` in `[pending]` keys. If not, `collection_viewers` and `viewers.alice` are the fallbacks and the README says so.

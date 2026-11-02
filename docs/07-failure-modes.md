@@ -24,7 +24,7 @@ What goes wrong, what the user sees, what the extension does, and what the deck 
 | 17 | OBS dock hidden | nothing, it keeps working | nothing | nothing | O8 |
 | 18 | Extension update installed | Bridge reloads; mirror and auth resume from ini | reads every earlier schema | nothing | D8 |
 | 20 | A bound-variable write violates an invariant (unknown field in a strict collection, too large, bad value) | the variable snaps back to the mirror's value within one poll; `Firebase: Write Rejected` fires with the reason | reverts the variable, emits the event, writes nothing | a policy on Write Rejected can alert | H5 ruling; data model rule 8 |
-| 21 | Two-way collection grows large | poll traffic grows with it (S12); tab shows poll cost | per-collection `two-way` off, or longer `poll_ms` | turn off two-way for big collections; use commands | S18 |
+| 21 | Two-way collection grows past one message (16,000 bytes) | Chains replace the whole-variable message; a variable write takes up to about 25 seconds at 500 documents; ids with a dash or space are left out of the variable and the tab says so | chained publish and paged poll (D32) | read those ids with commands; turn off two-way or use commands for big collections | S12, S18, D32 |
 | 19 | Project deleted in the console | all cloud calls fail; tab: "Project not found. Redo setup from step 1." | mirror keeps serving; nothing is lost locally | the ini is a readable backup | |
 
 ## Principles behind the table
@@ -32,6 +32,7 @@ What goes wrong, what the user sees, what the extension does, and what the deck 
 - **The mirror always serves queries.** Every row above leaves the queries working, Bridge permitting. Loss of the cloud is never loss of a stream.
 - **The extension always answers.** A command that cannot do its job answers `error: …` within the timeout rather than letting the box time out, so a deck can tell "failed" from "Bridge closed".
 - **Every error names the setup step to redo.** The setup guide numbers its steps for this reason.
+- **A deck that sets a field on a document missing from the variable crashes SAMMI** ("FATAL ERROR ... ds_map_set", found by T-V3). SAMMI's own Set String does this before the extension is involved. Write new documents with a Firebase command, not a variable.
 - **No silent data loss.** A dropped replay (rule 4) is announced through `Document Updated` with `source: remote`, so a policy can at least alert.
 
 ## Not handled in the MVP, by decision

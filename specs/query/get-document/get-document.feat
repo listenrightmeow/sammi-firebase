@@ -21,7 +21,7 @@ enforce:
   answer the document without _t and _d
   return unpack variables as data, never set them in the handler
   rejects MISSING when the document is not in the mirror
-  rejects NOT_CONNECTED when no connection is established
+  answer from the local copy whether or not a connection is established
   rejects BAD_COLLECTION_NAME when the collection name is not [a-z][a-z0-9_]{0,31}
   rejects BAD_ID when the id is not [A-Za-z0-9_-]{1,64}
 
@@ -73,12 +73,16 @@ scenario "rejects MISSING for an unknown collection":
   predict rejection MISSING:
     response ERR CommandError { code: "MISSING", answer: "error: missing ghosts/1" }
 
-scenario "rejects NOT_CONNECTED when nothing is connected":
+scenario "answers from the local copy when nothing is connected (D31)":
   given:
     clock at "2026-10-29T12:00:00Z"
-  when: GetDocument { collection: "viewers", id: "12345678" }
-  predict rejection NOT_CONNECTED:
-    response ERR CommandError { code: "NOT_CONNECTED", answer: "error: not connected" }
+    seed ini [ IniWrite with IniWrite { section: "index", key: "collections", json: ["viewers"] }, IniWrite with IniWrite { section: "index", key: "viewers", json: ["222"] }, IniWrite with IniWrite { section: "collection:viewers", key: "222", json: { name: "bob", points: 10, _t: 1793275110000, _d: "dev1" } } ]
+  when: GetDocument { collection: "viewers", id: "222" }
+  predict success:
+    response OK CommandResponse { answer: "{\"name\":\"bob\",\"points\":10}" }
+    ini has []
+    firebase has []
+    sammi has []
 
 scenario "rejects BAD_COLLECTION_NAME for an invalid name":
   given:
